@@ -55,7 +55,7 @@
           "id": "fz_shibo_gift",
           "type": "favour",
           "label": "送笔墨",
-          "text": "你给书吏送了一匣笔墨。他把名字写在簿上，下回办事少盘问。",
+          "text": "你在公凭房留下一匣笔墨，书吏把你的名字写进簿里，说下回少盘问。",
           "cost": 40,
           "once_per": "month",
           "effects": {
@@ -82,7 +82,7 @@
           "id": "fz_shibo_coin",
           "type": "rumor",
           "label": "听倭铜",
-          "text": "书吏把声音放低，说博多唐房有人囤倭铜，番船还没靠岸。",
+          "text": "书吏合上抽解簿，说博多唐房有人囤倭铜，番船还没靠岸。",
           "cost": 20,
           "cooldown_days": 45,
           "port": "hakata",
@@ -98,13 +98,13 @@
       "kind": "street",
       "pending_art": true,
       "bg": "bg_dist_fz_fanfang.jpg",
-      "description": "城南蕃坊，石巷窄，乳香与漆器沿墙码着。通事站在两拨人中间。",
+      "description": "城南蕃坊的石巷很窄，乳香与漆器沿墙码着，通事在两拨人之间传话。",
       "interactions": [
         {
           "id": "fz_fanfang_interpreter",
           "type": "hire",
           "label": "雇通事",
-          "text": "蕃坊通事肯跟你走巷子。他在时，漆器好说话，番客的簿子也松一笔。",
+          "text": "蕃坊通事肯随你走巷子。有他在，漆器议价少费口舌，番客的簿子也肯让一步。",
           "who": "蕃坊通事",
           "cost": 120,
           "wage": 22,
@@ -215,7 +215,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_fz_gushan.jpg",
-      "description": "鼓山涌泉寺在山腰。殿前樟树很老，石上没有后来人的字。僧人挑水下山。",
+      "description": "鼓山涌泉寺在半山，殿前老樟遮着石阶，碑上只刻宋人的年款。僧人挑水下山。",
       "interactions": [
         {
           "id": "fz_gushan_tea",
@@ -291,7 +291,7 @@
             {
               "id": "one",
               "label": "点一炷",
-              "text": "你点了一炷。僧人记你来过。",
+              "text": "你点了一炷香。僧人在簿上添了你的名字。",
               "cost": 10,
               "effects": {
                 "favour": 1
@@ -330,13 +330,13 @@
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_fz_wushan.jpg",
-      "description": "乌山在城中。石径弯弯，松树很多。登上去看见闽江与定光塔。",
+      "description": "乌山在城中，石径绕着松林往上。登到高处，闽江与定光塔都在眼底。",
       "interactions": [
         {
           "id": "fz_wushan_climb",
           "type": "choice",
           "label": "登山",
-          "text": "乌山上有两条路。东看江，西看城。",
+          "text": "乌山石径分作两支，一支临江，一支入城。",
           "once_per": "year",
           "options": [
             {
@@ -365,7 +365,7 @@
           "id": "fz_wushan_rumor",
           "type": "rumor",
           "label": "听硫黄",
-          "text": "乌山下卖香药的说，温州硫黄堆在仓里，海船等北风才开。",
+          "text": "乌山下卖香药的说，温州硫黄今年出得少，仓里的先供官买，海船等北风才开。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "wenzhou",
@@ -477,13 +477,13 @@
       "kind": "warehouse",
       "pending_art": true,
       "bg": "bg_dist_fz_tafang.jpg",
-      "description": "闽江边塌房木板旧。货悄悄从后门出去，行情牌不动。夜里潮声很大。",
+      "description": "闽江边塌房木板旧，后门对着河汊，货从那里悄悄上下，牙行的行情牌看不见。夜里潮声很大。",
       "interactions": [
         {
           "id": "fz_tafang_rent",
           "type": "invest",
           "label": "入股塌房",
-          "text": "闽江边塌房招人入本。入了本，按月分租钱。",
+          "text": "闽江边塌房招人入本。股本交足，每月按仓格分租钱。",
           "shop": "塌房",
           "costs": [
             300,
@@ -523,7 +523,7 @@
       "kind": "teahouse",
       "pending_art": true,
       "bg": "bg_dist_fz_chafang.jpg",
-      "description": "茶坊在街角。建盏、茶筅摆着，点茶的水刚开。客人不多，说话压低。",
+      "description": "福州茶坊在街角，柜上摆着建盏与茶筅，汤瓶里的水正滚。座上客人稀落，谈价都压着嗓子。",
       "interactions": [
         {
           "id": "fz_chafang_tea",
@@ -545,7 +545,7 @@
             {
               "id": "dian",
               "label": "点茶",
-              "text": "你按了点茶的法子。茶沫白，像雪，旁人喝彩。",
+              "text": "你依宋人点茶的法子击拂，盏面浮起一层白雪，旁人喝彩。",
               "cost": 0,
               "effects": {
                 "scholar_tendency": 1,
@@ -568,7 +568,7 @@
           "id": "fz_chafang_gift",
           "type": "favour",
           "label": "送建茶",
-          "text": "你送了一罐建茶给茶坊主人。他把盏放在柜里，记下你。",
+          "text": "你把一罐建茶留在柜上，茶坊主人收进柜里，向你拱了拱手。",
           "cost": 15,
           "once_per": "month",
           "cooldown_days": 30,
@@ -586,7 +586,7 @@
       "kind": "workshop",
       "pending_art": true,
       "bg": "bg_dist_fz_yao.jpg",
-      "description": "窑在城郊。窑火未熄，瓷坯沿墙摆着。匠人说这一窑出的是福建瓷。",
+      "description": "福州瓷窑在城郊，窑火还没熄，瓷坯一摞摞靠在墙边。匠人说这一窑烧的是要装船的福建瓷。",
       "interactions": [
         {
           "id": "fz_yao_porcelain",
@@ -612,7 +612,7 @@
           "id": "fz_yao_rumor",
           "type": "rumor",
           "label": "听瓷价",
-          "text": "福州匠人说，泉州码头积着福建瓷，窑里新出的货运不出去。",
+          "text": "福州匠人说，泉州蕃舶催福建瓷催得急，窑里新货还没出窑，码头上的瓷价先添了一成。",
           "cost": 15,
           "cooldown_days": 35,
           "port": "quanzhou",
@@ -628,7 +628,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_fz_yamen.jpg",
-      "description": "福州军衙在州城。案上堆着兵籍与粮册，小吏按军令说话。外间有人等回文。",
+      "description": "福州军衙在州城。案上摊着兵籍与粮册，小吏照着军令回话，廊下有人候批文。",
       "interactions": [
         {
           "id": "fz_yamen_gift",
@@ -676,13 +676,13 @@
       "kind": "exam",
       "pending_art": true,
       "bg": "bg_dist_fz_bang.jpg",
-      "description": "福州州学门外是碑与榜墙。大比之年，墙上贴着今秋的榜。",
+      "description": "福州州学门外立着石碑与榜墙。逢大比之年，今秋的榜就贴在墙上。",
       "interactions": [
         {
           "id": "fz_bang_look",
           "type": "favour",
           "label": "看榜",
-          "text": "州学墙外贴着今秋的榜。福州人挤在墙下，有人念，有人沉默。",
+          "text": "今秋的榜糊在州学墙外，福州人挤在墙下，有人念，有人沉默。",
           "exam": true,
           "scholar_1268": true,
           "once_per": "year",
@@ -746,7 +746,7 @@
             {
               "id": "give",
               "label": "助纸墨",
-              "text": "你送了纸墨。福州寒士记你。",
+              "text": "你送了纸墨。福州寒士在墙下向你拱手。",
               "cost": 40,
               "effects": {
                 "fame": 2,

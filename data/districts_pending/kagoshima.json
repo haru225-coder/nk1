@@ -55,7 +55,7 @@
           "id": "kg_mannose_gold",
           "type": "buy",
           "label": "收砂金",
-          "text": "川口的砂金用木盘淘，金粒在竹箕里闪。",
+          "text": "川口淘出的砂金还带着水，金粒在木盘底发亮。",
           "good": "placer_gold",
           "qty": 2,
           "price_mul": 0.94,
@@ -95,7 +95,7 @@
           "id": "kg_gun_gift",
           "type": "favour",
           "label": "送笔墨",
-          "text": "你给书吏送了一匣笔墨。他说下回办事好看些。",
+          "text": "郡衙书吏收了你一匣笔墨，点头说下回书状批得快些。",
           "cost": 40,
           "once_per": "month",
           "effects": {"favour": 2, "merchant_credit": 1}
@@ -104,7 +104,7 @@
           "id": "kg_gun_pass",
           "type": "licence",
           "label": "领入港书状",
-          "text": "萨摩的入港书状到手。博多的牙人认这张纸。",
+          "text": "萨摩的入港书状到手。有了它，博多唐房的牙人验船时少问几句。",
           "cost": 600,
           "licence": "lic_kg_pass",
           "unlock": {"favour_min": 2},
@@ -136,7 +136,7 @@
           "id": "kg_shrine_rite",
           "type": "favour",
           "label": "祭火山",
-          "text": "你在神社前祭了一回。海上的人认这个渡口。",
+          "text": "你在神社前祭过火山，神前换了一条新稻草绳。",
           "cost": 25,
           "once_per": "year",
           "effects": {"sea_tendency": 1, "fame": 1}
@@ -145,7 +145,7 @@
           "id": "kg_shrine_stall",
           "type": "invest",
           "label": "社前摊",
-          "text": "社前祭日有人摆摊卖扇。你入一股，按月收摊钱。",
+          "text": "社前逢祭日，卖扇与护符的摊子排开。你入一股，按月分摊钱。",
           "shop": "社前摊",
           "costs": [200],
           "monthly": [10]
@@ -197,7 +197,7 @@
           "id": "kg_sulfur_rumor",
           "type": "rumor",
           "label": "听浜上",
-          "text": "浜上的人说博多的硫黄又涨了一手，船家不肯多装。",
+          "text": "浜上的人说，博多唐房的火药坊赶工，硫黄要得急，船家坐地起价。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "hakata",
@@ -213,7 +213,7 @@
       "kind": "market",
       "pending_art": true,
       "bg": "bg_dist_kg_gold.jpg",
-      "description": "川口的砂金用木盘淘，金粒在竹箕里闪。换宋钱的人站在摊后。",
+      "description": "万之濑川口淘出的砂金摊在竹席上，金粒细碎。换宋钱的人站在摊后，眼睛盯着秤。",
       "interactions": [
         {
           "id": "kg_gold_buy",
@@ -311,7 +311,7 @@
           "id": "kg_smith_hire",
           "type": "hire",
           "label": "雇刀工",
-          "text": "有个刀工肯随船修兵器。他在时，船上的人心定些。",
+          "text": "有个萨摩刀工肯随船修兵器。有他在舱里，水手们夜里也睡得稳。",
           "who": "刀工",
           "cost": 100,
           "wage": 18,
@@ -361,7 +361,7 @@
           "id": "kg_tea_sit",
           "type": "favour",
           "label": "吃茶",
-          "text": "你与僧对坐吃了一碗茶。谈的都是明州旧事。",
+          "text": "你与僧对坐，共饮一碗茶。话里说的都是庆元府天童寺的旧事。",
           "cost": 15,
           "once_per": "month",
           "effects": {"scholar_tendency": 1, "network": 1}
@@ -502,7 +502,7 @@
           "id": "kg_gate_gift",
           "type": "favour",
           "label": "送礼",
-          "text": "你给门下的书役送了一匣宋墨。他说下回过门快些。",
+          "text": "你把一匣宋墨交给郡门的书役，他点头，说下回验书不必再拆箱。",
           "cost": 30,
           "once_per": "month",
           "effects": {"favour": 1, "merchant_credit": 1}
@@ -522,13 +522,13 @@
           "id": "kg_gate_choice",
           "type": "choice",
           "label": "过门",
-          "text": "门下的人拦住你。塞钱快，不塞也有一条慢路。",
+          "text": "门下的人拦住你。递钱过去，门就开得快；照文书办，要在廊下等。",
           "once": true,
           "options": [
             {
               "id": "bribe",
               "label": "塞钱",
-              "text": "钱递进去，事快了。门下的簿子上多了一笔。",
+              "text": "钱递进去，门役侧身让路，簿子上多了一笔。",
               "cost": 25,
               "effects": {"merchant_credit": 2, "pu_attention": 2}
             },
@@ -576,7 +576,7 @@
           "id": "kg_grove_stall",
           "type": "invest",
           "label": "果摊",
-          "text": "园边支一摊。鲜果过了季，干货还在卖，按月有进项。",
+          "text": "园边支一摊。柑橘下市后，烘干的橘饼与陈皮接着卖，按月分钱。",
           "shop": "果摊",
           "costs": [200, 420],
           "monthly": [10, 24]

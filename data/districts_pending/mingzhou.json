@@ -13,7 +13,7 @@
           "id": "mz_sanjiang_silk",
           "type": "sell",
           "label": "出手绢帛",
-          "text": "码头上的倭商问绢帛。宋货在这里吃香，价比牙行略高。",
+          "text": "码头上的倭商问绢帛，宋货在庆元吃香，出价高过牙行。",
           "good": "silk_fabric",
           "qty": 3,
           "price_mul": 1.06,
@@ -96,7 +96,7 @@
           "id": "mz_tiantong_sutra",
           "type": "sell",
           "label": "出手经卷",
-          "text": "寺里要宋刻的经卷。知客按册数收。",
+          "text": "寺里要宋刻的经卷，知客按册数点收，缺页的不收。",
           "good": "sutra_scrolls",
           "qty": 2,
           "price_mul": 1.08,
@@ -139,7 +139,7 @@
           "id": "mz_ashoka_rumor",
           "type": "rumor",
           "label": "听塔铃",
-          "text": "看塔的老僧说，博多来的僧人今冬少，寺里的茶要靠庆元商人带去才行。",
+          "text": "看塔的老僧说，博多今冬入宋的僧船少，寺里存的茶不够分，唐房正等庆元船带茶去。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "hakata",
@@ -161,7 +161,7 @@
           "id": "mz_baoguo_listen",
           "type": "favour",
           "label": "听讲",
-          "text": "你在廊外听了一讲。说的是钱谷与兵事。",
+          "text": "你站在殿廊外听了一讲，讲的是寺田租谷与海船抽解。",
           "cost": 0,
           "once_per": "month",
           "effects": {
@@ -254,7 +254,7 @@
           "id": "mz_bang_look",
           "type": "favour",
           "label": "看榜",
-          "text": "贡院墙外贴着今秋的榜。人挤在廊下，有人念，有人不作声。",
+          "text": "今秋的榜糊在贡院墙外，人挤在廊下，有人念，有人不作声。",
           "cost": 0,
           "once_per": "year",
           "exam": true,
@@ -337,7 +337,7 @@
           "id": "mz_shipyard_rumor",
           "type": "rumor",
           "label": "听船材",
-          "text": "坞里匠人说，温州的蚕上簇遇了雨，生丝缫得少，丝价要上去。",
+          "text": "坞里匠人说，温州的蚕上簇遇了雨，生丝缫得少，织坊已把丝价添了一成。",
           "cost": 14,
           "cooldown_days": 45,
           "port": "wenzhou",
@@ -365,7 +365,7 @@
             {
               "id": "play",
               "label": "押一盏",
-              "text": "你押了自己这盏。店家把话传到牙行，博多的茶船少。",
+              "text": "你押了自己这盏。店家把话传到牙行，说博多唐房今季茶船少，茶价已添了一成。",
               "cost": 20,
               "effects": {
                 "merchant_credit": 1
@@ -379,7 +379,7 @@
             {
               "id": "treat",
               "label": "作东",
-              "text": "你把两盏都买了请人。街上的人记着你这一杯。",
+              "text": "你把两盏茶都买下，请廊下的人同饮，街上都说你大方。",
               "cost": 30,
               "effects": {
                 "network": 1,
@@ -449,7 +449,7 @@
           "id": "mz_tafang_grain",
           "type": "buy",
           "label": "收仓米",
-          "text": "塌房里的米按仓价。比市上便宜些。",
+          "text": "塌房里的米按仓底价出，比市上便宜些。",
           "good": "grain",
           "qty": 10,
           "price_mul": 0.9,
@@ -480,7 +480,7 @@
           "id": "mz_market_sword",
           "type": "sell",
           "label": "出手日本刀",
-          "text": "市上有人问日本刀。件数不多，价比牙行略高。",
+          "text": "市上有人问日本刀，摊上只有两把，出价高过牙行。",
           "good": "japanese_sword",
           "qty": 2,
           "price_mul": 1.06,
@@ -512,7 +512,7 @@
           "id": "mz_bridge_cross",
           "type": "favour",
           "label": "过桥",
-          "text": "你在桥上站了一阵。江流从脚下过去。",
+          "text": "你在三江石桥上停了一歇，看江流从脚下过去。",
           "cost": 6,
           "once_per": "month",
           "effects": {
@@ -533,7 +533,7 @@
           "id": "mz_bridge_rumor",
           "type": "rumor",
           "label": "问行人",
-          "text": "牵马的人说，温州茶山遭了春寒，头茶没采上，茶价要高。",
+          "text": "牵马的人说，温州茶山遭了春寒，头茶没采上，茶行里已把价钱抬高。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "wenzhou",
@@ -555,7 +555,7 @@
           "id": "mz_academy_listen",
           "type": "favour",
           "label": "旁听",
-          "text": "你在廊外听了一讲。卷子留在案上。",
+          "text": "你在府学廊下听了一讲，案上的卷子还没收。",
           "cost": 0,
           "once_per": "month",
           "effects": {
@@ -594,7 +594,7 @@
       "kind": "ferry",
       "pending_art": true,
       "bg": "bg_dist_mz_ferry.jpg",
-      "description": "渡口篷船载人去三江口。岸上的人等着下一班。",
+      "description": "渡口的篷船载人去三江口，岸上的人候着下一班潮。",
       "interactions": [
         {
           "id": "mz_ferry_ride",
@@ -612,7 +612,7 @@
           "id": "mz_ferry_boatman",
           "type": "hire",
           "label": "雇船家",
-          "text": "船家肯跟你走一程。他熟三江口的水。",
+          "text": "明州船家肯随你的船走，三江口的潮路与水门他都熟。",
           "cost": 90,
           "who": "明州船家",
           "wage": 16
@@ -671,7 +671,7 @@
           "id": "mz_hill_pray",
           "type": "favour",
           "label": "祈风",
-          "text": "你在亭上祈了海路。风从山腰下来。",
+          "text": "你在四明山亭焚香，求海门这一季风信顺当。",
           "cost": 10,
           "once_per": "month",
           "effects": {

@@ -102,7 +102,7 @@
           "id": "ph_shiwu_hire",
           "type": "hire",
           "label": "雇渔人",
-          "text": "石屋村的渔人肯跟你出海。他在时，鹿皮好说话些，留意簿上也松一笔。",
+          "text": "石屋村的渔人肯跟你出海。有他在，鹿皮议价少费口舌，留意簿上也松一笔。",
           "who": "澎湖渔人",
           "cost": 90,
           "wage": 15,
@@ -156,7 +156,7 @@
           "id": "ph_bifeng_choice",
           "type": "choice",
           "label": "泊船",
-          "text": "澳里风小，船要泊。两条路，你选一条。",
+          "text": "澳里风小，船泊进来。交泊费，或趁夜把船悄悄靠进去。",
           "options": [
             {
               "id": "shelter",
@@ -220,7 +220,7 @@
           "id": "ph_yuzhai_pilot",
           "type": "hire",
           "label": "雇引水",
-          "text": "屿寨的引水肯跟你走礁。他在时，船好说话些。",
+          "text": "屿寨的引水肯跟你走礁。有他在，船过暗礁不必再等潮。",
           "who": "澎湖引水",
           "cost": 110,
           "wage": 18,
@@ -251,7 +251,7 @@
           "id": "ph_pirate_choice",
           "type": "choice",
           "label": "谈一笔",
-          "text": "巢主坐在石上。两条路，你选一条。",
+          "text": "巢主坐在石上，等你开口。交钱过路，或掉头另寻澳口。",
           "options": [
             {
               "id": "pay",
@@ -299,7 +299,7 @@
           "id": "ph_bushui_favour",
           "type": "favour",
           "label": "修井栏",
-          "text": "你出钱修了井栏。屿上人记你这个人。",
+          "text": "你出钱修了井栏。屿上人再打水时，都念着你的好。",
           "cost": 50,
           "effects": {
             "favour": 2,
@@ -367,7 +367,7 @@
           "id": "ph_tianhou_pray",
           "type": "favour",
           "label": "祈风",
-          "text": "你在顺济庙前点香。海上的风向，听天。",
+          "text": "你在顺济庙前点了一炷香，问这一季北风何时起。",
           "cost": 0,
           "once_per": "year",
           "effects": {
@@ -469,7 +469,7 @@
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_ph_wangtou.jpg",
-      "description": "望头山不高，站上去能看见四面的海。风把人的衣角吹起来。",
+      "description": "望头山顶上只长矮草，四面的海一览无余，风把人的衣角吹起来。",
       "interactions": [
         {
           "id": "ph_wangtou_grain",
@@ -517,7 +517,7 @@
           "id": "ph_ferry_favour",
           "type": "favour",
           "label": "送船资",
-          "text": "你给渡船口送了一笔船资。船夫记你这个人。",
+          "text": "你给渡船口留了一笔船资。船夫把桨一摆，下回先渡你的人。",
           "cost": 20,
           "effects": {
             "favour": 1,

@@ -192,7 +192,7 @@
           "id": "rk_temple_pray",
           "type": "favour",
           "label": "祈风",
-          "text": "你在祈年祠前点香。海上的风向，听天。",
+          "text": "你在祈年祠前点香，问今年的西南风何时到。",
           "cost": 0,
           "once_per": "year",
           "effects": {
@@ -204,7 +204,7 @@
           "id": "rk_temple_rumor",
           "type": "rumor",
           "label": "听泉州",
-          "text": "祈年祠的香客说泉州的漆器在码头等船，箱笼堆着。",
+          "text": "祈年祠的香客说，泉州漆器铺接了大食船的订货，现货不够，箱笼还没凑齐。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "quanzhou",
@@ -246,7 +246,7 @@
           "id": "rk_ferry_favour",
           "type": "favour",
           "label": "送船资",
-          "text": "你给渡海口送了一笔船资。船夫把船拢近，先渡你的人。",
+          "text": "你给渡海口留了一笔船资，船夫把船拢近，先渡你船上的人。",
           "cost": 20,
           "effects": {
             "favour": 1,
@@ -262,7 +262,7 @@
       "kind": "warehouse",
       "pending_art": true,
       "bg": "bg_dist_rk_warehouse.jpg",
-      "description": "石埠边的塌房收租，不喊价。货从后门悄悄出去，牙行的行情牌不动。",
+      "description": "石埠边的塌房收租，不喊价。货从珊瑚石后门悄悄搬出，牙行的行情牌上看不见。",
       "interactions": [
         {
           "id": "rk_warehouse_rent",
@@ -430,7 +430,7 @@
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_rk_watch.jpg",
-      "description": "了望台在石城砦上。站上去能看见四面的海，风把人的衣角吹起。",
+      "description": "了望台立在石城砦最高处，珊瑚石墙外四面皆海，风把人的衣角吹起。",
       "interactions": [
         {
           "id": "rk_watch_coin",
@@ -447,7 +447,7 @@
           "id": "rk_watch_rumor",
           "type": "rumor",
           "label": "听博多",
-          "text": "台下的人说博多唐房的宋钱换不动，海商只肯拿货相抵。",
+          "text": "台下的人说，博多唐房收不到宋钱，海商把铜钱压在舱底，只肯以货相换。",
           "cost": 16,
           "cooldown_days": 45,
           "port": "hakata",
@@ -479,7 +479,7 @@
           "id": "rk_beach_porcelain",
           "type": "sell",
           "label": "卖福建瓷",
-          "text": "浜里有人收瓷。价比牙行低，行情牌不动。",
+          "text": "浜里有人收瓷，压着价，行情牌上不动。",
           "good": "fujian_porcelain",
           "qty": 3,
           "price_mul": 0.9,
@@ -489,7 +489,7 @@
           "id": "rk_beach_choice",
           "type": "choice",
           "label": "泊船",
-          "text": "浜里风小，船要泊。两条路，你选一条。",
+          "text": "浜里风小，船泊进来。交泊费，或等天黑再悄悄靠岸。",
           "options": [
             {
               "id": "shelter",
@@ -521,13 +521,13 @@
       "kind": "street",
       "pending_art": true,
       "bg": "bg_dist_rk_inlet.jpg",
-      "description": "南岛的暗澳在石缝里。船藏在暗澳，夜里点灯，白天收旗。",
+      "description": "南岛的暗澳藏在珊瑚石缝里。船进了暗澳便收帆，只在天黑后点灯。",
       "interactions": [
         {
           "id": "rk_inlet_lacquer",
           "type": "sell",
           "label": "卖漆器",
-          "text": "澳里有人收漆器。不问来路，价比牙行低些。",
+          "text": "澳里有人收漆器，不问来路，只按暗价过手。",
           "good": "lacquerware",
           "qty": 2,
           "price_mul": 0.92,
@@ -537,7 +537,7 @@
           "id": "rk_inlet_choice",
           "type": "choice",
           "label": "谈一笔",
-          "text": "澳主坐在石上。两条路，你选一条。",
+          "text": "澳主坐在石上，等你先开口。交钱过路，或把船驶开。",
           "options": [
             {
               "id": "pay",

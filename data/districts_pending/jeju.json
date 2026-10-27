@@ -55,7 +55,7 @@
           "id": "jj_halla_pray",
           "type": "favour",
           "label": "祈风",
-          "text": "你在山前点香。海上的风向，听天由命。",
+          "text": "你在汉拿山前点香，求山神看顾这一船人。",
           "cost": 0,
           "once_per": "year",
           "effects": {
@@ -191,7 +191,7 @@
           "id": "jj_sable_porcelain",
           "type": "sell",
           "label": "卖青白瓷",
-          "text": "滩里有人收瓷。价比牙行低，行情牌不动。",
+          "text": "滩里有人收瓷，压着价，行情牌上不动。",
           "good": "qingbai_porcelain",
           "qty": 4,
           "price_mul": 0.9,
@@ -318,7 +318,7 @@
           "id": "jj_temple_rumor",
           "type": "rumor",
           "label": "听萨摩",
-          "text": "僧人说萨摩的硫黄还没运到，海船在等季风。",
+          "text": "僧人说萨摩的硫黄窑这月出得少，海船又等季风，浜上的硫黄不够分。",
           "cost": 14,
           "cooldown_days": 40,
           "port": "kagoshima",
@@ -380,7 +380,7 @@
       "kind": "warehouse",
       "pending_art": true,
       "bg": "bg_dist_jj_warehouse.jpg",
-      "description": "耽罗的塌房收租，不喊价。货从后门悄悄出去，牙行的行情牌不动。",
+      "description": "耽罗的塌房收租，不喊价。货从石墙后的暗门搬出，牙行的行情牌上看不见。",
       "interactions": [
         {
           "id": "jj_warehouse_rent",
@@ -442,7 +442,7 @@
           "id": "jj_ferry_favour",
           "type": "favour",
           "label": "送船资",
-          "text": "你给渡海口送了一笔船资。船夫把桨一摆，让你先上船。",
+          "text": "你给渡海口留了一笔船资，船夫把桨一摆，让你先上船。",
           "cost": 20,
           "effects": {
             "favour": 1,
@@ -464,7 +464,7 @@
           "id": "jj_gate_favour",
           "type": "favour",
           "label": "送笔墨",
-          "text": "你给书吏送了一匣笔墨。书吏把你的船名录在簿上，下回少盘问。",
+          "text": "门楼书吏收下你的一匣笔墨，把你的船名录进簿里，说下回少盘问。",
           "cost": 40,
           "once_per": "month",
           "effects": {
@@ -506,7 +506,7 @@
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_jj_watch.jpg",
-      "description": "了望台在石墙上。站上去能看见四面的海，远处有船的影子。",
+      "description": "了望台架在黑石墙上，望得见汉拿山与四面海面，远处有船的影子。",
       "interactions": [
         {
           "id": "jj_watch_coin",
@@ -523,7 +523,7 @@
           "id": "jj_watch_rumor",
           "type": "rumor",
           "label": "听博多",
-          "text": "台下的人说博多唐房的宋钱不好换，海商把铜钱藏在舱底。",
+          "text": "台下的人说，博多唐房闹钱荒，海商把铜钱藏在舱底，不肯轻易出手。",
           "cost": 16,
           "cooldown_days": 45,
           "port": "hakata",
@@ -539,13 +539,13 @@
       "kind": "street",
       "pending_art": true,
       "bg": "bg_dist_jj_inlet.jpg",
-      "description": "耽罗的暗澳在石缝里。船藏在暗澳，夜里点灯，白天收旗。",
+      "description": "耽罗的暗澳藏在黑石缝里。船一进去就落帆，灯火要到夜里才点。",
       "interactions": [
         {
           "id": "jj_inlet_aromatic",
           "type": "sell",
           "label": "卖香药",
-          "text": "澳里有人收香药。不问来路，价比牙行低些。",
+          "text": "澳里有人收香药，不问来路，只按暗价过手。",
           "good": "aromatic_medicine",
           "qty": 2,
           "price_mul": 0.92,
@@ -555,7 +555,7 @@
           "id": "jj_inlet_choice",
           "type": "choice",
           "label": "谈一笔",
-          "text": "澳主坐在石上。两条路，任你选。",
+          "text": "澳主坐在石上，拿眼打量你的船。交钱过路，或原路退回。",
           "options": [
             {
               "id": "pay",

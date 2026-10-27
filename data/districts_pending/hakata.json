@@ -23,7 +23,7 @@
           "id": "hk_ishigaki_stall",
           "type": "invest",
           "label": "垒边铺",
-          "text": "石垒边一间铺。入了本，按月收过路人的钱。",
+          "text": "石垒边一间铺，卖水与草鞋给筑垒的人。入了本，按月分铺钱。",
           "shop": "垒边铺",
           "costs": [
             220,
@@ -38,7 +38,7 @@
           "id": "hk_ishigaki_rumor",
           "type": "rumor",
           "label": "问石工",
-          "text": "石工说，萨摩那边今年硫黄紧。",
+          "text": "石工说，萨摩的硫黄窑这月出得少，海船又都去运石料，浜上的硫黄不够分。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "kagoshima",
