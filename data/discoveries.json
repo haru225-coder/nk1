@@ -131,6 +131,132 @@
       "value": 220,
       "near_ports": ["champa"],
       "historical_hook": "港已淤塞，砖塔犹存。土人云昔年蕃舶云集，今则移泊他处矣。"
+    },
+    {
+      "id": "jiuri_wind_stele",
+      "name": "九日山祈风题刻",
+      "type": "碑拓证据",
+      "location": "泉州九日山",
+      "value": 120,
+      "near_ports": ["quanzhou", "xinghua", "xinghua_harbor"],
+      "historical_hook": "郡守每岁夏冬两季登山祈风，摩崖题刻记其日月。题名者多郡守、舶使，可验候风之期。"
+    },
+    {
+      "id": "luoyang_bridge_oysters",
+      "name": "洛阳桥种蛎旧基",
+      "type": "航标",
+      "location": "泉州洛阳江",
+      "value": 130,
+      "near_ports": ["quanzhou", "zhangzhou"],
+      "historical_hook": "万安桥石梁横江，蔡襄所筑，桥墩种蛎固基，潮落可见。过桥行旅与盐船皆以此为记。"
+    },
+    {
+      "id": "shihu_six_victory_pagoda",
+      "name": "石湖六胜塔",
+      "type": "航标",
+      "location": "泉州湾石湖",
+      "value": 120,
+      "near_ports": ["quanzhou", "zhangzhou"],
+      "historical_hook": "六胜塔在石湖，北宋政和间所建。远见塔影便知已近刺桐，塔身石砌，檐角风铎作声。"
+    },
+    {
+      "id": "qingjing_arabic_gate",
+      "name": "清净寺石门",
+      "type": "祠庙",
+      "location": "泉州清净寺",
+      "value": 140,
+      "near_ports": ["quanzhou"],
+      "historical_hook": "寺门石砌不高，番商出入。院内安静，碑记剥蚀，年代不可细考。"
+    },
+    {
+      "id": "gushan_cliff_carving",
+      "name": "鼓山摩崖",
+      "type": "碑拓证据",
+      "location": "福州鼓山",
+      "value": 110,
+      "near_ports": ["fuzhou", "xinghua_harbor"],
+      "historical_hook": "鼓山涌泉寺下，摩崖题名多宋人笔迹，僧道与过客皆刻石。"
+    },
+    {
+      "id": "jiangxin_twin_pagodas",
+      "name": "江心屿双塔",
+      "type": "航标",
+      "location": "温州江心屿",
+      "value": 100,
+      "near_ports": ["wenzhou"],
+      "historical_hook": "江心屿东塔西塔皆北宋所起，立于江中。夜航望塔影，可辨水道。"
+    },
+    {
+      "id": "tiantong_ayuwang_temple",
+      "name": "天童阿育王寺",
+      "type": "祠庙",
+      "location": "庆元府",
+      "value": 120,
+      "near_ports": ["mingzhou"],
+      "historical_hook": "天童与阿育王二寺，日本僧人入宋多至此挂锡。寺藏经板，朝夕梵声。"
+    },
+    {
+      "id": "putuo_tide_cave",
+      "name": "普陀潮音洞",
+      "type": "祠庙",
+      "location": "普陀山",
+      "value": 130,
+      "near_ports": ["mingzhou", "wenzhou"],
+      "historical_hook": "潮音洞在普陀山下，海潮入洞作声。南宋以来东海香火渐盛，海舶至此焚香。"
+    },
+    {
+      "id": "guangzhou_light_pagoda",
+      "name": "广州光塔",
+      "type": "航标",
+      "location": "广州蕃坊",
+      "value": 150,
+      "near_ports": ["guangzhou"],
+      "historical_hook": "光塔立于蕃坊，番人呼为番塔。出海前望塔识岸，与南海神庙同为广州门户。"
+    },
+    {
+      "id": "hakata_jotenji_temple",
+      "name": "博多承天寺",
+      "type": "祠庙",
+      "location": "博多承天寺",
+      "value": 160,
+      "near_ports": ["hakata"],
+      "historical_hook": "承天寺为宋商谢国明助建，圣福寺则荣西开山。唐房宋人聚居数世，寺社为往来歇脚处。"
+    },
+    {
+      "id": "tamna_three_holes",
+      "name": "耽罗三姓穴",
+      "type": "遗迹",
+      "location": "耽罗岛北",
+      "value": 120,
+      "near_ports": ["jeju"],
+      "historical_hook": "穴在岛北，三穴相并，土人云三姓所出，岁时祭之。"
+    },
+    {
+      "id": "ponagar_cham_tower",
+      "name": "占城婆那加塔",
+      "type": "遗迹",
+      "location": "占城婆那加",
+      "value": 190,
+      "near_ports": ["champa"],
+      "historical_hook": "占婆砖塔，祀婆那加。塔身赤红，岁久不坏，土人香花奉之。"
+    },
+    {
+      "id": "penghu_channel",
+      "name": "澎湖水道",
+      "type": "水文",
+      "location": "澎湖与泉州之间",
+      "value": 150,
+      "near_ports": ["penghu", "quanzhou"],
+      "historical_hook": "澎湖水道当泉、漳之交，潮落则沙线毕露，潮满则深不可测。候潮出入，可避暗礁。"
+    },
+    {
+      "id": "kuroshio_northbound",
+      "name": "黑潮北上",
+      "type": "水文",
+      "location": "东海外洋",
+      "value": 180,
+      "near_ports": ["ryukyu", "hakata", "mingzhou"],
+      "historical_hook": "黑潮自南来，水色深碧，夏月尤急。循其外缘北行，自流求北境至博多可省风帆之力。"
     }
   ]
 }
