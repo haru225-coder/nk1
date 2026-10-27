@@ -65,6 +65,7 @@ func _run() -> void:
 		_report()
 		return
 	_check_data()
+	_check_characters()
 	_check_offers()
 	_check_hire()
 	_check_save()
@@ -119,6 +120,48 @@ func _check_data() -> void:
 		_check(str(c.get("unlock", "")) == str(spec.get("unlock", "")), "表：%s 章节 %s" % [cid, spec.get("unlock", "")])
 		_check(str(c.get("require_flag", "")) == "" and str(c.get("leave_from", "")) == "", "表：%s 只按章节候雇，无附加旗标与辞船月" % cid)
 		_check(str(c.get("bio", "")).length() >= 20, "表：%s 有一段出身白描（%d 字）" % [cid, str(c.get("bio", "")).length()])
+
+
+func _check_characters() -> void:
+	var trait_defs: Dictionary = gm.character_meta().get("trait_def", {})
+	for spec in NEW:
+		var cid := str(spec.get("id", ""))
+		var c: Dictionary = gm.character_for_crew(cid)
+		_check(not c.is_empty(), "设定集：%s 在册" % cid)
+		if c.is_empty():
+			continue
+		_check(str(c.get("id", "")) == cid, "设定集：%s 条目 id 对得上" % cid)
+		_check(str(c.get("name", "")) == str(spec.get("name", "")), "设定集：%s 姓名「%s」" % [cid, spec.get("name", "")])
+		_check(str(c.get("tier", "")) == "crew", "设定集：%s 归职事档" % cid)
+		_check(c.get("historical", true) == false, "设定集：%s 非史实人物" % cid)
+		var src = c.get("sources", {})
+		_check(typeof(src) == TYPE_DICTIONARY and str(src.get("crew_id", "")) == cid, "设定集：%s 挂回候选名册" % cid)
+		_check(str(c.get("title", "")) != "", "设定集：%s 有称谓" % cid)
+		_check(str(c.get("origin", "")) != "", "设定集：%s 有籍贯" % cid)
+		var attrs = c.get("attrs", {})
+		var attrs_ok := typeof(attrs) == TYPE_DICTIONARY
+		if attrs_ok:
+			for k in ["hang", "shang", "wu", "xue", "wang"]:
+				var v = attrs.get(k)
+				attrs_ok = attrs_ok and (typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT)
+		_check(attrs_ok, "设定集：%s 五维齐" % cid)
+		var traits = c.get("traits", [])
+		var traits_ok := typeof(traits) == TYPE_ARRAY and not (traits as Array).is_empty()
+		if traits_ok:
+			for t in traits:
+				traits_ok = traits_ok and trait_defs.has(str(t))
+		_check(traits_ok, "设定集：%s 特技在定义表里" % cid)
+		_check(str(c.get("personality", "")) != "", "设定集：%s 有性情" % cid)
+		_check(str(c.get("bio_short", "")).length() >= 20, "设定集：%s 有短白描" % cid)
+		_check(str(c.get("bio", "")).length() >= 60, "设定集：%s 有长篇出身" % cid)
+		var cand: Dictionary = crew.candidate_def(cid)
+		_check(str(c.get("bio", "")) != str(cand.get("bio", "")), "设定集：%s 长文不与候选白描照抄" % cid)
+		var lines = c.get("lines", [])
+		_check(typeof(lines) == TYPE_ARRAY and (lines as Array).size() == 3, "设定集：%s 恰好三句话" % cid)
+		_check(str(c.get("look", "")) != "", "设定集：%s 有画像白描" % cid)
+		var portrait := str(c.get("portrait", ""))
+		_check(portrait.begins_with("res://assets/portraits/") and ResourceLoader.exists(portrait), "设定集：%s 立绘在库" % cid)
+		_check(art.codex_short(c) != "" and art.codex_bio(c) != "", "设定集：%s 上屏文案齐" % cid)
 
 
 func _new_spec(cid: String) -> Dictionary:

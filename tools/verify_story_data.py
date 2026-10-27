@@ -833,6 +833,7 @@ L1B_READERS = {  # 路径: (读取类别, 身份, 为什么许它读)
     "tools/gate_json.py": ({"raw"}, "gate", "门禁登记表：条目 judge / when 文案引 characters.json 字段名（工具登记本体，自含 L1B 一条）"),
     "tools/qa_w54_saves_migrate_probe.gd": ({"api"}, "dev", "（lane w54-saves，w54-gates 补登）旧版本档迁到本版逐项对探针：v2→v3 回填的 met_ids 经 GameManager.character_for_crew 取人物 id，只取 id 不上屏（开发工具，不进正式流程）"),
     "tools/qa_companion_preview_probe.gd": ({"api"}, "dev", "（lane w64-k1）同伴预览浮页运行时探针：上屏文案 / 钮面 / 六卡名签对 GameManager.get_character 取数口逐字断言（开发工具，不进正式流程）"),
+    "tools/qa_w57_crew_probe.gd": ({"api"}, "dev", "（lane w57-crew）船上职事新候选探针：人物设定集经 GameManager.character_for_crew 取数口核全字段与上屏文案，只读不上屏（开发工具，不进正式流程）"),
     "tools/CharsDemo.gd": ({"api"}, "dev", "w26-k2 薄包装：extends scripts/chars/CharsDemo.gd 继承运行线真身，以 dev 身份走同一人物数据（GameManager 取数口）做接线自证，不进 scripts/ 不被 scenes/ project.godot 引用（开发工具，不进正式流程）"),
     "tools/qa_w53_8_codex_cols_probe.gd": ({"api", "codex"}, "dev", "（lane w53-8）人物志名册列数随页宽探针：摆真人物志页量格宽 / 列数，只读不上屏（主控补登记）"),
     "tools/qa_chars_wire_screenshots.gd": ({"api"}, "dev", "w26-k8 湮灭重打的接线截图探针：GameManager.get_character 取数口对屏上文本逐项断言（接线自证 + 反向变异），不进 scripts/ 不被 scenes/ project.godot 引用（开发工具，不进正式流程）"),
