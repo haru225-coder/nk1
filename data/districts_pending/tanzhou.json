@@ -273,8 +273,8 @@
         {
           "id": "tz_kaifu_incense",
           "type": "favour",
-          "label": "禅寺焚香",
-          "text": "禅寺的香案前只有三五人。你把香钱投进柜里，守殿的老僧点头。",
+          "label": "寻会春园",
+          "text": "寺旁马希范会春园的旧池还在，池边长满菖蒲。老僧说当年楚王在此宴客，如今只剩几块湖石。",
           "cost": 10,
           "once_per": "month",
           "effects": {
@@ -367,7 +367,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_tz_jiayi.jpg",
-      "description": "贾谊故宅在濯锦坊，宋时是贾太傅庙。宅中有井，传是贾谊所凿，旁边有一脚石床。",
+      "description": "贾谊故宅在城中，宋时立为贾太傅祠。宅中有井，传是贾谊所凿，井旁有一张石床。",
       "interactions": [
         {
           "id": "tz_jiayi_well",
@@ -515,7 +515,7 @@
           "id": "tz_xiangyin_rope",
           "type": "hire",
           "label": "雇缆手",
-          "text": "湘阴的缆手知道洞庭南口哪里水浅。雇他，船不至于在沙埂上打横。",
+          "text": "湘阴的缆手知道洞庭南口哪几处水浅，有他在船头点篙，船不至于在沙埂上打横。",
           "who": "缆手",
           "cost": 60,
           "wage": 9,
@@ -611,7 +611,7 @@
         "year_min": 1275,
         "year_max": 1276
       },
-      "description": "一二七五年九月，阿里海牙兵临潭州。李芾知潭州兼湖南安抚使，把城中丁壮编成什伍，分地守城。岳麓诸生也荷戈登城。围到次年正月，城破。",
+      "description": "乙亥年九月，阿里海牙兵临潭州。李芾知潭州兼湖南安抚使，把城中丁壮编成什伍，分地守城，岳麓诸生也荷戈登城。围到次年正月，城破。",
       "interactions": [
         {
           "id": "tz_siege_wall",
@@ -644,7 +644,7 @@
           "once": true,
           "unlock": {
             "year_min": 1275,
-            "year_max": 1276,
+            "year_max": 1275,
             "months": [
               9,
               10,
@@ -662,7 +662,7 @@
           "id": "tz_siege_fall",
           "type": "favour",
           "label": "随僧收殓",
-          "text": "一二七六年正月初一，城破。李芾一家尽节。你随寺僧在城外收殓，不敢多问。",
+          "text": "丙子年正月，城破。李芾一家尽节。你随寺僧在城外收殓，不敢多问。",
           "cost": 20,
           "once": true,
           "unlock": {
