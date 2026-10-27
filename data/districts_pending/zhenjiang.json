@@ -1,0 +1,913 @@
+{
+  "districts": [
+    {
+      "id": "zj_jinshan",
+      "port": "zhenjiang",
+      "pending_port": true,
+      "name": "金山寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_zj_jinshan.jpg",
+      "description": "金山在江心，寺依山势起殿，远远看去像把整座山裹在檐下。渡船靠岸，石阶从水边一直铺到山门。",
+      "interactions": [
+        {
+          "id": "zj_jinshan_incense",
+          "type": "favour",
+          "label": "渡江上香",
+          "text": "渡船在金山脚下拢岸。你随香客上石阶，知客僧在殿前递来三炷香。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "zj_jinshan_stay",
+          "type": "choice",
+          "label": "留宿",
+          "text": "江上起雾，知客僧问你要不要在寺里住一夜，等雾散再渡回去。",
+          "options": [
+            {
+              "id": "zj_jinshan_stay_yes",
+              "label": "住下",
+              "text": "你在客堂住下。夜里钟声隔水传来，雾到天亮才退。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "zj_jinshan_stay_no",
+              "label": "回船",
+              "text": "你谢过知客，踏着湿石阶回到船上。船夫把灯挑亮，慢慢摇回南岸。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zj_jinshan_rumor",
+          "type": "rumor",
+          "label": "听香客",
+          "text": "同船的香客说明州新到一批青白瓷，寺里要添供器，瓷价怕要抬。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "mingzhou",
+          "good": "qingbai_porcelain",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "zj_jiaoshan",
+      "port": "zhenjiang",
+      "pending_port": true,
+      "name": "焦山寺与瘗鹤铭",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_zj_jiaoshan.jpg",
+      "description": "焦山寺旧名普济禅院，宋末火后重建，改称焦山寺。山西麓的《瘗鹤铭》早已坠江，枯水时露出残石，寺僧另藏旧拓。",
+      "interactions": [
+        {
+          "id": "zj_jiaoshan_stone",
+          "type": "favour",
+          "label": "看残石",
+          "text": "退潮后，寺僧带你下到西麓。江滩上露出一角石面，字口被水磨得发圆。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "焦山看过瘗鹤铭残石。"
+          }
+        },
+        {
+          "id": "zj_jiaoshan_rubbing",
+          "type": "favour",
+          "label": "借旧拓",
+          "text": "寺僧从柜里取出一卷旧拓，纸色发黄，墨口却还清楚。他只许你在廊下看，不许带走。",
+          "cost": 20,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "zj_jiaoshan_pavilion",
+          "type": "choice",
+          "label": "补碑亭",
+          "text": "寺里要给残石搭一座小亭，知客僧捧着缘簿站在廊下。",
+          "options": [
+            {
+              "id": "zj_jiaoshan_pavilion_give",
+              "label": "捐钱",
+              "text": "你在缘簿上写了名字。僧人把铜钱倒进木柜，说亭子秋天动工。",
+              "cost": 30,
+              "effects": {
+                "fame": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "zj_jiaoshan_pavilion_pass",
+              "label": "不捐",
+              "text": "你合上缘簿，去看廊下的碑。知客僧也不多劝，只把笔收好。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zj_beigu",
+      "port": "zhenjiang",
+      "pending_port": true,
+      "name": "北固山甘露寺",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_zj_beigu.jpg",
+      "description": "北固山三面临江，甘露寺的殿角压在崖头。多景楼在寺后，推窗就是江天，楼柱上留着前人题墨。",
+      "interactions": [
+        {
+          "id": "zj_beigu_tower",
+          "type": "favour",
+          "label": "登多景楼",
+          "text": "你沿石阶上到多景楼，江风把衣角吹得猎猎响。守楼的僧人替你推开窗。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "zj_beigu_wall",
+          "type": "choice",
+          "label": "题壁",
+          "text": "楼角有一方空白粉壁，寺僧把笔递过来，说题不题都由你。",
+          "options": [
+            {
+              "id": "zj_beigu_wall_write",
+              "label": "题一行",
+              "text": "你题了一行，墨还没干，江风就把纸角吹得翻起来。",
+              "cost": 10,
+              "effects": {
+                "fame": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "zj_beigu_wall_look",
+              "label": "只看",
+              "text": "你把笔还给寺僧，站在壁前读别人的字，读到落款才走。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zj_beigu_wen",
+          "type": "choice",
+          "label": "夜渡",
+          "text": "甘露寺下的石阶没人。一个穿青衫的人从暗处出来，说他是文丞相，要从京口脱身，问你肯不肯指一条船。",
+          "once": true,
+          "unlock": {
+            "year_min": 1276,
+            "year_max": 1276,
+            "months": [
+              2
+            ]
+          },
+          "options": [
+            {
+              "id": "zj_beigu_wen_help",
+              "label": "指船",
+              "text": "你把他引到寺下的渡口，又让船夫把灯压暗。船离岸时，他朝石阶拱了拱手。",
+              "cost": 0,
+              "effects": {
+                "flag": "zj_wentianxiang_ferry",
+                "fame": 2,
+                "network": 2
+              }
+            },
+            {
+              "id": "zj_beigu_wen_refuse",
+              "label": "摇头",
+              "text": "你说今夜风大，没有船。那人看了你一会儿，转身走进寺后的暗处。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zj_xijin",
+      "port": "zhenjiang",
+      "pending_port": true,
+      "name": "西津渡",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_zj_xijin.jpg",
+      "description": "西津渡在城西，宋时置西津寨，渡船五艘。江面开阔，风涛最险，候渡的人把担子放在石阶上，等潮水稳一稳。",
+      "interactions": [
+        {
+          "id": "zj_xijin_ferryman",
+          "type": "hire",
+          "label": "雇渡夫",
+          "text": "渡夫姓周，在这条水上撑了二十年。雇他，遇风时先得一句稳当话。",
+          "who": "渡夫",
+          "cost": 60,
+          "wage": 8,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "zj_xijin_wait",
+          "type": "choice",
+          "label": "候渡",
+          "text": "潮水正涨，津吏说今日只放两船。一个盐商挤到跳板前，问你要不要一同先过。",
+          "options": [
+            {
+              "id": "zj_xijin_wait_first",
+              "label": "先过",
+              "text": "你跟着盐商上了船。船头压得低，浪打到跳板上，船夫连声催人坐稳。",
+              "cost": 15,
+              "effects": {
+                "network": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "zj_xijin_wait_hold",
+              "label": "再等",
+              "text": "你退回石阶，看头一船摇进江心。风浪稍平，津吏才叫下一船。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zj_xijin_rumor",
+          "type": "rumor",
+          "label": "听江口",
+          "text": "渡口的人说，温州的漆器船在江口候潮，船主急着出手，漆器价要松。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "wenzhou",
+          "good": "lacquerware",
+          "mul": 0.9
+        }
+      ]
+    },
+    {
+      "id": "zj_zha",
+      "port": "zhenjiang",
+      "pending_port": true,
+      "name": "京口闸",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_zj_zha.jpg",
+      "description": "京口闸是江口潮闸，闸外就是大江。漕船到了这里要候潮，闸吏按先后启闭，闸室里挤着等过闸的纲船。",
+      "interactions": [
+        {
+          "id": "zj_zha_winch",
+          "type": "favour",
+          "label": "帮绞闸",
+          "text": "闸门要合，绞关的木杠缺人手。你上去搭了一把，闸板慢慢落进槽里。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "zj_zha_order",
+          "type": "choice",
+          "label": "让纲",
+          "text": "你的船排在一条官纲后面。闸吏问你要不要抢在纲船前头过闸。",
+          "options": [
+            {
+              "id": "zj_zha_order_first",
+              "label": "抢过",
+              "text": "你塞给闸吏一串钱，船先进了闸室。官纲上的押纲官回头看了你一眼。",
+              "cost": 20,
+              "effects": {
+                "merchant_credit": 1,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "zj_zha_order_wait",
+              "label": "让纲",
+              "text": "你把船退到一旁，等官纲过完。押纲官在船头朝你点了点头。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "favour": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zj_zha_rumor",
+          "type": "rumor",
+          "label": "听闸吏",
+          "text": "闸吏翻着过闸簿，说运河浅，温州的米船改泊江口，米价怕要动。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "wenzhou",
+          "good": "grain",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "zj_shuijun",
+      "port": "zhenjiang",
+      "pending_port": true,
+      "name": "都统司水军寨",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_zj_shuijun.jpg",
+      "description": "都统司的水军寨扎在江边，寨墙外是滩涂，寨里一排船棚。江防船泊在棚下，桅杆比寨墙还高。",
+      "interactions": [
+        {
+          "id": "zj_shuijun_plank",
+          "type": "favour",
+          "label": "补船板",
+          "text": "船棚里一条江防船的舷板裂了，匠人缺个递钉的人。你蹲在船边替他递了半日。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "martial": 1
+          }
+        },
+        {
+          "id": "zj_shuijun_poleman",
+          "type": "hire",
+          "label": "雇篙手",
+          "text": "寨外的篙手姓陈，识得江心的暗沙。雇他，船过焦山不至于搁浅。",
+          "who": "篙手",
+          "cost": 70,
+          "wage": 10,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "zj_shuijun_muster",
+          "type": "choice",
+          "label": "点阅",
+          "text": "寨将点阅水军，册上少了两条船。他问你肯不肯把商船借来充数。",
+          "options": [
+            {
+              "id": "zj_shuijun_muster_lend",
+              "label": "借船",
+              "text": "你让船在寨前泊了一日。点阅时旗号从船头过，寨将在册上添了你的船号。",
+              "cost": 0,
+              "effects": {
+                "network": 2,
+                "pu_attention": 1,
+                "flag": "zj_navy_borrow"
+              }
+            },
+            {
+              "id": "zj_shuijun_muster_refuse",
+              "label": "不借",
+              "text": "你说船已装了货，不能久泊。寨将把册子合上，没再问第二遍。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zj_jiaoshan_battle",
+      "port": "zhenjiang",
+      "pending_port": true,
+      "name": "焦山江面",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_zj_jiaoshan_battle.jpg",
+      "unlock": {
+        "year_min": 1275,
+        "year_max": 1276
+      },
+      "description": "焦山与北固之间的江面，一二七五年七月成了战场。宋军把十艘船连成一舫，铁索把船连住，碇在江心，元军的火矢射来。",
+      "interactions": [
+        {
+          "id": "zj_battle_chain",
+          "type": "choice",
+          "label": "借船连舟",
+          "text": "宋军沿江收船，要把十艘连成一舫。军吏站在滩头，问你肯不肯把船交出去。",
+          "once": true,
+          "unlock": {
+            "year_min": 1275,
+            "year_max": 1275,
+            "months": [
+              6,
+              7
+            ]
+          },
+          "options": [
+            {
+              "id": "zj_battle_chain_give",
+              "label": "交船",
+              "text": "你把船交到军吏手里。铁索从船头穿过，江面上响起一片锁链声。",
+              "cost": 0,
+              "effects": {
+                "flag": "zj_jiaoshan_chain",
+                "fame": 2,
+                "martial": 1
+              }
+            },
+            {
+              "id": "zj_battle_chain_keep",
+              "label": "不交",
+              "text": "你说船要运粮，不能连舫。军吏在簿上划了一笔，转身去拦下一条渔船。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zj_battle_bury",
+          "type": "favour",
+          "label": "收殓",
+          "text": "江面漂来断桨和尸首。寺僧在滩上支起席棚，缺人抬运。",
+          "cost": 20,
+          "once": true,
+          "unlock": {
+            "year_min": 1275,
+            "year_max": 1275,
+            "months": [
+              7,
+              8
+            ]
+          },
+          "effects": {
+            "hometown_tendency": 2,
+            "fame": 1
+          }
+        },
+        {
+          "id": "zj_battle_chain_salvage",
+          "type": "favour",
+          "label": "捞铁索",
+          "text": "退潮后，滩上露出半截铁索。军匠要把它拖上岸，回炉打钉。",
+          "cost": 0,
+          "once": true,
+          "unlock": {
+            "year_min": 1275,
+            "year_max": 1276
+          },
+          "effects": {
+            "martial": 1,
+            "network": 1,
+            "note": "焦山江滩捞过铁索。"
+          }
+        }
+      ]
+    },
+    {
+      "id": "zj_mifu",
+      "port": "zhenjiang",
+      "pending_port": true,
+      "name": "海岳庵旧址",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_zj_mifu.jpg",
+      "description": "海岳庵旧址在子城东的高冈上，米芾晚年在这里住过。后人又在旧基上建堂，如今只剩几株老树和一段墙脚。",
+      "interactions": [
+        {
+          "id": "zj_mifu_rubbing",
+          "type": "favour",
+          "label": "拓旧帖",
+          "text": "旧基旁的人家藏着一册米帖拓本，纸边已脆。主人肯让你在窗下翻一翻，不许借走。",
+          "cost": 15,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 2
+          }
+        },
+        {
+          "id": "zj_mifu_inkstone",
+          "type": "choice",
+          "label": "收旧砚",
+          "text": "坡下有人拿一方残砚来卖，说是米老用过的。砚池里还留着一点旧墨。",
+          "options": [
+            {
+              "id": "zj_mifu_inkstone_buy",
+              "label": "买下",
+              "text": "你把残砚买下。卖砚的人用旧布包好，叮嘱你别用热水洗。",
+              "cost": 30,
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "得残砚一方。"
+              }
+            },
+            {
+              "id": "zj_mifu_inkstone_pass",
+              "label": "不买",
+              "text": "你把砚翻过来看了看，放回摊上。卖砚的人也不缠，只把布重新盖好。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zj_suanshan",
+      "port": "zhenjiang",
+      "pending_port": true,
+      "name": "蒜山烽堠",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_zj_suanshan.jpg",
+      "description": "蒜山在城西三里，北面就是江。山顶有烽堠，山脚扎着都巡检的营房，守兵每日上来看一回江面。",
+      "interactions": [
+        {
+          "id": "zj_suanshan_firewood",
+          "type": "favour",
+          "label": "送柴火",
+          "text": "烽堠上的守兵缺柴，你把一担干柴挑上去。山顶风大，火盆里的炭红得很快。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "martial": 1
+          }
+        },
+        {
+          "id": "zj_suanshan_beacon",
+          "type": "choice",
+          "label": "举烽",
+          "text": "江上有几只船影，守兵拿不准是不是北岸的哨船。他问你举不举烽。",
+          "options": [
+            {
+              "id": "zj_suanshan_beacon_light",
+              "label": "举烽",
+              "text": "你帮守兵把柴薪推上火盆。烟柱升起来，下游的营寨很快也冒了烟。",
+              "cost": 0,
+              "effects": {
+                "martial": 1,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "zj_suanshan_beacon_watch",
+              "label": "再看",
+              "text": "你伏在墙后看了半晌，船影转往下游。守兵把火种重新埋进灰里。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zj_suanshan_rumor",
+          "type": "rumor",
+          "label": "听哨兵",
+          "text": "哨兵说北岸的巡船近来多，兴化的盐船不敢走，盐价怕要动。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "xinghua",
+          "good": "sea_salt",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "zj_jiuku",
+      "port": "zhenjiang",
+      "pending_port": true,
+      "name": "府城酒库",
+      "kind": "warehouse",
+      "pending_art": true,
+      "bg": "bg_dist_zj_jiuku.jpg",
+      "description": "府城酒库在子城西，库门一开，酒气顺着巷子走。官酒按务册出库，脚夫把酒坛一只只抬上独轮车。",
+      "interactions": [
+        {
+          "id": "zj_jiuku_invest",
+          "type": "invest",
+          "label": "入股酒库",
+          "text": "酒库的监官要添本钱修窖，问你肯不肯入一股。",
+          "shop": "酒库",
+          "costs": [
+            300,
+            700
+          ],
+          "monthly": [
+            16,
+            38
+          ]
+        },
+        {
+          "id": "zj_jiuku_wine",
+          "type": "favour",
+          "label": "打官酒",
+          "text": "你拿酒牌到库口打酒。库吏按牌上的数舀满一坛，又用泥封了口。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "zj_jiuku_private",
+          "type": "choice",
+          "label": "私酒",
+          "text": "库后有人挑着两坛酒来问价，说是不上务册的私酒。守库的吏人正背过身去。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "zj_jiuku_private_take",
+              "label": "收下",
+              "text": "你按他的价收了酒。挑酒的人把坛子挪进舱角，扁担都没留下。",
+              "cost": 20,
+              "effects": {
+                "money": 30,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "zj_jiuku_private_refuse",
+              "label": "不收",
+              "text": "你摆手让他走。挑酒的人嘟囔了一句，拐进库后的巷子。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zj_yushi",
+      "port": "zhenjiang",
+      "pending_port": true,
+      "name": "江鱼市",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_zj_yushi.jpg",
+      "description": "江鱼市在江边，渔船靠岸就摆开鱼篓。刀鱼汛来得早，鲥鱼汛来得晚，鱼行牙人按汛期改价。",
+      "interactions": [
+        {
+          "id": "zj_yushi_knife",
+          "type": "favour",
+          "label": "买刀鱼",
+          "text": "刀鱼刚上岸，银鳞还亮。鱼行牙人替你挑了几尾，用草绳穿了鳃。",
+          "cost": 15,
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              2,
+              3
+            ]
+          },
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "zj_yushi_shad",
+          "type": "favour",
+          "label": "买鲥鱼",
+          "text": "鲥鱼离水就死，鱼行不敢久放。牙人从水舱里取出一尾，鳞上还带着水光。",
+          "cost": 25,
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              4,
+              5,
+              6
+            ]
+          },
+          "effects": {
+            "fame": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "zj_yushi_give",
+          "type": "choice",
+          "label": "让鱼",
+          "text": "一个老妇在摊前站了很久，手里只攥着几文钱。牙人看看她，又看看你。",
+          "options": [
+            {
+              "id": "zj_yushi_give_one",
+              "label": "让一尾",
+              "text": "你替她付了一尾鱼的钱。老妇把鱼抱在怀里，走两步又回头道谢。",
+              "cost": 10,
+              "effects": {
+                "hometown_tendency": 1,
+                "fame": 1
+              }
+            },
+            {
+              "id": "zj_yushi_give_none",
+              "label": "照价买",
+              "text": "你按自己的数买了鱼。牙人把鱼递过来，老妇往旁边让了让。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zj_fuxue",
+      "port": "zhenjiang",
+      "pending_port": true,
+      "name": "府学榜墙",
+      "kind": "academy",
+      "pending_art": true,
+      "bg": "bg_dist_zj_fuxue.jpg",
+      "description": "府学的榜墙临着街，墙上贴着历科的榜纸。阶前立着几方题名碑，碑阴的字被拓得发亮。",
+      "interactions": [
+        {
+          "id": "zj_fuxue_list",
+          "type": "favour",
+          "label": "看榜",
+          "text": "府学墙前挤着看榜的人。一个青衫士子从榜尾往前找，找到自己的名字，忽然不说话了。",
+          "exam": true,
+          "once_per": "year",
+          "cost": 0,
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "zj_fuxue_stele",
+          "type": "favour",
+          "label": "拓碑",
+          "text": "阶前的题名碑可以拓。学吏替你按好纸，墨包一捶，碑上的字就翻到纸上。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "府学拓过题名碑。"
+          }
+        },
+        {
+          "id": "zj_fuxue_lodging",
+          "type": "choice",
+          "label": "借舱",
+          "text": "一个赴试的士子找不到住处，问你船上能不能借一宿。",
+          "exam": true,
+          "once_per": "year",
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "options": [
+            {
+              "id": "zj_fuxue_lodging_yes",
+              "label": "借舱",
+              "text": "你让士子睡在舱角。他借着灯看了一夜书，天亮前把舱板擦干净才走。",
+              "cost": 0,
+              "effects": {
+                "network": 2,
+                "fame": 1
+              }
+            },
+            {
+              "id": "zj_fuxue_lodging_no",
+              "label": "不便",
+              "text": "你说舱里堆着货，转身替他问了岸上的客栈。士子拱手谢过。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zj_zhuanban",
+      "port": "zhenjiang",
+      "pending_port": true,
+      "name": "转般仓",
+      "kind": "warehouse",
+      "pending_art": true,
+      "bg": "bg_dist_zj_zhuanban.jpg",
+      "description": "转般仓前临潮河，后枕大江。上江的米纲到这里卸纳，再换船入运河。淳熙五年置仓，仓廒连成一片。",
+      "interactions": [
+        {
+          "id": "zj_zhuanban_rice",
+          "type": "buy",
+          "label": "收米",
+          "text": "纲船刚卸完一舱，米还带着江上的潮气。仓吏按筹牌给你量了两石。",
+          "good": "grain",
+          "qty": 2,
+          "price_mul": 0.96,
+          "impact": false
+        },
+        {
+          "id": "zj_zhuanban_convoy",
+          "type": "hire",
+          "label": "雇纲首",
+          "text": "纲首姓王，识得运河各闸的放船次序。雇他，米纲过闸少等两日。",
+          "who": "纲首",
+          "cost": 80,
+          "wage": 11,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "zj_zhuanban_measure",
+          "type": "choice",
+          "label": "过斛",
+          "text": "仓吏把斛里的米刮平，说你的米潮。你看着他手里的刮板。",
+          "options": [
+            {
+              "id": "zj_zhuanban_measure_argue",
+              "label": "争一句",
+              "text": "你说米是刚卸的江米，潮气还没散。仓吏把刮板放下，重新量了一遍。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "network": -1
+              }
+            },
+            {
+              "id": "zj_zhuanban_measure_accept",
+              "label": "不争",
+              "text": "你没再说话，看仓吏把米倒进仓斗。他记数时，笔尖顿了顿。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "favour": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
