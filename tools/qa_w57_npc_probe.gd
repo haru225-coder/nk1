@@ -1,6 +1,6 @@
 extends SceneTree
-## lane npc2 城中 NPC 链探针（headless，经门锁跑）。
-## 断言：五条 NPC 线的 flag 顺序、各段可达、两条分支收益不同、存档来回。
+## lane npc2 / npc3 城中 NPC 链探针（headless，经门锁跑）。
+## 断言：七条 NPC 线的 flag 顺序、各段可达、两条分支收益不同、存档来回。
 
 const TAG := "QA_W57_NPC"
 const ScriptErrTally := preload("res://tools/script_err_tally.gd")
@@ -60,6 +60,8 @@ func _run() -> void:
 	_arc_cairong()
 	_arc_zhouxing()
 	_arc_liang()
+	_arc_zhengyan()
+	_arc_xudai()
 	_save_roundtrip()
 	_report()
 
@@ -104,7 +106,7 @@ func _check_data() -> void:
 		for n in parsed.get("npcs", []):
 			if typeof(n) == TYPE_DICTIONARY:
 				ids[str(n.get("id", ""))] = n
-	for id in ["maruding", "zhubo", "cairong", "zhouxing", "liang_ashui"]:
+	for id in ["maruding", "zhubo", "cairong", "zhouxing", "liang_ashui", "zhengyan", "xudai"]:
 		var n: Dictionary = ids.get(id, {})
 		_check(str(n.get("name", "")) != "" and str(n.get("role", "")) != "" and str(n.get("function", "")) != "", "表：NPC %s 有名字、身份、小传" % id)
 	for id in [
@@ -113,9 +115,13 @@ func _check_data() -> void:
 		"npc_cairong_meet", "npc_cairong_evidence", "npc_cairong_settle",
 		"npc_zhouxing_meet", "npc_zhouxing_rumor", "npc_zhouxing_bet",
 		"npc_liang_wreck", "npc_liang_tide", "npc_liang_dive",
+		"npc_zhengyan_meet", "npc_zhengyan_ledger", "npc_zhengyan_split",
+		"npc_xudai_meet", "npc_xudai_contract", "npc_xudai_bargain",
 	]:
 		var ix: Dictionary = Book.interaction(id)
 		_check(str(ix.get("id", "")) == id and bool(ix.get("once", false)), "表：事 %s 在册且只办一次" % id)
+	var inv: Dictionary = Book.interaction("npc_zhengyan_invest")
+	_check(str(inv.get("id", "")) == "npc_zhengyan_invest" and not bool(inv.get("once", false)) and (inv.get("costs", []) as Array).size() == 2 and (inv.get("monthly", []) as Array).size() == 2, "表：修陂工分两级入股，不标只办一次")
 
 
 func _arc_maruding() -> void:
@@ -231,6 +237,68 @@ func _arc_liang() -> void:
 	_check(ready and bool(r.get("ok", false)) and gs.has_flag("npc_liang_saved") and int(gs.network) == n0 + 2 and int(gs.sea_tendency) == s0 + 1 and int(gs.money) == m0 and not gs.has_flag("npc_liang_lost"), "梁阿水：等风平得人脉与海路")
 
 
+func _arc_zhengyan() -> void:
+	_fresh()
+	_check(_blocked("npc_zhengyan_ledger", "还没到那一步"), "郑堰：未见面时对水租簿不可办")
+	_check(_blocked("npc_zhengyan_invest", "还没到那一步"), "郑堰：未对簿时认修陂工不可办")
+	_check(_blocked("npc_zhengyan_split", "还没到那一步", "weir"), "郑堰：未认工时分水租不可办")
+	_check(_ok("npc_zhengyan_meet") and gs.has_flag("npc_zhengyan_met"), "郑堰：初见留 flag")
+	_check(_ok("npc_zhengyan_ledger") and gs.has_flag("npc_zhengyan_ledger"), "郑堰：对水租簿留 flag")
+	_fresh()
+	var ready := _ok("npc_zhengyan_meet") and _ok("npc_zhengyan_ledger")
+	var costs: Array = Book.interaction("npc_zhengyan_invest").get("costs", [])
+	var monthly: Array = Book.interaction("npc_zhengyan_invest").get("monthly", [])
+	var m0 := int(gs.money)
+	var inv: Dictionary = _apply("npc_zhengyan_invest")
+	_check(ready and bool(inv.get("ok", false)) and gs.has_flag("npc_zhengyan_invested") and Book.level_of("npc_zhengyan_invest") == 1 and int(gs.money) == m0 - int(costs[0]), "郑堰：认修陂工入本一级")
+	var after := int(gs.money)
+	var notice: String = Book.month_tick()
+	_check(int(gs.money) == after + int(monthly[0]) and notice.contains("修陂工入账 %d 钱" % int(monthly[0])), "郑堰：修陂工按月入账")
+	_fresh()
+	ready = _ok("npc_zhengyan_meet") and _ok("npc_zhengyan_ledger") and _ok("npc_zhengyan_invest")
+	m0 = int(gs.money)
+	var h0 := int(gs.hometown_tendency)
+	var f0: int = int(Book.favour_of("xinghua"))
+	var r: Dictionary = _apply("npc_zhengyan_split", "weir")
+	_check(ready and bool(r.get("ok", false)) and gs.has_flag("npc_zhengyan_weir") and int(gs.hometown_tendency) == h0 + 2 and Book.favour_of("xinghua") == f0 + 2 and int(gs.money) == m0 and not gs.has_flag("npc_zhengyan_share"), "郑堰：留作堰工得乡土与兴化人情")
+	_fresh()
+	ready = _ok("npc_zhengyan_meet") and _ok("npc_zhengyan_ledger") and _ok("npc_zhengyan_invest")
+	m0 = int(gs.money)
+	var c0 := int(gs.merchant_credit)
+	var h0b := int(gs.hometown_tendency)
+	r = _apply("npc_zhengyan_split", "share")
+	_check(ready and bool(r.get("ok", false)) and gs.has_flag("npc_zhengyan_share") and int(gs.money) == m0 + 80 and int(gs.merchant_credit) == c0 + 1 and int(gs.hometown_tendency) == h0b and not gs.has_flag("npc_zhengyan_weir"), "郑堰：按契分得八十钱与海商信用")
+
+
+func _arc_xudai() -> void:
+	_fresh()
+	_check(_blocked("npc_xudai_contract", "还没到那一步"), "许岱：未见面时立盐契不可办")
+	_check(_blocked("npc_xudai_bargain", "年份未到", "old"), "许岱：1255 年盐价不可议")
+	_check(_ok("npc_xudai_meet") and gs.has_flag("npc_xudai_met"), "许岱：初见留 flag")
+	_check(_ok("npc_xudai_contract") and gs.has_flag("npc_xudai_contract"), "许岱：立盐契留 flag")
+	cal.from_dict({"year": 1276, "month": 10, "day": 1})
+	_check(_blocked("npc_xudai_bargain", "眼下的战况不对", "old"), "许岱：1276 年十月太平不可议价")
+	cal.from_dict({"year": 1276, "month": 11, "day": 1})
+	_check(_ok("npc_xudai_bargain", "old"), "许岱：1276 年十一月围城可议价")
+	_fresh(1276, 12, 1)
+	var ready := _ok("npc_xudai_meet") and _ok("npc_xudai_contract")
+	var h0 := int(gs.hometown_tendency)
+	var f0: int = int(Book.favour_of("xinghua"))
+	var m0 := int(gs.money)
+	var r: Dictionary = _apply("npc_xudai_bargain", "old")
+	_check(ready and bool(r.get("ok", false)) and gs.has_flag("npc_xudai_oldprice") and int(gs.hometown_tendency) == h0 + 2 and Book.favour_of("xinghua") == f0 + 2 and int(gs.money) == m0 and not gs.has_flag("npc_xudai_guanzi"), "许岱：认旧价得乡土与兴化人情")
+	_fresh(1276, 12, 1)
+	ready = _ok("npc_xudai_meet") and _ok("npc_xudai_contract")
+	m0 = int(gs.money)
+	var c0 := int(gs.merchant_credit)
+	var h0b := int(gs.hometown_tendency)
+	r = _apply("npc_xudai_bargain", "paper")
+	_check(ready and bool(r.get("ok", false)) and gs.has_flag("npc_xudai_guanzi") and int(gs.money) == m0 + 100 and int(gs.merchant_credit) == c0 + 1 and int(gs.hometown_tendency) == h0b and not gs.has_flag("npc_xudai_oldprice"), "许岱：折关子得一百钱与海商信用")
+	_fresh(1277, 3, 1)
+	ready = _ok("npc_xudai_meet") and _ok("npc_xudai_contract")
+	_check(ready and _blocked("npc_xudai_bargain", "眼下的战况不对", "old"), "许岱：1277 年三月复归太平不可议价")
+
+
 func _save_roundtrip() -> void:
 	_fresh()
 	var flags := [
@@ -239,6 +307,8 @@ func _save_roundtrip() -> void:
 		"npc_cairong_met", "npc_cairong_evidence", "npc_cairong_exposed", "npc_cairong_covered",
 		"npc_zhouxing_met", "npc_zhouxing_heard", "npc_zhouxing_peace", "npc_zhouxing_war",
 		"npc_liang_met", "npc_liang_tide", "npc_liang_lost", "npc_liang_saved",
+		"npc_zhengyan_met", "npc_zhengyan_ledger", "npc_zhengyan_invested", "npc_zhengyan_weir", "npc_zhengyan_share",
+		"npc_xudai_met", "npc_xudai_contract", "npc_xudai_oldprice", "npc_xudai_guanzi",
 	]
 	for f in flags:
 		gs.set_flag(str(f))
@@ -249,4 +319,4 @@ func _save_roundtrip() -> void:
 	for f in flags:
 		if not gs.has_flag(str(f)):
 			missing.append(str(f))
-	_check(missing.is_empty(), "存档：二十一枚 NPC flag 来回不丢（缺 %d）" % missing.size())
+	_check(missing.is_empty(), "存档：三十枚 NPC flag 来回不丢（缺 %d）" % missing.size())

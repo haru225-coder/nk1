@@ -46,7 +46,7 @@
 - [终局系统化_2026-09-04.md](终局系统化_2026-09-04.md)：终局拆成系统与事件，不做线性幕串
 - [districts.md](districts.md)：城中各处数据契约（data/districts.json）、交互类型与存档、给别的港补城区时只加 JSON 和图
 - [balance_w57.md](balance_w57.md)：按货市场深浅（lane bal2，goods.json depth_mul 二十九货逐条史由、改前改后 simulate_run 对照、砂金/宋钱期望）
-- [npc_cast.md](npc_cast.md)：城中五条常客 NPC 链（身份、旧事、到访顺序、分支收益、flags），与 `data/npcs.json`、`data/districts.json` 对照
+- [npc_cast.md](npc_cast.md)：城中七条常客 NPC 链（身份、旧事、到访顺序、分支收益、flags），与 `data/npcs.json`、`data/districts.json` 对照
 - [节令需求与季节行情.md](节令需求与季节行情.md)：Economy 季节需求（节令）行情层——月×货倍数表、price_at_rate 乘 seasonal_mul、Song-era 节令依据
 - [牙人赊销.md](牙人赊销.md)：牙人赊销 receivable——锁价贴水、两月到期、按笔定骰倒账、与蕃商赊贷/委办/季节行情互不相扰（lane sim4）
 ## 剧情与史料
