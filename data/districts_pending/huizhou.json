@@ -1,0 +1,738 @@
+{
+  "districts": [
+    {
+      "id": "hz_zhouya",
+      "port": "huizhou",
+      "pending_port": true,
+      "name": "徽州州衙",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_hz_zhouya.jpg",
+      "description": "州衙在子城西北，南面是谯楼，进门过仪门，便是设厅。厅后一排库房，军资与公使酒各有一库，廊下总有吏人捧着簿册走动。",
+      "interactions": [
+        {
+          "id": "hz_zhouya_petition",
+          "type": "favour",
+          "label": "递状纸",
+          "text": "廊下摆着一张长案，吏人正替人录状。你把状纸递上去，他看过一遍，指给你该去的厢房。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "hz_zhouya_roll",
+          "type": "choice",
+          "label": "点卯",
+          "text": "天刚亮，厅前点卯。一个书吏抱着一摞簿册，问你肯不肯帮着核一核昨日的押字。",
+          "options": [
+            {
+              "id": "hz_zhouya_roll_help",
+              "label": "帮着核",
+              "text": "你坐在廊下翻簿册，把押字一个个对过。书吏给你倒了盏冷茶。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "hz_zhouya_roll_leave",
+              "label": "不接",
+              "text": "你说自己还有事，把簿册推回去。书吏点点头，抱起来进了厅。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "hz_zhouya_rumor",
+          "type": "rumor",
+          "label": "听吏人",
+          "text": "吏人合上茶引簿，说明州今春要的茶多，徽州的茶包还在江口压着，茶价恐难回落。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "mingzhou",
+          "good": "tea",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "hz_fabu",
+      "port": "huizhou",
+      "pending_port": true,
+      "name": "新安江筏埠",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_hz_fabu.jpg",
+      "description": "新安江在城南转了一个弯，筏埠就设在浅滩边。茶包、木料和纸捆从岸上抬下来，扎成筏子顺水往东，船夫先看水势再解缆。",
+      "interactions": [
+        {
+          "id": "hz_fabu_raftsman",
+          "type": "hire",
+          "label": "雇筏工",
+          "text": "筏工老程在新安江上撑了半辈子，识得每一处浅滩。雇他，茶包下筏时先有人看水。",
+          "who": "筏工",
+          "cost": 60,
+          "wage": 8,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "hz_fabu_wait",
+          "type": "choice",
+          "label": "候排",
+          "text": "上游放下来一列木排，埠头挤满了等下水的人。筏工问你要不要先把茶包并到他的排上。",
+          "options": [
+            {
+              "id": "hz_fabu_wait_join",
+              "label": "并排",
+              "text": "你让茶包并过去。木排在浅滩上顿了顿，顺着水势滑进深槽。",
+              "cost": 10,
+              "effects": {
+                "network": 1,
+                "sea_tendency": 1
+              }
+            },
+            {
+              "id": "hz_fabu_wait_hold",
+              "label": "再等",
+              "text": "你守着茶包退到岸上。下一列木排来时，日头已经偏西。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "hz_fabu_carry",
+          "type": "favour",
+          "label": "帮抬茶包",
+          "text": "茶包从岸上抬到筏边，跳板窄，脚夫喊你搭一把手。你扶着跳板，让他们一包包过去。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "hz_longwei",
+      "port": "huizhou",
+      "pending_port": true,
+      "name": "龙尾山砚坑",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_hz_longwei.jpg",
+      "description": "龙尾山在婺源西南，砚坑沿溪排开，坑口只容一人侧身进去。石工从水里凿出砚石，石面带着罗纹，得顺纹路下刀。",
+      "interactions": [
+        {
+          "id": "hz_longwei_pit",
+          "type": "favour",
+          "label": "看砚坑",
+          "text": "砚坑在溪边，坑口只容一人侧身。石工提灯下去，半晌才从水里递上一块湿石。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "龙尾山看过砚坑。"
+          }
+        },
+        {
+          "id": "hz_longwei_stone",
+          "type": "choice",
+          "label": "挑砚石",
+          "text": "石工把几块砚石摊在草席上，一块有罗纹，一块有眉纹。他让你自己挑。",
+          "options": [
+            {
+              "id": "hz_longwei_stone_buy",
+              "label": "买一块",
+              "text": "你挑了一块罗纹石。石工用旧布裹好，说回去先别急着下刀。",
+              "cost": 30,
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "得龙尾山砚石一块。"
+              }
+            },
+            {
+              "id": "hz_longwei_stone_pass",
+              "label": "只看",
+              "text": "你把石头逐块翻看，又放回席上。石工把布重新盖好，没有多话。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "hz_longwei_ink",
+          "type": "favour",
+          "label": "试墨",
+          "text": "砚工舀了一勺溪水，在石面上磨墨。墨色慢慢铺开，他把笔递给你试一笔。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "hz_mofang",
+      "port": "huizhou",
+      "pending_port": true,
+      "name": "徽墨墨坊",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_hz_mofang.jpg",
+      "description": "墨坊临着巷子，屋里一排墨模，墙角堆着松烟。墨工把烟和胶捣成团，再压进模子，脱出来的墨锭要阴干许久。",
+      "interactions": [
+        {
+          "id": "hz_mofang_mold",
+          "type": "favour",
+          "label": "看墨模",
+          "text": "墨模摆在长案上，模底刻着龙凤和云纹。墨工说，同一副模子，和胶的厚薄不同，脱出来的墨也不一样。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "看过徽墨墨模。"
+          }
+        },
+        {
+          "id": "hz_mofang_choose",
+          "type": "choice",
+          "label": "选墨",
+          "text": "柜上摆着两样墨，一样是贡墨，一样是寻常条墨。墨工问你要哪一种。",
+          "options": [
+            {
+              "id": "hz_mofang_choose_tribute",
+              "label": "要贡墨",
+              "text": "你取了贡墨。墨工用黄纸包好，又叮嘱别放在潮气重的地方。",
+              "cost": 45,
+              "effects": {
+                "scholar_tendency": 2,
+                "fame": 1
+              }
+            },
+            {
+              "id": "hz_mofang_choose_plain",
+              "label": "要条墨",
+              "text": "你取了条墨。墨工拿草绳一扎，说写字够用了。",
+              "cost": 15,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "hz_mofang_dry",
+          "type": "favour",
+          "label": "帮晾墨",
+          "text": "新脱的墨锭排满竹架，墨工怕风吹急了，叫你把窗子掩上半扇。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "hz_zhifang",
+      "port": "huizhou",
+      "pending_port": true,
+      "name": "新安纸坊",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_hz_zhifang.jpg",
+      "description": "纸坊靠溪，水碓从早响到晚。槽户把树皮煮烂、捣成浆，再用竹帘一张张抄起，纸膜贴在焙墙上烘干。",
+      "interactions": [
+        {
+          "id": "hz_zhifang_look",
+          "type": "favour",
+          "label": "看抄纸",
+          "text": "抄纸工把竹帘探进槽里，手腕一翻，帘上就留下一层薄浆。水从帘缝漏下去，纸膜渐渐定住。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "看过新安纸坊抄纸。"
+          }
+        },
+        {
+          "id": "hz_zhifang_try",
+          "type": "choice",
+          "label": "试纸",
+          "text": "槽户取出一张长幅纸，说是照着澄心堂旧样做的。他问你要不要试一笔。",
+          "options": [
+            {
+              "id": "hz_zhifang_try_buy",
+              "label": "买两张",
+              "text": "你买了两张长纸。槽户把纸卷紧，外面又裹了一层油纸。",
+              "cost": 25,
+              "effects": {
+                "scholar_tendency": 2
+              }
+            },
+            {
+              "id": "hz_zhifang_try_write",
+              "label": "试一笔",
+              "text": "你蘸墨写了一行。纸面不洇，墨边却慢慢化开一点。",
+              "cost": 5,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "hz_zhifang_wall",
+          "type": "favour",
+          "label": "帮焙纸",
+          "text": "焙墙烧得发烫，纸膜一张张贴上去。槽户叫你看着火口，别让风把纸边掀起来。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "hz_chabei",
+      "port": "huizhou",
+      "pending_port": true,
+      "name": "徽州茶焙",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_hz_chabei.jpg",
+      "description": "茶焙在城外山脚，焙灶一排，竹席上摊着新采的叶芽。山户把茶送来，焙工看火候翻焙，茶香顺着风飘到路口。",
+      "interactions": [
+        {
+          "id": "hz_chabei_invest",
+          "type": "invest",
+          "label": "入股茶焙",
+          "text": "茶焙的焙主想添两座灶，问你肯不肯入一股。秋茶下来，按月分账。",
+          "shop": "茶焙",
+          "costs": [
+            240,
+            560
+          ],
+          "monthly": [
+            12,
+            30
+          ]
+        },
+        {
+          "id": "hz_chabei_watch",
+          "type": "favour",
+          "label": "看焙茶",
+          "text": "焙工把新叶摊在竹席上，火候一到就翻。你站在灶边，鼻子里全是热茶香。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "看过徽州茶焙。"
+          }
+        },
+        {
+          "id": "hz_chabei_taste",
+          "type": "choice",
+          "label": "分茶",
+          "text": "焙主从不同的焙笼里各抓一撮，冲了两碗。他问你要哪一笼的茶。",
+          "options": [
+            {
+              "id": "hz_chabei_taste_new",
+              "label": "要新茶",
+              "text": "你取了新焙的那一笼。焙主用纸包好，说再放几日，火气才退。",
+              "cost": 20,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "hz_chabei_taste_old",
+              "label": "要旧茶",
+              "text": "你取了去年的一笼。茶色沉，焙主说懂的人才会挑这一笼。",
+              "cost": 15,
+              "effects": {
+                "scholar_tendency": 1,
+                "favour": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hz_ziyang",
+      "port": "huizhou",
+      "pending_port": true,
+      "name": "紫阳书院",
+      "kind": "academy",
+      "pending_art": true,
+      "bg": "bg_dist_hz_ziyang.jpg",
+      "description": "紫阳书院在歙县南门外，前有讲堂，后有书楼。宋理宗时赐下院额，来求学的士子常在廊下抄书，山门外的石阶被脚步磨得发亮。",
+      "interactions": [
+        {
+          "id": "hz_ziyang_plaque",
+          "type": "favour",
+          "label": "看赐额",
+          "text": "讲堂前悬着理宗赐下的院额，字是御书。山长站在阶上，把书院始建的旧事说了一遍。",
+          "cost": 0,
+          "once": true,
+          "effects": {
+            "scholar_tendency": 2,
+            "fame": 1
+          }
+        },
+        {
+          "id": "hz_ziyang_copy",
+          "type": "choice",
+          "label": "借书",
+          "text": "书楼里有一部残本，山长只许在廊下看。他问你要不要抄一页带走。",
+          "options": [
+            {
+              "id": "hz_ziyang_copy_page",
+              "label": "抄一页",
+              "text": "你磨墨铺纸，抄到日头偏西。山长过来看了看，说字还算稳。",
+              "cost": 10,
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "在紫阳书院抄过一页书。"
+              }
+            },
+            {
+              "id": "hz_ziyang_copy_read",
+              "label": "只读",
+              "text": "你把残本读完，合上书时天已经暗了。山长把楼门锁上，送你到山门外。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hz_huangshan",
+      "port": "huizhou",
+      "pending_port": true,
+      "name": "黄山",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_hz_huangshan.jpg",
+      "description": "黄山在歙县西北，峰石从云里露出来，松树多生在崖缝间。山脚有汤泉，水从石缝里涌出，上山的人先在泉边歇脚。",
+      "interactions": [
+        {
+          "id": "hz_huangshan_spring",
+          "type": "favour",
+          "label": "看汤泉",
+          "text": "汤泉在山脚，泉眼四周砌着石栏。水汽从池面升起来，旁边有人把布巾搭在栏上。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "hz_huangshan_climb",
+          "type": "choice",
+          "label": "上山",
+          "text": "上山的路分作两条，一条去汤泉，一条往峰下。挑担的人问你要走哪一条。",
+          "options": [
+            {
+              "id": "hz_huangshan_climb_spring",
+              "label": "去汤泉",
+              "text": "你沿石阶走到泉边，脱了鞋在池沿坐了一会儿。水热，山风却凉。",
+              "cost": 15,
+              "effects": {
+                "network": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "hz_huangshan_climb_foot",
+              "label": "到峰下",
+              "text": "你走到峰下就停了。云从松林后漫上来，远处的石壁一会儿隐，一会儿现。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hz_baiyue",
+      "port": "huizhou",
+      "pending_port": true,
+      "name": "白岳山",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_hz_baiyue.jpg",
+      "description": "白岳在休宁西面，山腰的玉屏峰下有一座道院，香客沿石阶上去进香。天气晴时，能看见远处江面的水光。",
+      "interactions": [
+        {
+          "id": "hz_baiyue_visit",
+          "type": "favour",
+          "label": "访道院",
+          "text": "道院在玉屏峰下，院墙低，门前一株老松。道士正在殿前扫叶，见你上来，放下扫帚引你去看碑。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "hz_baiyue_rumor",
+          "type": "rumor",
+          "label": "听香客",
+          "text": "香客从泉州回来，说市舶司刚放了一批香药，泉州的香药不缺了，价钱正往下走。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "aromatic_medicine",
+          "mul": 0.9
+        }
+      ]
+    },
+    {
+      "id": "hz_yuliang",
+      "port": "huizhou",
+      "pending_port": true,
+      "name": "渔梁坝",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_hz_yuliang.jpg",
+      "description": "渔梁坝横在练江上，石梁一层层叠起，坝下留着泄水的缺口。旧坝始筑于唐，宋绍定间，州推官督工伐石重修，往来的筏子都要在坝前候水。",
+      "interactions": [
+        {
+          "id": "hz_yuliang_sluice",
+          "type": "favour",
+          "label": "看放闸",
+          "text": "坝上水满，闸工抽起木闸，水从缺口冲下去。候在下游的筏子一条接一条放行。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "hz_yuliang_rumor",
+          "type": "rumor",
+          "label": "听坝上人",
+          "text": "坝上的人说明州米船还没到，临安的米价先涨，明州米价跟着往上走。",
+          "cost": 10,
+          "cooldown_days": 35,
+          "port": "mingzhou",
+          "good": "grain",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "hz_wuyuan",
+      "port": "huizhou",
+      "pending_port": true,
+      "name": "婺源朱子故里",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_hz_wuyuan.jpg",
+      "description": "婺源在徽州西南，朱氏旧宅靠着山，门前一条溪水。族中子弟在旧宅旁读书，门外立着碑，过路的人常停下来看。",
+      "interactions": [
+        {
+          "id": "hz_wuyuan_visit",
+          "type": "favour",
+          "label": "谒旧宅",
+          "text": "旧宅门前有一条溪，石桥低得几乎贴着水。族中的老人开了门，指给你看旧宅的堂屋和一方旧碑。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 2,
+            "note": "到过婺源朱氏旧宅。"
+          }
+        },
+        {
+          "id": "hz_wuyuan_plaque",
+          "type": "choice",
+          "label": "看赐额",
+          "text": "咸淳五年，诏赐朱氏故居“文公阙里”额。族中把榜文贴在门侧，问你告不告诉来客。",
+          "once": true,
+          "unlock": {
+            "year_min": 1269,
+            "year_max": 1277
+          },
+          "options": [
+            {
+              "id": "hz_wuyuan_plaque_tell",
+              "label": "抄下",
+              "text": "你把榜文录在纸上。族中老人看着你写完，说这宅子总算有了名分。",
+              "cost": 5,
+              "effects": {
+                "scholar_tendency": 1,
+                "fame": 1
+              }
+            },
+            {
+              "id": "hz_wuyuan_plaque_look",
+              "label": "只看",
+              "text": "你站在门侧读完榜文，没有动笔。老人把浆糊收好，榜纸还湿着。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hz_ruoling",
+      "port": "huizhou",
+      "pending_port": true,
+      "name": "箬岭古道",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_hz_ruoling.jpg",
+      "description": "箬岭古道从歙县北面翻山，石阶在竹林里一段段往上。岭口有座小关，关下几间铺舍，挑担的人在那里歇肩、换草鞋。",
+      "interactions": [
+        {
+          "id": "hz_ruoling_road",
+          "type": "favour",
+          "label": "走古道",
+          "text": "石阶从竹林里往上，路面被独轮车碾出两道浅槽。岭口的关楼不高，守关的人坐在门洞里歇脚。",
+          "cost": 5,
+          "once_per": "year",
+          "effects": {
+            "network": 1,
+            "martial": 1
+          }
+        },
+        {
+          "id": "hz_ruoling_rest",
+          "type": "choice",
+          "label": "歇脚",
+          "text": "铺舍前摆着几张矮凳，挑担的人放下担子，问你要不要一同喝碗茶。",
+          "options": [
+            {
+              "id": "hz_ruoling_rest_tea",
+              "label": "喝一碗",
+              "text": "你买了一碗粗茶。挑担的人把扁担横在膝上，说前头岭上风大。",
+              "cost": 10,
+              "effects": {
+                "network": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "hz_ruoling_rest_give",
+              "label": "让担",
+              "text": "你把靠墙的位子让给一个老人。他把担子挪过去，朝你点了点头。",
+              "cost": 0,
+              "effects": {
+                "favour": 1,
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hz_chengmen",
+      "port": "huizhou",
+      "pending_port": true,
+      "name": "歙县城门",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_hz_chengmen.jpg",
+      "description": "歙县城门临着街市，门洞上建楼，门吏按牌放人。城门外常贴榜文，来往的人先在墙下看一阵，再决定进不进城。",
+      "interactions": [
+        {
+          "id": "hz_chengmen_tax",
+          "type": "choice",
+          "label": "过门",
+          "text": "门吏拦下担子，按货数收钱。前头的人正为几文钱争，后面的人等着进门。",
+          "options": [
+            {
+              "id": "hz_chengmen_tax_pay",
+              "label": "照数纳",
+              "text": "你数了钱递过去。门吏在簿上记了一笔，抬手放行。",
+              "cost": 10,
+              "effects": {
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "hz_chengmen_tax_argue",
+              "label": "争一句",
+              "text": "你说货是自家用的，门吏抬眼看了看担子，减了两文。",
+              "cost": 5,
+              "effects": {
+                "network": -1,
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "hz_chengmen_notice",
+          "type": "choice",
+          "label": "看榜",
+          "text": "城门外新贴了一张榜文，墨迹还没干透。看榜的人挤在墙下，没人高声说话。",
+          "once": true,
+          "unlock": {
+            "year_min": 1276,
+            "year_max": 1277
+          },
+          "options": [
+            {
+              "id": "hz_chengmen_notice_copy",
+              "label": "抄下",
+              "text": "你挤出人群，把榜文抄在纸上。风把纸角吹得直响，墨迹干得很慢。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "hz_chengmen_notice_leave",
+              "label": "走开",
+              "text": "你看了两行便转身。身后有人还在墙下站着，榜纸被风掀起一角。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
