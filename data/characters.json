@@ -356,7 +356,7 @@
           "rel": "托信之人"
         }
       ],
-      "look": "三十上下，瘦削警觉；粗布风帽压眉，褐麻长衫半旧，衣摆与麻鞋溅满黄泥，袖里藏一封未封口的短信。",
+      "look": "三十上下，瘦削警觉；粗布风帽压眉，褐麻长衫半旧，衣摆与麻鞋溅满黄泥，袖里藏一封未封口的短札。",
       "portrait": "res://assets/portraits/xinghua_messenger.png",
       "portrait_src": "codex:portrait_linan_passerby.png",
       "portrait_status": "painted",
@@ -502,7 +502,7 @@
           "rel": "差遣牙人"
         }
       ],
-      "look": "四十五六，精瘦，八字短须；黑纱高装巾子，深靛暗纹直裰，袖口磨白，腰悬算袋，手不离一册线装货账。",
+      "look": "四十五六，精瘦，八字短须；黑纱高装巾子，深靛暗纹直裰，袖口磨白，腰悬算袋，手不离一册纸本货账。",
       "portrait": "res://assets/portraits/merchant_lin.png",
       "portrait_src": "codex:portrait_mingzhou_merchant.png",
       "portrait_status": "painted",
@@ -2356,7 +2356,7 @@
         "博多的风，五月起才向着宋国吹。急不得。"
       ],
       "relations": [],
-      "look": "三十上下，面容端正，目光温和；黑漆乌帽，素色直垂外罩青灰狩衣（镰仓装束），腰佩短刀，袖中揣汉文书札。",
+      "look": "三十上下，面容端正，目光温和；黑漆乌帽，素色直垂外罩青灰狩衣，腰佩短刀，袖中揣汉文书札。",
       "portrait": "res://assets/portraits/kondo_saburo.png",
       "portrait_src": "gen:grok:kondo_saburo.png",
       "portrait_status": "painted",
@@ -2744,7 +2744,7 @@
           "rel": "门下小吏"
         }
       ],
-      "look": "五十余岁，高鼻深目，花白长髯；黑纱幞头（私宅则白绫缠头），紫色圆领公服，腰佩金鱼袋，指上一枚宝石戒。",
+      "look": "五十余岁，高鼻深目，花白长髯；黑纱幞头，紫色圆领公服，腰佩金鱼袋，指上一枚宝石戒。",
       "portrait": "res://assets/portraits/pu_shougeng.png",
       "portrait_src": "gen:grok:pu_shougeng.png",
       "portrait_status": "painted",
@@ -4002,7 +4002,7 @@
       "name": "北条时赖",
       "alt_names": [],
       "courtesy": "",
-      "title": "镰仓幕府执权",
+      "title": "镰仓幕府得宗",
       "faction": "foreign",
       "origin": "日本相模镰仓",
       "born": 1227,
@@ -4037,7 +4037,7 @@
         "博多的船，多运经卷来。铜钱也要。"
       ],
       "relations": [],
-      "look": "三十岁上下，面容清癯，目光锐利；出家后剃发，素色直垂外罩黑色袈裟，手持念珠，坐于禅院檐下。",
+      "look": "三十岁上下，面容清癯，目光锐利；出家后剃发，墨染僧衣外披黑色袈裟，手持念珠，坐于禅院檐下。",
       "portrait": "res://assets/portraits/hojo_tokiyori.png",
       "portrait_src": "gen:cursor:hojo_tokiyori_v1.png",
       "portrait_status": "painted",
