@@ -66,11 +66,11 @@
       "id": "zj_jiaoshan",
       "port": "zhenjiang",
       "pending_port": true,
-      "name": "焦山寺与瘗鹤铭",
+      "name": "焦山普济禅院与瘗鹤铭",
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_zj_jiaoshan.jpg",
-      "description": "焦山寺旧名普济禅院，宋末火后重建，改称焦山寺。山西麓的《瘗鹤铭》早已坠江，枯水时露出残石，寺僧另藏旧拓。",
+      "description": "普济禅院在焦山，宋末火后重建，寺僧仍以山名称之。山西麓的《瘗鹤铭》早已坠江，枯水时露出残石，寺僧另藏旧拓。",
       "interactions": [
         {
           "id": "zj_jiaoshan_stone",
@@ -191,7 +191,7 @@
             {
               "id": "zj_beigu_wen_help",
               "label": "指船",
-              "text": "你把他引到寺下的渡口，又让船夫把灯压暗。船离岸时，他朝石阶拱了拱手。",
+              "text": "你把他引到江边一处僻静的渡口，又让船夫把灯压暗。船离岸时，他朝石阶拱了拱手。",
               "cost": 0,
               "effects": {
                 "flag": "zj_wentianxiang_ferry",
@@ -226,7 +226,7 @@
           "id": "zj_xijin_ferryman",
           "type": "hire",
           "label": "雇渡夫",
-          "text": "渡夫姓周，在这条水上撑了二十年。雇他，遇风时先得一句稳当话。",
+          "text": "渡夫在这条水上撑了多年。雇他，遇风时先得一句稳当话。",
           "who": "渡夫",
           "cost": 60,
           "wage": 8,
@@ -266,7 +266,7 @@
           "id": "zj_xijin_rumor",
           "type": "rumor",
           "label": "听江口",
-          "text": "渡口的人说，温州的漆器船在江口候潮，船主急着出手，漆器只好贱卖。",
+          "text": "渡口的人说，温州的漆器行今年压了货，店主急着出手，漆器只好贱卖。",
           "cost": 10,
           "cooldown_days": 30,
           "port": "wenzhou",
@@ -329,7 +329,7 @@
           "id": "zj_zha_rumor",
           "type": "rumor",
           "label": "听闸吏",
-          "text": "闸吏翻着过闸簿，说运河浅，温州的米船都被截在江口转卖军前，温州城里的米行等不回船，斗价一日一涨。",
+          "text": "闸吏翻着过闸簿，说往温州去的米船在江口候潮，一时回不来，温州城里的米行存货先紧了，斗价一日一涨。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "wenzhou",
@@ -364,7 +364,7 @@
           "id": "zj_shuijun_poleman",
           "type": "hire",
           "label": "雇篙手",
-          "text": "寨外的篙手姓陈，识得江心的暗沙。雇他，船过焦山不至于搁浅。",
+          "text": "寨外的篙手识得江心的暗沙。雇他，船过焦山不至于搁浅。",
           "who": "篙手",
           "cost": 70,
           "wage": 10,
@@ -596,7 +596,7 @@
           "id": "zj_suanshan_rumor",
           "type": "rumor",
           "label": "听哨兵",
-          "text": "哨兵说北岸巡船这一月添了三倍，兴化的盐船不敢进江，江上缺盐，商人都赶去兴化盐场抢收存盐。",
+          "text": "哨兵说北岸巡船巡得比先前勤，兴化的盐船不敢进江，江上缺盐，商人都赶去兴化盐场抢收存盐。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "xinghua",
@@ -613,7 +613,7 @@
       "kind": "warehouse",
       "pending_art": true,
       "bg": "bg_dist_zj_jiuku.jpg",
-      "description": "府城酒库在子城西，库门一开，酒气顺着巷子走。官酒按务册出库，脚夫把酒坛一只只抬上独轮车。",
+      "description": "府城酒库在城中，库门一开，酒气顺着巷子走。官酒按务册出库，脚夫把酒坛一只只抬上独轮车。",
       "interactions": [
         {
           "id": "zj_jiuku_invest",
@@ -756,7 +756,7 @@
       "kind": "academy",
       "pending_art": true,
       "bg": "bg_dist_zj_fuxue.jpg",
-      "description": "府学的榜墙临着街，墙上贴着历科的榜纸。阶前立着几方题名碑，碑阴的字被拓得发亮。",
+      "description": "府学的榜墙临着街，墙上贴着历科的榜纸。阶前立着几方题名碑，碑面的字被拓得发亮。",
       "interactions": [
         {
           "id": "zj_fuxue_list",
@@ -791,7 +791,7 @@
           "id": "zj_fuxue_stele",
           "type": "favour",
           "label": "拓碑",
-          "text": "阶前的题名碑可以拓。学吏替你按好纸，墨包一捶，碑上的字就翻到纸上。",
+          "text": "阶前的题名碑可以拓。学吏用棕刷拂去碑面浮土，覆纸打墨，字口慢慢显出来。",
           "cost": 10,
           "once_per": "year",
           "effects": {
@@ -870,7 +870,7 @@
           "id": "zj_zhuanban_convoy",
           "type": "hire",
           "label": "雇纲首",
-          "text": "纲首姓王，识得运河各闸的放船次序。雇他，米纲过闸少等两日。",
+          "text": "纲首识得运河各闸的放船次序。雇他，米纲过闸少等些时日。",
           "who": "纲首",
           "cost": 80,
           "wage": 11,
@@ -888,7 +888,7 @@
             {
               "id": "zj_zhuanban_measure_argue",
               "label": "争一句",
-              "text": "你说米是刚卸的江米，潮气还没散。仓吏把刮板放下，重新量了一遍。",
+              "text": "你说米是刚卸的漕米，潮气还没散。仓吏把刮板放下，重新量了一遍。",
               "cost": 0,
               "effects": {
                 "merchant_credit": 1,

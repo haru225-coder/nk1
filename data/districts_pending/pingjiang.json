@@ -104,7 +104,7 @@
           "id": "pj_panmen_rumor",
           "type": "rumor",
           "label": "听纲运",
-          "text": "门吏翻着纲运的札子，说浙西漕船先尽官仓，温州的米船这一旬到得少。",
+          "text": "门吏翻着纲运的札子，说浙西漕船先尽官仓，温州的米船这几日到得少。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "wenzhou",
@@ -140,12 +140,12 @@
           "id": "pj_fuxue_read",
           "type": "choice",
           "label": "读碑",
-          "text": "学正问你先看哪一碑。天文图刻星官，地理图刻山川，平江图刻的是眼前这座城。",
+          "text": "教授问你先看哪一碑。天文图刻星官，地理图刻山川，平江图刻的是眼前这座城。",
           "options": [
             {
               "id": "pj_fuxue_read_star",
               "label": "看天文图",
-              "text": "你在天文图碑前找北极与三垣。学正指着一处星官，说这碑刻成于丁未年。",
+              "text": "你在天文图碑前找北极与三垣。教授指着一处星官，说这碑刻成于丁未年。",
               "cost": 0,
               "effects": {
                 "scholar_tendency": 2
@@ -199,11 +199,11 @@
       "id": "pj_xuanmiao",
       "port": "pingjiang",
       "pending_port": true,
-      "name": "玄妙观三清殿",
+      "name": "天庆观三清殿",
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_pj_xuanmiao.jpg",
-      "description": "玄妙观在城心，三清殿是淳熙年间的木构，斗拱大，出檐深。殿前香炉终日不熄，廊下摆着算命与卖符的摊子。",
+      "description": "天庆观在城心，三清殿是淳熙年间的木构，斗拱大，出檐深。殿前香炉终日不熄，廊下摆着算命与卖符的摊子。",
       "interactions": [
         {
           "id": "pj_xuanmiao_lamp",
@@ -248,7 +248,7 @@
           "id": "pj_xuanmiao_rumor",
           "type": "rumor",
           "label": "闻香药",
-          "text": "道士说，泉州来的香药船被抽解留了半舱，观里的乳香也要等下一批。",
+          "text": "道士说，泉州来的香药船在江口待抽解，观里的乳香也要等下一批。",
           "cost": 15,
           "cooldown_days": 45,
           "port": "quanzhou",
@@ -367,13 +367,13 @@
       "kind": "manor",
       "pending_art": true,
       "bg": "bg_dist_pj_fanshi.jpg",
-      "description": "范氏义庄在城中，范仲淹置义田千亩，赡族中孤寡。庄门内是义仓与义学，庄正按簿发米，族中子弟在廊下读书。",
+      "description": "范氏义庄在城中，范仲淹置义田赡族，族中孤寡按月领米。庄门内是义仓与义学，管事按簿发米，族中子弟在廊下读书。",
       "interactions": [
         {
           "id": "pj_fanshi_rice",
           "type": "favour",
           "label": "纳义米",
-          "text": "你把一担米送进义仓。庄正过斗入簿，说这米要分给三房孤寡。",
+          "text": "你把一担米送进义仓。管事过斗入簿，说这米要分给三房孤寡。",
           "cost": 30,
           "once_per": "month",
           "effects": {
@@ -386,12 +386,12 @@
           "id": "pj_fanshi_school",
           "type": "choice",
           "label": "义学纸笔",
-          "text": "义学的窗纸破了，庄正指着廊下的空席，说今年来读书的族子多了两个。",
+          "text": "义学的窗纸破了，管事指着廊下的空席，说今年来读书的族子多了两个。",
           "options": [
             {
               "id": "pj_fanshi_school_give",
               "label": "助纸笔",
-              "text": "你留下纸笔钱。庄正把两个族子的名字写进义学簿，墨迹很淡。",
+              "text": "你留下纸笔钱。管事把两个族子的名字写进义学簿，墨迹很淡。",
               "cost": 40,
               "effects": {
                 "fame": 2,
@@ -516,7 +516,7 @@
           "id": "pj_changmen_rumor",
           "type": "rumor",
           "label": "听纲梢",
-          "text": "纲梢说，太湖涨水，低田漫了，往明州的米船这一旬要少。",
+          "text": "纲梢说，太湖涨水，低田漫了，往庆元府的米船这几日要少。",
           "cost": 10,
           "cooldown_days": 35,
           "port": "mingzhou",
@@ -649,7 +649,7 @@
           "id": "pj_taihu_stone",
           "type": "favour",
           "label": "选石",
-          "text": "石户带你到水边看新起的石头，瘦、皱、透、漏，各指一块给你看。",
+          "text": "石户带你到水边看新起的石头，指着石上的孔窍与水痕，各说一块的来历。",
           "cost": 20,
           "once_per": "month",
           "effects": {
@@ -737,7 +737,7 @@
           "id": "pj_chasi_rumor",
           "type": "rumor",
           "label": "听会子",
-          "text": "掌柜说，新界会子还没印齐，市上先认铜钱。广州的宋钱一天一个价。",
+          "text": "掌柜说，新界会子还没印齐，市上先认铜钱。广州的宋钱日日不同价。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "guangzhou",
@@ -760,7 +760,7 @@
           "id": "pj_shufang_book",
           "type": "favour",
           "label": "翻志书",
-          "text": "你在架上翻到一册《吴郡志》，记着城中水巷与桥名。主人说这版只印了二百部。",
+          "text": "你在架上翻到一册《吴郡志》，记着城中水巷与桥名。主人说这版印得不多，余纸还堆在墙边。",
           "cost": 25,
           "once_per": "month",
           "effects": {
@@ -799,7 +799,7 @@
           "id": "pj_shufang_rumor",
           "type": "rumor",
           "label": "听纸价",
-          "text": "主人说，高丽纸的船在耽罗候了半月，泉州纸铺手里的存纸一张也不肯贱卖。",
+          "text": "主人说，高丽纸的船在耽罗候了多日，泉州纸铺手里的存纸一张也不肯贱卖。",
           "cost": 10,
           "cooldown_days": 40,
           "port": "quanzhou",

@@ -7,7 +7,7 @@
       "kind": "teahouse",
       "pending_art": true,
       "bg": "bg_dist_xhh_wine_shed.jpg",
-      "description": "海口酒棚搭在礁石边，草帘挡不住风。柜上温着薄酒，南来北往的船户都在这里坐一坐。",
+      "description": "海口酒棚搭在埠头边，草帘挡不住风。柜上温着薄酒，南来北往的船户都在这里坐一坐。",
       "interactions": [
         {
           "id": "xhh_wine_shed_warm",
@@ -54,7 +54,7 @@
           "id": "xhh_wine_shed_rumor",
           "type": "rumor",
           "label": "问米价",
-          "text": "掌柜把酒碗推过来：连雨三日，溪船在涵头搁了浅，海口的米到得迟。",
+          "text": "掌柜把酒碗推过来：连雨多日，溪船在涵头搁了浅，海口的米到得迟。",
           "cost": 10,
           "cooldown_days": 35,
           "port": "xinghua_harbor",
@@ -202,7 +202,7 @@
           "id": "xhh_sanjiang_salt",
           "type": "buy",
           "label": "收海盐",
-          "text": "潮埠的盐包刚卸下，还没过牙行的秤。按埠头价收。",
+          "text": "潮埠的盐包才卸下，牙人还没开秤。按埠头价收。",
           "good": "sea_salt",
           "qty": 8,
           "price_mul": 0.9,
@@ -267,7 +267,7 @@
           "id": "xhh_salt_yard_rumor",
           "type": "rumor",
           "label": "听盐船",
-          "text": "元兵到了兴化城下。海口的盐船不敢出海，泉州盐铺一天里改了两回价牌。",
+          "text": "元兵到了兴化城下。海口的盐船不敢出海，泉州盐铺一天里改了几回价牌。",
           "cost": 12,
           "cooldown_days": 40,
           "unlock": {
@@ -318,7 +318,7 @@
           "id": "xhh_boat_beach_rumor",
           "type": "rumor",
           "label": "听船户",
-          "text": "泉州换了旗，抽解加倍。瓷船都绕外洋走，到博多要晚一季。",
+          "text": "泉州换了旗，抽解加倍。瓷船多绕外洋走，到博多要晚一季。",
           "cost": 13,
           "cooldown_days": 40,
           "unlock": {
@@ -383,7 +383,7 @@
           "id": "xhh_patrol_rumor",
           "type": "rumor",
           "label": "听寨兵",
-          "text": "哨船扣了两条夹带鹿皮的船。海口的鹿皮要少。",
+          "text": "哨船扣了几条夹带鹿皮的船。海口的鹿皮要少。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "xinghua_harbor",
@@ -509,7 +509,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_xhh_ferry_guild.jpg",
-      "description": "渡船会是一条巷里的公所。渡户在这里议班次、摊修船钱，墙上挂着写船名的木牌。",
+      "description": "渡船会是一条巷里的小院。渡户在这里议早渡、摊修船钱，墙上挂着写船名的木牌。",
       "interactions": [
         {
           "id": "xhh_ferry_guild_hire",
@@ -524,7 +524,7 @@
           "id": "xhh_ferry_guild_fare",
           "type": "favour",
           "label": "贴渡钱",
-          "text": "你替过不起渡的人贴了几文。渡户把这事写在公所的木牌上。",
+          "text": "你替过不起渡的人贴了几文。渡户把这事写在会里的木牌上。",
           "cost": 15,
           "once_per": "month",
           "effects": {
@@ -535,14 +535,14 @@
         {
           "id": "xhh_ferry_guild_shift",
           "type": "choice",
-          "label": "议班次",
-          "text": "渡户议早班。添钱加早班，或照旧，都行。",
+          "label": "议早渡",
+          "text": "渡户议早渡。添钱加一渡，或照旧，都行。",
           "once_per": "year",
           "options": [
             {
               "id": "add",
-              "label": "添早班",
-              "text": "你添了钱，早班船多了一条。",
+              "label": "添早渡",
+              "text": "你添了钱，早渡多了一条船。",
               "cost": 20,
               "effects": {
                 "network": 2,
@@ -552,7 +552,7 @@
             {
               "id": "keep",
               "label": "照旧",
-              "text": "班次照旧。渡户说这样也稳。",
+              "text": "早渡照旧。渡户说这样也稳。",
               "cost": 0,
               "effects": {
                 "hometown_tendency": 1
@@ -662,7 +662,7 @@
           "id": "xhh_post_rumor",
           "type": "rumor",
           "label": "听驿卒",
-          "text": "临安降了，行朝在福州。闽江的粮船都被征去，驿卒的短札上这样写。",
+          "text": "临安降了，行朝在福州。闽江的粮船多被征去，驿卒的短札上这样写。",
           "cost": 14,
           "cooldown_days": 45,
           "unlock": {

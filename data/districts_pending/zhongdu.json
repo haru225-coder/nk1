@@ -13,7 +13,7 @@
           "id": "zd_lize_fur",
           "type": "buy",
           "label": "收貂皮",
-          "text": "西来的驮队在门洞外卸皮货，毛上还沾着雪。按张点过，钱货两清。",
+          "text": "北来的驮队在门洞外卸皮货，毛上还沾着雪。按张点过，钱货两清。",
           "good": "sable_fur",
           "qty": 2,
           "price_mul": 0.96,
@@ -51,7 +51,7 @@
           "id": "zd_lize_gatekeeper",
           "type": "hire",
           "label": "雇门子",
-          "text": "门子姓赵，识得军中换班的鼓点。雇他，西门的驮队先得一句准信。",
+          "text": "门子识得军中换班的鼓点。雇他，西门的驮队先得一句准信。",
           "who": "门子",
           "cost": 70,
           "wage": 11,
@@ -73,7 +73,7 @@
           "id": "zd_zhangyi_tea",
           "type": "sell",
           "label": "卖茶包",
-          "text": "南来的茶包在门洞外拆开，往西南的脚店按包收，价压得低。",
+          "text": "南来的茶包在门洞外拆开，往西南的脚店按包收，价给得还平。",
           "good": "tea",
           "qty": 2,
           "price_mul": 1.02,
@@ -174,7 +174,7 @@
           "id": "zd_jingfeng_gateguard",
           "type": "hire",
           "label": "雇门军",
-          "text": "门军老韩认得南来北往的车把式。雇他，景风门前的队先挪出一条道。",
+          "text": "门军认得南来北往的车把式。雇他，景风门前的队先挪出一条道。",
           "who": "门军",
           "cost": 80,
           "wage": 12,
@@ -217,8 +217,8 @@
         {
           "id": "zd_huicheng_stranger",
           "type": "choice",
-          "label": "无过所",
-          "text": "一个汉人客商被哨兵拦住，怀里没有过所，回头看你。",
+          "label": "无公凭",
+          "text": "一个汉人客商被哨兵拦住，怀里没有公凭，回头看你。",
           "once": true,
           "options": [
             {
@@ -295,7 +295,7 @@
           "id": "zd_palace_rumor",
           "type": "rumor",
           "label": "听拆料车",
-          "text": "拆料车从旧宫往城外去，回程捎带的青白瓷被军吏先挑，庆元府的瓷行收不齐货，开价也硬了。",
+          "text": "拆料车从旧宫往城外去，赶车的人说军吏把庆元府的青白瓷订走大半，瓷行收不齐货，开价也硬了。",
           "port": "mingzhou",
           "good": "qingbai_porcelain",
           "mul": 1.18,
@@ -376,7 +376,7 @@
           "id": "zd_longjin_toll",
           "type": "favour",
           "label": "收桥税",
-          "text": "你站在桥头替牙行收税，驼队一只只过去，铁掌敲得石面发响。",
+          "text": "你站在桥头替桥吏收税，骆驼一只只过去，铁掌敲得石面发响。",
           "cost": 0,
           "once_per": "month",
           "effects": {
@@ -458,7 +458,7 @@
           "id": "zd_lugou_rumor",
           "type": "rumor",
           "label": "听铺马",
-          "text": "驿铺把马都拨去运军械，辽东参客改走南路，庆元府的人参要涨。",
+          "text": "驿铺把马多拨去运军械，辽东参客不敢南下，庆元府的人参要涨。",
           "port": "mingzhou",
           "good": "korean_ginseng",
           "mul": 1.15,
@@ -475,7 +475,7 @@
       "kind": "hill",
       "bg": "bg_dist_zd_qionghua.jpg",
       "pending_art": true,
-      "description": "琼华岛上山石层叠，广寒殿只剩台基，近年才有工匠来量屋架。湖面芙蓉落了一半，蒙古贵族的毡帐扎在岸边。",
+      "description": "琼华岛上山石层叠，广寒殿只剩台基，偶尔有工匠来量屋架。湖面芙蓉落了一半，蒙古贵族的毡帐扎在岸边。",
       "interactions": [
         {
           "id": "zd_qionghua_climb",
@@ -583,7 +583,7 @@
           "id": "zd_taiye_fisher",
           "type": "hire",
           "label": "雇渔户",
-          "text": "渔户老周识得池底的旧石，也识得军马的饮水时辰。雇他，池边的网先收得回来。",
+          "text": "渔户识得池底的旧石，也识得军马的饮水时辰。雇他，池边的网先收得回来。",
           "who": "渔户",
           "cost": 70,
           "wage": 11,
@@ -633,7 +633,7 @@
             {
               "id": "zd_taining_repair_give",
               "label": "捐三十钱",
-              "text": "你在缘簿上写了名字，僧人把铜钱倒进木柜。",
+              "text": "你提笔在缘簿上写了名字，僧人把铜钱串好收进柜里。",
               "cost": 30,
               "effects": {
                 "fame": 1,
@@ -783,7 +783,7 @@
       "kind": "temple",
       "bg": "bg_dist_zd_qingshou.jpg",
       "pending_art": true,
-      "description": "庆寿寺在旧城西，两座砖塔并立，塔身风化。僧人各说各的年岁，塔下的碑却没人认得全。",
+      "description": "庆寿寺在旧城，两座砖塔并立，塔身风化。僧人各说各的年岁，塔下的碑却没人认得全。",
       "interactions": [
         {
           "id": "zd_qingshou_walk",
@@ -827,7 +827,7 @@
           "id": "zd_qingshou_rumor",
           "type": "rumor",
           "label": "听香火",
-          "text": "全真道场占了几座旧寺，佛寺香火减半，泉州运来的香药压在仓里，蕃商只好折价出手。",
+          "text": "全真道场占了几座旧寺，佛寺香火减半，泉州港的香药压在仓里，蕃商只好折价出手。",
           "port": "quanzhou",
           "good": "aromatic_medicine",
           "mul": 0.9,
@@ -1070,7 +1070,7 @@
           "options": [
             {
               "id": "zd_mongol_corvee_obey",
-              "label": "应下",
+              "label": "出人",
               "text": "你从脚行里点了十个人，百户在簿上画了一笔。",
               "cost": 10,
               "effects": {
@@ -1106,7 +1106,7 @@
     {
       "id": "zd_dadu",
       "port": "zhongdu",
-      "name": "大都新城门",
+      "name": "新城门",
       "kind": "gate",
       "bg": "bg_dist_zd_dadu.jpg",
       "pending_art": true,
@@ -1183,7 +1183,7 @@
       "kind": "gate",
       "bg": "bg_dist_zd_zhonglou.jpg",
       "pending_art": true,
-      "description": "钟鼓楼立在大都新城的中心台上，鼓声传过夯土坊墙。旧城那边听不见，只当是远处的雷。",
+      "description": "钟鼓楼立在新城中心台上，鼓声传过夯土坊墙。旧城那边听不见，只当是远处的雷。",
       "unlock": {
         "year_min": 1267
       },
@@ -1206,7 +1206,7 @@
           "id": "zd_zhonglou_drummer",
           "type": "hire",
           "label": "雇鼓手",
-          "text": "鼓手姓白，能听风辨时辰。雇他，夜里赶路少走冤枉道。",
+          "text": "鼓手能听风辨时辰。雇他，夜里赶路少走冤枉道。",
           "who": "鼓手",
           "cost": 80,
           "wage": 12,
@@ -1238,7 +1238,7 @@
       "kind": "dam",
       "bg": "bg_dist_zd_haizi.jpg",
       "pending_art": true,
-      "description": "积水潭水面阔，通惠河未开，漕船还进不来。岸边多是渔户、柴船与拆料堆，水鸟落在浅滩上。",
+      "description": "积水潭水面阔，运道未通，漕船还进不来。岸边多是渔户、柴船与拆料堆，水鸟落在浅滩上。",
       "interactions": [
         {
           "id": "zd_haizi_mooring",
@@ -1282,7 +1282,7 @@
           "id": "zd_haizi_rumor",
           "type": "rumor",
           "label": "听工地",
-          "text": "大都工地要粮，南来的米船先往北岸卸，庆元府的米铺一时缺货，开价跟着硬起来。",
+          "text": "北边的军营要粮，南来的米船先往北岸卸，庆元府的米铺一时缺货，开价跟着硬起来。",
           "port": "mingzhou",
           "good": "grain",
           "mul": 1.12,
@@ -1305,7 +1305,7 @@
           "id": "zd_hanjiang_carpenter",
           "type": "hire",
           "label": "雇木匠",
-          "text": "木匠姓李，做过金宫檐下的斗拱。雇他，起屋先省一道返工。",
+          "text": "木匠做过金宫檐下的斗拱。雇他，起屋先省一道返工。",
           "who": "木匠",
           "cost": 90,
           "wage": 13,
@@ -1367,7 +1367,7 @@
           "id": "zd_yizhan_message",
           "type": "favour",
           "label": "递脚",
-          "text": "你托驿卒把一封信夹进公文袋，往南去的脚程省了半个月。",
+          "text": "你托驿卒把一封信夹进公文袋，往南去的脚程省了不少。",
           "cost": 20,
           "once_per": "month",
           "effects": {
@@ -1406,7 +1406,7 @@
           "id": "zd_yizhan_rumor",
           "type": "rumor",
           "label": "听军将",
-          "text": "军将沿驿路索贿，象牙商队绕道，泉州的象牙到得少，蕃坊里一根牙要多出两成钱。",
+          "text": "军将沿驿路索贿，象牙商队绕道，泉州的象牙到得少，蕃坊里一根牙要贵出一截。",
           "port": "quanzhou",
           "good": "ivory",
           "mul": 1.18,
