@@ -13,7 +13,7 @@
       "location": "南岛海道北口",
       "value": 80,
       "near_ports": ["ryukyu", "penghu"],
-      "historical_hook": "未入官图的旧泊地，未来可能成为海口通信与避风节点"
+      "historical_hook": "未入官图的旧泊地，岸形可避风，是否常有人泊，尚待查访。"
     },
     {
       "id": "broken_buddhist_stele",
@@ -22,7 +22,7 @@
       "location": "礁口旧泊地",
       "value": 120,
       "near_ports": ["ryukyu", "hakata"],
-      "historical_hook": "寺院网络暗示旧航路或曾被僧侣使用"
+      "historical_hook": "残碑文字与寺中旧记相合，或可见僧侣曾走这条航路。"
     },
     {
       "id": "heishui_gou",
@@ -31,7 +31,7 @@
       "location": "澎湖与流求之间的水道",
       "value": 150,
       "near_ports": ["penghu", "ryukyu", "quanzhou"],
-      "historical_hook": "澎湖以东水势渐低，近流求则水趋下而不回，舟人谓之落漈。遇飓风漂流落漈者，回者百一。摸清其流向与宽窄，往流求的航期可缩短数日。"
+      "historical_hook": "澎湖以东水势渐低，近流求则水趋下而不回，舟人谓之落漈。遇飓风漂流落漈者，回者百一。记下其水势与宽窄，往流求者可少遇漂失。"
     },
     {
       "id": "penghu_stone_wall",
@@ -49,7 +49,7 @@
       "location": "兴化外海湄洲屿",
       "value": 110,
       "near_ports": ["xinghua", "xinghua_harbor", "quanzhou"],
-      "historical_hook": "祀林氏女，舟人遇风涛辄呼之。自宣和赐额以来，香火沿海路而南北，凡海商未有不奉者。"
+      "historical_hook": "祀林氏女，舟人遇风涛辄呼之。自宣和赐额以来，香火沿海路而南北，海商多奉之。"
     },
     {
       "id": "lingshan_tombs",
@@ -58,7 +58,7 @@
       "location": "泉州东郊",
       "value": 130,
       "near_ports": ["quanzhou"],
-      "historical_hook": "碑石作蕃字，不可辨识。蕃坊人云其中葬有唐时远来的圣门弟子，年代已不可考。"
+      "historical_hook": "碑石作蕃字，不可辨识。蕃坊人云其中葬有远来的先贤，年代已不可考。"
     },
     {
       "id": "beacon_ruin",
@@ -71,12 +71,12 @@
     },
     {
       "id": "whale_route",
-      "name": "鲸鱼回游道",
+      "name": "鲸鱼道",
       "type": "物产",
       "location": "东海北缘",
       "value": 100,
       "near_ports": ["mingzhou", "jeju", "hakata"],
-      "historical_hook": "每岁春末，巨鱼成群北去。舟人以其行止验水温与洋流，比针路还准。"
+      "historical_hook": "春夏之交，巨鲸成群北去。舟人以其行止验水色与水性，可佐针路。"
     },
     {
       "id": "sulfur_vent",
@@ -85,7 +85,7 @@
       "location": "南岛火山岸",
       "value": 160,
       "near_ports": ["ryukyu", "kagoshima"],
-      "historical_hook": "岸石作黄色，气腥而热，掘之得硫。此物北输入宋，军中所急。"
+      "historical_hook": "岸石作黄色，气腥而热，掘之得硫。此物入宋，军中所急。"
     },
     {
       "id": "tangfang_stele",
@@ -121,7 +121,7 @@
       "location": "广州外海屿上",
       "value": 180,
       "near_ports": ["guangzhou", "zhangzhou", "champa"],
-      "historical_hook": "屿上立石，刻历代舟师所记发舶日月。累世所积，竟成一部候风之书。"
+      "historical_hook": "屿上立石，刻舟师发舶日月。年久字漫，细辨或可推候风之期。"
     },
     {
       "id": "champa_old_port",
@@ -139,7 +139,7 @@
       "location": "泉州九日山",
       "value": 120,
       "near_ports": ["quanzhou", "xinghua", "xinghua_harbor"],
-      "historical_hook": "郡守每岁夏冬两季登山祈风，摩崖题刻记其日月。题名者多郡守、舶使，可验候风之期。"
+      "historical_hook": "郡守每岁夏冬两季登山祈风，摩崖题刻记其日月。题名者多郡守、提举市舶，可验候风之期。"
     },
     {
       "id": "luoyang_bridge_oysters",
@@ -148,7 +148,7 @@
       "location": "泉州洛阳江",
       "value": 130,
       "near_ports": ["quanzhou", "zhangzhou"],
-      "historical_hook": "万安桥石梁横江，蔡襄所筑，桥墩种蛎固基，潮落可见。过桥行旅与盐船皆以此为记。"
+      "historical_hook": "万安桥石梁横江，蔡襄所筑，桥墩种蛎固基，潮落可见。桥上行旅与江中盐船皆以此为记。"
     },
     {
       "id": "shihu_six_victory_pagoda",
@@ -175,7 +175,7 @@
       "location": "福州鼓山",
       "value": 110,
       "near_ports": ["fuzhou", "xinghua_harbor"],
-      "historical_hook": "鼓山涌泉寺下，摩崖题名多宋人笔迹，僧道与过客皆刻石。"
+      "historical_hook": "鼓山涌泉寺下，摩崖题名多宋人笔迹，僧俗与过客皆刻石。"
     },
     {
       "id": "jiangxin_twin_pagodas",
@@ -184,7 +184,7 @@
       "location": "温州江心屿",
       "value": 100,
       "near_ports": ["wenzhou"],
-      "historical_hook": "江心屿东塔西塔皆北宋所起，立于江中。夜航望塔影，可辨水道。"
+      "historical_hook": "东塔西塔久立江中。夜航望塔影，可辨水道。"
     },
     {
       "id": "tiantong_ayuwang_temple",
@@ -193,25 +193,25 @@
       "location": "庆元府",
       "value": 120,
       "near_ports": ["mingzhou"],
-      "historical_hook": "天童与阿育王二寺，日本僧人入宋多至此挂锡。寺藏经板，朝夕梵声。"
+      "historical_hook": "天童与阿育王二寺，日本僧人入宋多至此挂锡。寺有经藏，朝夕梵声。"
     },
     {
       "id": "putuo_tide_cave",
-      "name": "普陀潮音洞",
+      "name": "梅岑潮音洞",
       "type": "祠庙",
-      "location": "普陀山",
+      "location": "庆元府梅岑山",
       "value": 130,
       "near_ports": ["mingzhou", "wenzhou"],
-      "historical_hook": "潮音洞在普陀山下，海潮入洞作声。南宋以来东海香火渐盛，海舶至此焚香。"
+      "historical_hook": "潮音洞在梅岑山下，海潮入洞作声。南宋以来东海香火渐盛，海舶至此焚香。"
     },
     {
       "id": "guangzhou_light_pagoda",
-      "name": "广州光塔",
+      "name": "广州番塔",
       "type": "航标",
       "location": "广州蕃坊",
       "value": 150,
       "near_ports": ["guangzhou"],
-      "historical_hook": "光塔立于蕃坊，番人呼为番塔。出海前望塔识岸，与南海神庙同为广州门户。"
+      "historical_hook": "番塔在蕃坊，砖身浑圆，顶有小尖。出海前望塔识岸，与南海神庙同为广州门户。"
     },
     {
       "id": "hakata_jotenji_temple",
@@ -244,10 +244,10 @@
       "id": "penghu_channel",
       "name": "澎湖水道",
       "type": "水文",
-      "location": "澎湖与泉州之间",
+      "location": "澎湖与流求之间",
       "value": 150,
       "near_ports": ["penghu", "quanzhou"],
-      "historical_hook": "澎湖水道当泉、漳之交，潮落则沙线毕露，潮满则深不可测。候潮出入，可避暗礁。"
+      "historical_hook": "澎湖水道在澎湖以东、流求以西，潮落则沙线毕露，潮满则水深难探。候潮出入，可避暗礁。"
     },
     {
       "id": "kuroshio_northbound",
