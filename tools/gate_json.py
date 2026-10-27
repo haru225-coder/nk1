@@ -838,7 +838,12 @@ CHECK = [
      "kind": "py", "file": "tools/check_w57_data.py",
      "judge": "（lane w57）城区数据交叉校验：district / interaction id 全局唯一；港存在或标 pending_port；货在 goods.json；传闻的港与货有市面；非市面的买卖 impact 须为 false；require_flag 须在某处 effects.flag 产出；公凭 id 一致；成本、数量、price_mul、入股数组合理",
      "green": "`城区数据交叉校验（data/districts*.json）` + `  ✓ 全部通过` + `结果：全部通过`",
-     "red": "`  ✗ …` 行；`结果：N 项问题`"}
+     "red": "`  ✗ …` 行；`结果：N 项问题`"},
+    {"id": "check_treasures", "tier": "lane", "when": "动 data/treasures.json 或 tools/check_treasures.py 或宝物系统接线",
+     "kind": "py", "file": "tools/check_treasures.py",
+     "judge": "（lane treas1）data/treasures.json 骨架：22 件；id / name 唯一且不撞货名；七类；甲 3 / 乙 9 / 丙 8 / 丁 2；价 120–2600；shop 港在 ports、discovery 在 discoveries、event 只作形态；每件有 shop / discovery 途径；恰 7 售港、5 发现钩；effect fame / duty / appraise_only 域与职事在册；待鉴 6 件；era_note 全 GB2312、无明清物名、逐条不同且无 8 字窗重复",
+     "green": "零节自检好样本须绿 + 17 格变异逐格红且点名 + 末行 `结果：全部通过`",
+     "red": "`✗ …` 行点名（字段缺 / 重号 / 域越界 / 港或发现不存在 / 无来源 / 效果越域 / 非 GB2312 / 重句 / 后世物名 / 撞货名 / 待鉴数错）+ 末行 `结果：N 项问题`，退 1"},
 
 ]
 

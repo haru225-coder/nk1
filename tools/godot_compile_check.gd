@@ -71,6 +71,8 @@ const SCRIPTS := [
 	"res://scripts/ui/GuildExamPage.gd",
 	# Lane main8 Main.gd 第八刀拆出的市舶司页
 	"res://scripts/ui/MaritimeOfficePage.gd",
+	# Lane treas1 牙行侧柜唐物铺
+	"res://scripts/ui/TreasureShop.gd",
 	# Lane main9 Main.gd 第九刀拆出的住处 / 寺观页
 	"res://scripts/ui/ResidencePage.gd",
 	# Lane main10 Main.gd 第十刀拆出的船屋页
@@ -316,6 +318,7 @@ const SCRIPTS := [
 	"res://tools/qa_w57_seasonal_probe.gd",  # lane sim3 季节需求（节令）探针
 	"res://tools/qa_w57_festival_probe.gd",  # lane fest1 岁时节令十一条声口探针（原位、月门、一年一回）
 	"res://tools/qa_w57_discovery_probe.gd",  # lane disc2 发现录探针（每港至少两条、id 唯一、near_ports 合法）
+	"res://tools/qa_w58_treasure_probe.gd",  # lane treas1 宝物系统运行时探针
 	"res://tools/qa_w57_tut_probe.gd",  # lane tut2 玩家引导札记探针
 	"res://tools/qa_w57_npc_probe.gd",  # lane npc2 城中 NPC 链探针
 	"res://tools/qa_w57_credit_probe.gd",  # lane sim4 牙人赊销探针
