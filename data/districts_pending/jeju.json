@@ -364,7 +364,7 @@
           "id": "jj_horse_licence",
           "type": "licence",
           "label": "领牧凭",
-          "text": "招讨司发一张凭，凭此才许在马场挑马。",
+          "text": "官衙发一张凭，凭此才许在马场挑马。",
           "cost": 260,
           "licence": "lic_jj_horse",
           "effects": {
@@ -458,7 +458,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_jj_gate.jpg",
-      "description": "招讨司门楼用石砌成，旗号挂在楼头，衙役倚着门墙望海。",
+      "description": "耽罗官衙的门楼用石砌成，旗号挂在楼头，衙役倚着门墙望海。",
       "interactions": [
         {
           "id": "jj_gate_favour",
@@ -512,7 +512,7 @@
           "id": "jj_watch_coin",
           "type": "sell",
           "label": "卖宋钱",
-          "text": "台下有人私下收宋钱。铜钱在耽罗属禁物，官府晓得要记一笔。",
+          "text": "台下有人私下收宋钱。耽罗市上少用铜钱，收去多半换高丽银瓶。",
           "good": "song_coin",
           "qty": 2,
           "price_mul": 1.15,

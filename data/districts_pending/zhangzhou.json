@@ -414,7 +414,7 @@
           "id": "zz_shan_rumor",
           "type": "rumor",
           "label": "听硫黄",
-          "text": "山下有人说温州硫黄装不满船，牙行把价抬了一线。",
+          "text": "山下有人说温州港上倭船转来的硫黄装不满船，牙行把价抬了一线。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "wenzhou",

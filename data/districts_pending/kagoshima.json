@@ -89,7 +89,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_kg_gun.jpg",
-      "description": "郡衙扎在高地上，管西海道的书状。武士披甲守门，书吏按宋钱折算。",
+      "description": "郡衙扎在高地上，管这一郡的书状。武士披甲守门，书吏按宋钱折算。",
       "interactions": [
         {
           "id": "kg_gun_gift",
@@ -186,7 +186,7 @@
           "id": "kg_sulfur_coin",
           "type": "sell",
           "label": "出手宋钱",
-          "text": "浜里有人暗中收宋钱。铜钱是禁物，郡衙晓得要记一笔。",
+          "text": "浜里有人暗中收宋钱，只挑成色足的，郡衙的人也常来问价。",
           "good": "song_coin",
           "qty": 2,
           "price_mul": 1.1,

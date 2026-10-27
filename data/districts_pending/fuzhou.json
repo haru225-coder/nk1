@@ -365,7 +365,7 @@
           "id": "fz_wushan_rumor",
           "type": "rumor",
           "label": "听硫黄",
-          "text": "山脚卖香药的说，温州硫黄今年出得少，官买先占了大半，海船要等北风。",
+          "text": "山脚卖香药的说，倭船转到温州的硫黄今年来得少，官买先占了大半，海船要等北风。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "wenzhou",
@@ -392,7 +392,7 @@
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_fz_yushan.jpg",
-      "description": "于山在城北，岩壁上旧题名层层叠叠。登临处江风很硬，能望见水门外的桅杆。",
+      "description": "于山在城东南，岩壁上旧题名层层叠叠。登临处江风很硬，能望见水门外的桅杆。",
       "interactions": [
         {
           "id": "fz_yushan_lacquer",
