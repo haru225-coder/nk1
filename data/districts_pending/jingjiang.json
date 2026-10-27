@@ -1,0 +1,707 @@
+{
+  "districts": [
+    {
+      "id": "gl_cheng",
+      "port": "jingjiang",
+      "pending_port": true,
+      "name": "静江府城",
+      "kind": "gate",
+      "bg": "bg_dist_gl_cheng.jpg",
+      "pending_art": true,
+      "description": "静江府城东临漓江，子城包在外城之中。北面诸山脚下，墙壕一层接一层；南门外的驿路通向邕州与广州。",
+      "interactions": [
+        {
+          "id": "gl_cheng_walk",
+          "type": "favour",
+          "label": "沿城走一遭",
+          "text": "你沿女墙走了一遭。北面的新墙压在山脚，墙外壕沟还留着木桩；守卒说，这一段最怕夜雨。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "martial": 1
+          }
+        },
+        {
+          "id": "gl_cheng_sluice",
+          "type": "choice",
+          "label": "壕闸放舟",
+          "text": "壕闸只开一孔，粮舟与货舟挤在闸外。闸夫问你，先放哪一队。",
+          "options": [
+            {
+              "id": "gl_cheng_sluice_grain",
+              "label": "先放粮舟",
+              "text": "粮舟先过。岸上的脚夫朝你拱手，货舟的梢公沉着脸。",
+              "effects": {
+                "favour": 1,
+                "hometown_tendency": 1
+              }
+            },
+            {
+              "id": "gl_cheng_sluice_trade",
+              "label": "先放货舟",
+              "text": "货舟先过。牙人记下你的名字，粮舟的押纲官没有再说话。",
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1,
+                "pu_attention": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gl_cheng_sluicekeeper",
+          "type": "hire",
+          "label": "雇闸手",
+          "text": "闸夫姓秦，认得壕闸的每一道木槽。有他在闸上，舟到闸口少等半日。",
+          "who": "闸夫",
+          "cost": 55,
+          "wage": 9,
+          "attention_ease": 1
+        }
+      ]
+    },
+    {
+      "id": "gl_yingwu",
+      "port": "jingjiang",
+      "pending_port": true,
+      "name": "鹦鹉山城图",
+      "kind": "hill",
+      "bg": "bg_dist_gl_yingwu.jpg",
+      "pending_art": true,
+      "unlock": {
+        "year_min": 1272
+      },
+      "description": "鹦鹉山在城北，山南崖壁平削。咸淳八年，修城记与城图刻在石上；图上画着子城、外城与沿江石墙。",
+      "interactions": [
+        {
+          "id": "gl_yingwu_map",
+          "type": "favour",
+          "label": "对城图",
+          "text": "你对着崖上的城图找北墙。图线细得像发丝，山势、壕沟与敌楼都标在上面。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "gl_yingwu_line",
+          "type": "choice",
+          "label": "指认壕线",
+          "text": "军吏把图拓摊在石上，问你先核北城还是西城。",
+          "options": [
+            {
+              "id": "gl_yingwu_line_north",
+              "label": "先核北城",
+              "text": "北城的壕线沿山脚转，缺口比图上多了一处。",
+              "effects": {
+                "martial": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "gl_yingwu_line_west",
+              "label": "先核西城",
+              "text": "西城的重城套着旧墙，砖色一新一旧。",
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gl_yingwu_iron",
+          "type": "rumor",
+          "label": "问城工铁价",
+          "text": "城北补墙要换铁钉，静江的匠人把泉州的铁器船订空了，泉州的铁价跟着抬。",
+          "cost": 14,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "ironware",
+          "mul": 1.08
+        }
+      ]
+    },
+    {
+      "id": "gl_lijiang",
+      "port": "jingjiang",
+      "pending_port": true,
+      "name": "漓江与訾家洲",
+      "kind": "ferry",
+      "bg": "bg_dist_gl_lijiang.jpg",
+      "pending_art": true,
+      "description": "漓江过城南，訾家洲横在江心。唐元和间裴行立在洲上建亭，柳宗元作记；宋时仍是送客宴游之地。",
+      "interactions": [
+        {
+          "id": "gl_lijiang_zhou",
+          "type": "favour",
+          "label": "上訾家洲",
+          "text": "渡船靠上洲头。亭子的旧基还在，石阶被水磨得发亮；洲尾有人收鱼，也有人摆酒送客。",
+          "cost": 6,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "gl_lijiang_moor",
+          "type": "choice",
+          "label": "择地泊舟",
+          "text": "洲北水缓，洲南近象鼻山。梢公问你泊在哪一边。",
+          "options": [
+            {
+              "id": "gl_lijiang_moor_north",
+              "label": "泊北岸",
+              "text": "北岸的缆桩多，夜里有人守船。",
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "gl_lijiang_moor_south",
+              "label": "泊南岸",
+              "text": "南岸离城门近，卸货快，只是水声吵。",
+              "effects": {
+                "favour": 1,
+                "sea_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gl_lijiang_ferryman",
+          "type": "hire",
+          "label": "雇洲渡",
+          "text": "洲渡的老梢公识得漓江的沙线，也识得哪一段水底下有旧石。",
+          "who": "洲渡梢公",
+          "cost": 50,
+          "wage": 9,
+          "attention_ease": 1
+        }
+      ]
+    },
+    {
+      "id": "gl_fubo",
+      "port": "jingjiang",
+      "pending_port": true,
+      "name": "伏波山还珠洞",
+      "kind": "temple",
+      "bg": "bg_dist_gl_fubo.jpg",
+      "pending_art": true,
+      "description": "伏波山在漓江边，还珠洞穿入山腹。洞壁满是宋人题名；嘉定间方信孺又在洞中刻了米芾的像。",
+      "interactions": [
+        {
+          "id": "gl_fubo_names",
+          "type": "favour",
+          "label": "看洞中题名",
+          "text": "还珠洞的壁面高低不平。你举火读了几行，最早的一则落款是北宋年号，字口还很清楚。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "gl_fubo_rubbing",
+          "type": "choice",
+          "label": "拓洞壁题名",
+          "text": "拓工把纸按在石上，说这一段潮气重，墨容易走。",
+          "options": [
+            {
+              "id": "gl_fubo_rubbing_full",
+              "label": "拓北宋题名",
+              "text": "纸揭下来，字口带着石屑。拓工说，这张可以收进书箧。",
+              "cost": 24,
+              "effects": {
+                "scholar_tendency": 1,
+                "fame": 1
+              }
+            },
+            {
+              "id": "gl_fubo_rubbing_note",
+              "label": "只记年月",
+              "text": "你把年月抄在簿上，没有动石面。",
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gl_xiangbi",
+      "port": "jingjiang",
+      "pending_port": true,
+      "name": "象鼻山水月洞",
+      "kind": "hill",
+      "bg": "bg_dist_gl_xiangbi.jpg",
+      "pending_art": true,
+      "description": "漓江与阳江在城南相会，水月洞穿山而过。乾道间张孝祥把洞名改作朝阳，后来范成大又复名水月。",
+      "interactions": [
+        {
+          "id": "gl_xiangbi_cave",
+          "type": "favour",
+          "label": "看水月洞",
+          "text": "洞门临水，船从石门下穿过。洞里的题刻被水汽浸得发黑，抬头能看见洞顶的水痕。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "gl_xiangbi_read",
+          "type": "choice",
+          "label": "读宋人题刻",
+          "text": "洞口一块题记写着朝阳，另一块又改回水月。你问守洞人，哪一块在先。",
+          "options": [
+            {
+              "id": "gl_xiangbi_read_zhang",
+              "label": "读乾道题记",
+              "text": "字口浅，落款只剩一个张字。守洞人说，改朝阳的就是他。",
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "gl_xiangbi_read_fan",
+              "label": "读复名题记",
+              "text": "范成大的题记在里侧，墨色比外头淡。",
+              "effects": {
+                "scholar_tendency": 1,
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gl_qixing",
+      "port": "jingjiang",
+      "pending_port": true,
+      "name": "七星岩栖霞洞",
+      "kind": "hill",
+      "bg": "bg_dist_gl_qixing.jpg",
+      "pending_art": true,
+      "description": "七星岩在城东，栖霞洞深而阔。洞里有唐、宋人的题名，石乳垂在灯影里。",
+      "interactions": [
+        {
+          "id": "gl_qixing_enter",
+          "type": "favour",
+          "label": "入栖霞洞",
+          "text": "洞丁举着火把走在前头。石乳从顶上垂下来，水滴在火把上响了一声。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "gl_qixing_path",
+          "type": "choice",
+          "label": "择路",
+          "text": "洞丁在岔口停下。左边低而湿，右边绕远；他等你开口。",
+          "options": [
+            {
+              "id": "gl_qixing_path_low",
+              "label": "走低处",
+              "text": "火把照见水沟，鞋底很快湿透。",
+              "effects": {
+                "sea_tendency": 1,
+                "martial": 1
+              }
+            },
+            {
+              "id": "gl_qixing_path_far",
+              "label": "绕远路",
+              "text": "路远些，石壁上的题名多。",
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gl_qixing_guide",
+          "type": "hire",
+          "label": "雇洞丁",
+          "text": "洞丁姓邓，识得洞里的岔路，也识得哪一处石乳不能碰。",
+          "who": "洞丁",
+          "cost": 45,
+          "wage": 8,
+          "attention_ease": 1
+        }
+      ]
+    },
+    {
+      "id": "gl_duxiu",
+      "port": "jingjiang",
+      "pending_port": true,
+      "name": "独秀峰读书岩",
+      "kind": "hill",
+      "bg": "bg_dist_gl_duxiu.jpg",
+      "pending_art": true,
+      "description": "静江北面，独秀峰孤峰拔起。峰下唐时已建州学；东麓读书岩相传是颜延之读书处，岩壁留着前人题名。",
+      "interactions": [
+        {
+          "id": "gl_duxiu_climb",
+          "type": "favour",
+          "label": "登独秀峰",
+          "text": "石阶绕着峰腰往上。到顶能看见漓江的白水，也能看见子城的瓦脊。",
+          "cost": 6,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "gl_duxiu_rock",
+          "type": "choice",
+          "label": "读读书岩",
+          "text": "读书岩的题刻高高低低。最显眼的一首是鹿鸣宴诗，落款在嘉泰元年。",
+          "options": [
+            {
+              "id": "gl_duxiu_rock_poem",
+              "label": "抄鹿鸣宴诗",
+              "text": "你抄到桂林山水甲天下七字，笔尖停了停。",
+              "effects": {
+                "scholar_tendency": 1,
+                "fame": 1
+              }
+            },
+            {
+              "id": "gl_duxiu_rock_names",
+              "label": "看旧题名",
+              "text": "岩口的旧题名只剩半行，石花盖住了名字。",
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gl_lingqu",
+      "port": "jingjiang",
+      "pending_port": true,
+      "name": "灵渠",
+      "kind": "dam",
+      "bg": "bg_dist_gl_lingqu.jpg",
+      "pending_art": true,
+      "description": "灵渠在兴安，秦时凿通湘漓二水。渠上设陡门，船入一陡，闭门蓄水，水满再开。南宋时陡门三十有六。",
+      "interactions": [
+        {
+          "id": "gl_lingqu_dou",
+          "type": "favour",
+          "label": "看陡门",
+          "text": "船进了陡门，闸板一块块落下。水涨到线，门才再开；船尾的人用篙顶着石壁。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "gl_lingqu_repair",
+          "type": "choice",
+          "label": "助修一陡",
+          "text": "一陡的闸板朽了，渠吏在岸上摊开木料单。",
+          "options": [
+            {
+              "id": "gl_lingqu_repair_wood",
+              "label": "出木料",
+              "text": "木料抬到陡边。渠吏提笔，把你的名字添在簿尾。",
+              "cost": 30,
+              "effects": {
+                "favour": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "gl_lingqu_repair_work",
+              "label": "帮半日工",
+              "text": "你帮着抬闸板，手掌磨出一道红印。",
+              "effects": {
+                "martial": 1,
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gl_lingqu_rumor",
+          "type": "rumor",
+          "label": "问米纲",
+          "text": "灵渠陡门漏水，兴安的米纲停了半月，广州米行到货少，米价先往上走。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "guangzhou",
+          "good": "grain",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "gl_longyin",
+      "port": "jingjiang",
+      "pending_port": true,
+      "name": "龙隐岩党籍碑",
+      "kind": "temple",
+      "bg": "bg_dist_gl_longyin.jpg",
+      "pending_art": true,
+      "description": "龙隐岩在城东，洞前石壁刻着党籍碑。庆元四年，梁律按家藏旧本重刻，碑额还是蔡京的字。",
+      "interactions": [
+        {
+          "id": "gl_longyin_stele",
+          "type": "favour",
+          "label": "读党籍碑",
+          "text": "碑面被拓得发亮。你从上往下读，姓名一行接一行，中间没有空白。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "hometown_tendency": 1
+          }
+        },
+        {
+          "id": "gl_longyin_rubbing",
+          "type": "choice",
+          "label": "拓党籍碑",
+          "text": "拓工把纸喷湿，问你拓全碑还是只拓碑额。",
+          "options": [
+            {
+              "id": "gl_longyin_rubbing_full",
+              "label": "拓全碑",
+              "text": "全碑拓了四张，最末一张的墨还没有干。",
+              "cost": 30,
+              "effects": {
+                "scholar_tendency": 1,
+                "fame": 1
+              }
+            },
+            {
+              "id": "gl_longyin_rubbing_top",
+              "label": "只拓碑额",
+              "text": "碑额的字大，拓出来只有两行。",
+              "effects": {
+                "scholar_tendency": 1,
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gl_longyin_paper",
+          "type": "rumor",
+          "label": "问纸价",
+          "text": "龙隐岩新拓党籍碑，静江的书铺到泉州买纸，高丽纸一到就被分走，纸价高了三成。",
+          "cost": 12,
+          "cooldown_days": 45,
+          "port": "quanzhou",
+          "good": "korean_paper",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "gl_jinglue",
+      "port": "jingjiang",
+      "pending_port": true,
+      "name": "经略司与马政",
+      "kind": "office",
+      "bg": "bg_dist_gl_jinglue.jpg",
+      "pending_art": true,
+      "description": "广南西路经略安抚司设在静江府。邕州横山寨岁市马，买马的钱、锦与盐由经略司支拨；马纲北来，在静江点验。",
+      "interactions": [
+        {
+          "id": "gl_jinglue_horses",
+          "type": "favour",
+          "label": "马纲到城",
+          "text": "横山寨的马纲到城下。押纲官按册点马，马背上还带着山里的泥。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "martial": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "gl_jinglue_price",
+          "type": "choice",
+          "label": "点马价",
+          "text": "押纲官把马价单摊开，问你是按旧例支盐，还是添锦帛。",
+          "options": [
+            {
+              "id": "gl_jinglue_price_salt",
+              "label": "按旧例支盐",
+              "text": "盐钞过了数，押纲官收好单子。",
+              "effects": {
+                "merchant_credit": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "gl_jinglue_price_silk",
+              "label": "添锦帛",
+              "text": "锦帛抬上来，押纲官挑了一匹，脸色松了些。",
+              "cost": 24,
+              "effects": {
+                "network": 1,
+                "favour": 1,
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gl_jinglue_rumor",
+          "type": "rumor",
+          "label": "问盐钞",
+          "text": "横山寨的马纲到了静江，经略司支盐换马，广州盐仓发盐的数目先减了。",
+          "cost": 14,
+          "cooldown_days": 45,
+          "port": "guangzhou",
+          "good": "sea_salt",
+          "mul": 1.08
+        }
+      ]
+    },
+    {
+      "id": "gl_yancao",
+      "port": "jingjiang",
+      "pending_port": true,
+      "name": "盐钞场",
+      "kind": "office",
+      "bg": "bg_dist_gl_yancao.jpg",
+      "pending_art": true,
+      "description": "广西盐法屡改，行钞法时，商人在场上纳钱请钞，凭钞到仓支盐；经略司的买马钱也从这里拨。",
+      "interactions": [
+        {
+          "id": "gl_yancao_invest",
+          "type": "invest",
+          "label": "入股盐钞铺",
+          "text": "盐钞场边的铺子要添本钱收钞。你把钱压在柜上，往后每月来对一次账。",
+          "shop": "盐钞铺",
+          "costs": [
+            280,
+            650
+          ],
+          "monthly": [
+            12,
+            32
+          ]
+        },
+        {
+          "id": "gl_yancao_check",
+          "type": "favour",
+          "label": "看验钞",
+          "text": "柜上把盐钞一张张对数，纸角、印色、字号都要看。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "gl_yancao_change",
+          "type": "choice",
+          "label": "换旧钞",
+          "text": "柜吏说旧钞可以折新钞，也可以等到下一纲盐到。",
+          "options": [
+            {
+              "id": "gl_yancao_change_new",
+              "label": "折新钞",
+              "text": "旧钞剪角，新钞上手，印色还没干透。",
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "gl_yancao_change_wait",
+              "label": "等下一纲",
+              "text": "柜吏在簿上记下数目，说盐到再兑。",
+              "effects": {
+                "merchant_credit": 1,
+                "favour": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gl_majia",
+      "port": "jingjiang",
+      "pending_port": true,
+      "name": "马帅守城",
+      "kind": "gate",
+      "bg": "bg_dist_gl_majia.jpg",
+      "pending_art": true,
+      "unlock": {
+        "year_min": 1276,
+        "year_max": 1277
+      },
+      "description": "景炎间，阿里海牙的兵围静江。守臣马帅总领屯戍诸军，严关失守后退保子城。城破后，部将娄钤辖仍率二百五十人守月城。",
+      "interactions": [
+        {
+          "id": "gl_majia_grain",
+          "type": "favour",
+          "label": "送粮入月城",
+          "text": "月城的门还开着，里面的人在分米。你把粮袋放在门内，没有多问。",
+          "cost": 20,
+          "once": true,
+          "effects": {
+            "martial": 1,
+            "favour": 1,
+            "hometown_tendency": 1
+          }
+        },
+        {
+          "id": "gl_majia_moon",
+          "type": "choice",
+          "label": "守月城",
+          "text": "娄钤辖的人还在月城里。有人问你，是留下守城，还是护送百姓出城。",
+          "once": true,
+          "options": [
+            {
+              "id": "gl_majia_moon_stay",
+              "label": "留守月城",
+              "text": "你留下的那一夜，城外火把一直没有散。",
+              "effects": {
+                "martial": 2,
+                "fame": 2
+              }
+            },
+            {
+              "id": "gl_majia_moon_leave",
+              "label": "护送百姓",
+              "text": "你带着百姓沿水门出去，身后传来火器声。",
+              "effects": {
+                "hometown_tendency": 2,
+                "network": 1,
+                "fame": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
