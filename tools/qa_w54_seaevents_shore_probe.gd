@@ -15,7 +15,7 @@ extends SceneTree
 
 const ScriptErrTally := preload("res://tools/script_err_tally.gd")
 const COAST := 2
-const ALONG := ["meizhou_shrine", "lingshan_tombs", "beacon_ruin", "heishui_gou"]
+const ALONG := ["meizhou_shrine", "lingshan_tombs", "beacon_ruin", "heishui_gou", "gushan_cliff_carving", "jiuri_wind_stele", "luoyang_bridge_oysters", "penghu_channel", "qingjing_arabic_gate", "shihu_six_victory_pagoda"]  # disc2 发现录 14→28 后泉州—福州沿途增六处
 
 var _gs: Node
 var _cal: Node
