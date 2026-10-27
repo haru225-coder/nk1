@@ -220,6 +220,7 @@ EXEMPT = [
     ("qa_w56_district_sim_probe.gd", "lane-w56-district-sim", "城中各处深化探针（链 flag、大比、季节、风险、小卖入股、传闻），回退即红，headless 秒级"),
     ("qa_w56_pending_districts_probe.gd", "lane-d1-pending", "待画城区探针（pending/*.json 全扫、底图尚不存在、pending_art=true、账本不暴露），回退即红，headless 秒级"),
     ("qa_w57_credit_probe.gd", "lane-sim4", "牙人赊销探针（锁价贴水、舱货移除、赊销簿、到期结清、读档往返），回退即红，headless 秒级"),
+    ("qa_w57_crew_probe.gd", "lane-w57-crew", "船上职事新候选探针（五名宋元海船职事在册与字段、章节前后各港候雇、人物志指港、雇入扣钱记史、一职一人、crew 分区存档来回），回退即红，headless 秒级"),
     ("qa_w57_depth_probe.gd", "lane-bal2", "按货深浅探针（每货深度、买卖推演、存档结构），回退即红，headless 秒级"),
     ("qa_w57_discovery_probe.gd", "lane-disc2", "发现录探针（每港至少两条近侧发现、id 唯一、near_ports 合法），回退即红，headless 秒级"),
     ("qa_w57_districtui_probe.gd", "lane-ui2-districtui", "城中各处 UI 可用性探针（名单与事页按类分组、钮带花费/冷却/条件悬停提示），回退即红，headless 秒级"),
