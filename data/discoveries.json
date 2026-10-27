@@ -251,12 +251,12 @@
     },
     {
       "id": "kuroshio_northbound",
-      "name": "黑潮北上",
+      "name": "外洋北流",
       "type": "水文",
       "location": "东海外洋",
       "value": 180,
       "near_ports": ["ryukyu", "hakata", "mingzhou"],
-      "historical_hook": "黑潮自南来，水色深碧，夏月尤急。循其外缘北行，自流求北境至博多可省风帆之力。"
+      "historical_hook": "外洋有北流自南来，舟人见水色深碧即知入流，夏月尤急。循其外缘北行，自流求北境至博多可省风帆之力。"
     }
   ]
 }
