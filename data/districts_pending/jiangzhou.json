@@ -458,7 +458,7 @@
           "id": "jzh_hukou_rumor",
           "type": "rumor",
           "label": "听茶客",
-          "text": "茶棚里的人说，江州茶场的新茶被湖口的风拦在港里，庆元府的茶行存货只够卖到月底。",
+          "text": "茶棚里的人说，江州茶场的新茶被湖口的风拦在港里，庆元府茶行存货只够卖到月底。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "mingzhou",
