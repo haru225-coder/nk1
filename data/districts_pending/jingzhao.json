@@ -1,0 +1,677 @@
+{
+ "districts": [
+  {
+   "id": "xa_cheng",
+   "port": "jingzhao",
+   "pending_port": true,
+   "name": "京兆府城",
+   "kind": "gate",
+   "pending_art": true,
+   "bg": "bg_dist_xa_cheng.jpg",
+   "description": "唐末韩建弃了宫城外郭，只把皇城圈作新城，城周比旧长安小得多。南门外还能看见旧坊墙的土垄，麦子种到了垄脚。",
+   "interactions": [
+    {
+     "id": "xa_cheng_walk",
+     "type": "favour",
+     "label": "沿土垄走",
+     "text": "你出南门，顺着旧坊墙的土垄往东走。犁过的地里翻出半块莲花纹砖，农人随手扔到田埂上。",
+     "cost": 5,
+     "once_per": "year",
+     "effects": {
+      "scholar_tendency": 1,
+      "note": "京兆南门外踏过旧坊土垄。"
+     }
+    },
+    {
+     "id": "xa_cheng_toll",
+     "type": "choice",
+     "label": "门税",
+     "text": "城门吏拿秤称你驮子上的货，说南来的茶要另抽一分。身后排着一串驴驮，赶脚的已经在骂。",
+     "options": [
+      {
+       "id": "xa_cheng_toll_pay",
+       "label": "照抽",
+       "text": "你数了钱递过去。门吏在木牌上划一道，挥手放驴驮进城。",
+       "cost": 12,
+       "effects": {
+        "merchant_credit": 1
+       }
+      },
+      {
+       "id": "xa_cheng_toll_argue",
+       "label": "讨公凭",
+       "text": "你掏出过关的公凭，指着上面已抽过的印。门吏看了半晌，只收了半数。",
+       "cost": 0,
+       "effects": {
+        "network": -1,
+        "merchant_credit": 1
+       }
+      }
+     ]
+    },
+    {
+     "id": "xa_cheng_rumor",
+     "type": "rumor",
+     "label": "听驼队",
+     "text": "西来的驼队在城门下歇脚，领队说秦凤一路驿马全被征去运军粮，泉州的药材今年北上得少，那边存货怕要压价。",
+     "cost": 10,
+     "cooldown_days": 40,
+     "port": "quanzhou",
+     "good": "aromatic_medicine",
+     "mul": 0.9
+    }
+   ]
+  },
+  {
+   "id": "xa_beilin",
+   "port": "jingzhao",
+   "pending_port": true,
+   "name": "府学石经",
+   "kind": "academy",
+   "pending_art": true,
+   "bg": "bg_dist_xa_beilin.jpg",
+   "description": "府学北墙下排着唐开成年间刻的石经，北宋时从城外搬进来，一石挨一石立在廊里。金末兵乱，廊顶塌过一回，几块石面裂了缝。",
+   "interactions": [
+    {
+     "id": "xa_beilin_read",
+     "type": "favour",
+     "label": "廊下读经",
+     "text": "学正领你进廊。石面上的经文一行行刻得极匀，你从《论语》找到《孝经》，太阳已斜到廊外。",
+     "cost": 8,
+     "once_per": "month",
+     "effects": {
+      "scholar_tendency": 2
+     }
+    },
+    {
+     "id": "xa_beilin_rub",
+     "type": "choice",
+     "label": "求拓本",
+     "text": "拓工说这几块裂石不好上纸，要多垫一层毡，工钱翻倍。",
+     "options": [
+      {
+       "id": "xa_beilin_rub_buy",
+       "label": "照价拓",
+       "text": "拓工把湿纸贴上石面，用棕刷压平，墨包一下下拍。揭下来的纸上，裂缝成了一道白线。",
+       "cost": 30,
+       "effects": {
+        "scholar_tendency": 1,
+        "note": "得开成石经拓本一纸。"
+       }
+      },
+      {
+       "id": "xa_beilin_rub_skip",
+       "label": "只抄几行",
+       "text": "你借了学里的笔，在自带的纸上抄下《尔雅》几行。学正看了看你的字，没说什么。",
+       "cost": 0,
+       "effects": {
+        "scholar_tendency": 1
+       }
+      }
+     ]
+    },
+    {
+     "id": "xa_beilin_roof",
+     "type": "favour",
+     "label": "捐补廊瓦",
+     "text": "学正指着漏雨的那段廊顶，说缺瓦三百片，雨季前补不上，石经又要泡水。",
+     "cost": 25,
+     "once_per": "year",
+     "effects": {
+      "fame": 1,
+      "favour": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "xa_ciensi",
+   "port": "jingzhao",
+   "pending_port": true,
+   "name": "慈恩寺塔",
+   "kind": "temple",
+   "pending_art": true,
+   "bg": "bg_dist_xa_ciensi.jpg",
+   "description": "慈恩寺的殿宇大半烧在唐末，只剩砖塔立在城南高地上。塔下的僧房是后来补盖的，僧人不多，塔门白天开着。",
+   "interactions": [
+    {
+     "id": "xa_ciensi_climb",
+     "type": "favour",
+     "label": "登塔",
+     "text": "塔内木梯窄得只容一人。你攀到顶层，从券洞往外看，终南山压在南边，城里的屋顶矮成一片。",
+     "cost": 10,
+     "once_per": "month",
+     "effects": {
+      "fame": 1,
+      "scholar_tendency": 1
+     }
+    },
+    {
+     "id": "xa_ciensi_names",
+     "type": "favour",
+     "label": "看题名",
+     "text": "塔下砖壁上留着唐人进士题名，字被香火熏得发黑。老僧拿湿布替你擦出一行。",
+     "cost": 5,
+     "once_per": "year",
+     "effects": {
+      "scholar_tendency": 1,
+      "note": "慈恩寺塔下看过唐人题名。"
+     }
+    },
+    {
+     "id": "xa_ciensi_rumor",
+     "type": "rumor",
+     "label": "听游僧",
+     "text": "一个从五台来的游僧在塔下歇脚，说那边几座大寺都在抄补藏经，明州运去的经卷一到就被请走。",
+     "cost": 12,
+     "cooldown_days": 45,
+     "port": "mingzhou",
+     "good": "sutra_scrolls",
+     "mul": 1.12
+    }
+   ]
+  },
+  {
+   "id": "xa_jianfu",
+   "port": "jingzhao",
+   "pending_port": true,
+   "name": "荐福寺小塔",
+   "kind": "temple",
+   "pending_art": true,
+   "bg": "bg_dist_xa_jianfu.jpg",
+   "description": "荐福寺在城南，寺里的砖塔比慈恩寺塔瘦，檐层密，塔顶早年被地震震裂，一道缝从上往下走。",
+   "interactions": [
+    {
+     "id": "xa_jianfu_bell",
+     "type": "favour",
+     "label": "听晨钟",
+     "text": "寺里一口铁钟挂在塔东。天没亮，钟声先起，城南几条巷子的狗跟着叫起来。",
+     "cost": 5,
+     "once_per": "month",
+     "effects": {
+      "hometown_tendency": 1
+     }
+    },
+    {
+     "id": "xa_jianfu_crack",
+     "type": "choice",
+     "label": "问裂缝",
+     "text": "塔下的老僧说，这道缝前些年地动时又宽了一指。寺里想请匠人看看，又怕动一砖倒一层。",
+     "options": [
+      {
+       "id": "xa_jianfu_crack_pay",
+       "label": "出钱请匠",
+       "text": "你出钱请了城里的砖匠。匠人绕塔看了三天，只敢在缝口塞铁片灌灰浆。",
+       "cost": 40,
+       "effects": {
+        "fame": 1,
+        "favour": 1
+       }
+      },
+      {
+       "id": "xa_jianfu_crack_leave",
+       "label": "不动它",
+       "text": "你说这塔能自己站了几百年，比人可靠。老僧笑了笑，把扫帚靠回墙边。",
+       "cost": 0,
+       "effects": {
+        "network": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "xa_wangfu",
+   "port": "jingzhao",
+   "pending_port": true,
+   "name": "安西王府",
+   "kind": "office",
+   "pending_art": true,
+   "bg": "bg_dist_xa_wangfu.jpg",
+   "unlock": {
+    "year_min": 1273
+   },
+   "description": "忙哥剌受封安西王，在城东北的河岸上筑王府。夯土墙围出一座宫城，帐殿和瓦殿并排，蒙古宿卫在门外换岗。",
+   "interactions": [
+    {
+     "id": "xa_wangfu_supply",
+     "type": "choice",
+     "label": "供帐殿",
+     "text": "王府长史要采办一批毡帐用的茶和粗绢，问你能供多少，价按府里的旧例给。",
+     "once_per": "year",
+     "options": [
+      {
+       "id": "xa_wangfu_supply_supply",
+       "label": "接这单",
+       "text": "你应承供货。长史让书吏写了收单，盖上府印，说秋天按单结钱。",
+       "cost": 0,
+       "effects": {
+        "network": 2,
+        "pu_attention": 1
+       }
+      },
+      {
+       "id": "xa_wangfu_supply_decline",
+       "label": "推辞",
+       "text": "你说南货一时凑不齐，不敢误了府期。长史挥挥手，另叫了一个回回商人进来。",
+       "cost": 0,
+       "effects": {
+        "merchant_credit": 1
+       }
+      }
+     ]
+    },
+    {
+     "id": "xa_wangfu_wall",
+     "type": "favour",
+     "label": "看筑墙",
+     "text": "王府东墙还在夯。民夫一排排踩着夯杵，监工的蒙古百户骑马沿墙来回走。",
+     "cost": 0,
+     "once": true,
+     "effects": {
+      "martial": 1,
+      "note": "见过安西王府筑墙。"
+     }
+    },
+    {
+     "id": "xa_wangfu_rumor",
+     "type": "rumor",
+     "label": "听书吏",
+     "text": "王府书吏说，王府要在六盘山另起夏宫，木料和铁件都从京兆调，泉州运来的铁器要被收走一大批。",
+     "cost": 15,
+     "cooldown_days": 40,
+     "port": "quanzhou",
+     "good": "ironware",
+     "mul": 1.12
+    }
+   ]
+  },
+  {
+   "id": "xa_xishi",
+   "port": "jingzhao",
+   "pending_port": true,
+   "name": "西市旧地骡马市",
+   "kind": "market",
+   "pending_art": true,
+   "bg": "bg_dist_xa_xishi.jpg",
+   "description": "唐代西市的坊墙早没了，地名还在。如今这里是骡马市，秦陇来的马贩把马拴成一排，牙人捏着马嘴看牙口。",
+   "interactions": [
+    {
+     "id": "xa_xishi_fur",
+     "type": "buy",
+     "label": "收貂皮",
+     "text": "一个从河西下来的商胡解开皮包，貂皮一张张抖开，毛尖泛着青光。",
+     "good": "sable_fur",
+     "qty": 1,
+     "price_mul": 0.95,
+     "impact": false
+    },
+    {
+     "id": "xa_xishi_groom",
+     "type": "hire",
+     "label": "雇马夫",
+     "text": "马夫是凉州人，一路赶过祁连山下的驿道。他说牲口一咳嗽，他半夜就能听出来。",
+     "who": "马夫",
+     "cost": 50,
+     "wage": 7,
+     "attention_ease": 0,
+     "monthly_effects": {
+      "martial": 1
+     }
+    },
+    {
+     "id": "xa_xishi_horse",
+     "type": "choice",
+     "label": "验马",
+     "text": "牙人牵来一匹青骢，说是官马退下来的，蹄铁还新。你掰开马嘴，牙口比他说的老两岁。",
+     "options": [
+      {
+       "id": "xa_xishi_horse_press",
+       "label": "压价",
+       "text": "你把马嘴合上，报了个低价。牙人骂了一句，还是收了钱。",
+       "cost": 20,
+       "effects": {
+        "merchant_credit": 1
+       }
+      },
+      {
+       "id": "xa_xishi_horse_walk",
+       "label": "不要",
+       "text": "你拍拍马颈走开。牙人追了两步，又回去拴马。",
+       "cost": 0,
+       "effects": {
+        "network": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "xa_yaoshi",
+   "port": "jingzhao",
+   "pending_port": true,
+   "name": "府城药市",
+   "kind": "market",
+   "pending_art": true,
+   "bg": "bg_dist_xa_yaoshi.jpg",
+   "description": "药市在府城东街，摊上堆着秦岭采下的当归、党参，也有商胡从西边带来的硇砂和乳香。药行按斤论价，秤杆一律十六两。",
+   "interactions": [
+    {
+     "id": "xa_yaoshi_buy",
+     "type": "buy",
+     "label": "收当归",
+     "text": "药行把当归摊在竹匾上，头大身粗的才算上货。伙计称了一捆，用麻纸包好。",
+     "good": "aromatic_medicine",
+     "qty": 2,
+     "price_mul": 0.93,
+     "impact": false
+    },
+    {
+     "id": "xa_yaoshi_invest",
+     "type": "invest",
+     "label": "入股药行",
+     "text": "药行掌柜要在终南山脚收一片药圃，缺一笔本钱，问你肯不肯合伙。",
+     "shop": "药行",
+     "costs": [
+      280,
+      650
+     ],
+     "monthly": [
+      14,
+      34
+     ]
+    },
+    {
+     "id": "xa_yaoshi_rumor",
+     "type": "rumor",
+     "label": "听药客",
+     "text": "药客说今年秦岭春雪晚化，当归误了一季，广州药行要的货发不出去，那边药价得往上走。",
+     "cost": 12,
+     "cooldown_days": 40,
+     "port": "guangzhou",
+     "good": "aromatic_medicine",
+     "mul": 1.12
+    }
+   ]
+  },
+  {
+   "id": "xa_bahe",
+   "port": "jingzhao",
+   "pending_port": true,
+   "name": "灞河岸",
+   "kind": "ferry",
+   "pending_art": true,
+   "bg": "bg_dist_xa_bahe.jpg",
+   "description": "出城东行二十余里到灞河。河岸柳树成行，送行的人到这里停下，折一枝给远行的人。车马过河，要看河水深浅。",
+   "interactions": [
+    {
+     "id": "xa_bahe_willow",
+     "type": "favour",
+     "label": "折柳",
+     "text": "同行的一个书生要回洛阳，你在岸边折了一枝柳递给他。他把柳条插在驴鞍后头。",
+     "cost": 0,
+     "once_per": "year",
+     "effects": {
+      "network": 1,
+      "hometown_tendency": 1
+     }
+    },
+    {
+     "id": "xa_bahe_ford",
+     "type": "choice",
+     "label": "涉灞",
+     "text": "夏雨刚过，灞水涨到马腹。脚户说再等一天水就退，你的驮子却赶着进城。",
+     "unlock": {
+      "months": [
+       6,
+       7,
+       8
+      ]
+     },
+     "options": [
+      {
+       "id": "xa_bahe_ford_cross",
+       "label": "赶水过",
+       "text": "你让脚户牵着头驴先下水。货包湿了半截，好在人畜都过了。",
+       "cost": 15,
+       "effects": {
+        "sea_tendency": 1,
+        "merchant_credit": 1
+       }
+      },
+      {
+       "id": "xa_bahe_ford_wait",
+       "label": "等一天",
+       "text": "你在岸边的车店住了一夜。第二天水退到膝下，驮子一点没湿。",
+       "cost": 8,
+       "effects": {
+        "network": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "xa_qujiang",
+   "port": "jingzhao",
+   "pending_port": true,
+   "name": "曲江旧池",
+   "kind": "grove",
+   "pending_art": true,
+   "bg": "bg_dist_xa_qujiang.jpg",
+   "description": "唐时的曲江池早已干涸，池底开成了水田和菜畦。只有几道土岸还看得出池形，春天农人在岸上种桃。",
+   "interactions": [
+    {
+     "id": "xa_qujiang_peach",
+     "type": "favour",
+     "label": "看桃花",
+     "text": "三月里土岸上的桃花开了。一个老农坐在田埂上，指给你看哪里原是芙蓉园的门。",
+     "cost": 5,
+     "once_per": "year",
+     "unlock": {
+      "months": [
+       3
+      ]
+     },
+     "effects": {
+      "scholar_tendency": 1,
+      "fame": 1
+     }
+    },
+    {
+     "id": "xa_qujiang_field",
+     "type": "choice",
+     "label": "买池田",
+     "text": "老农的儿子要去从军，想把池底两亩水田典出去，价钱压得很低。",
+     "once": true,
+     "options": [
+      {
+       "id": "xa_qujiang_field_buy",
+       "label": "典下",
+       "text": "你写了典契，按了手印。老农把地界指给你看，一根木桩插在原来的池心。",
+       "cost": 40,
+       "effects": {
+        "hometown_tendency": 1,
+        "money": -10,
+        "note": "在曲江池底典下两亩田。"
+       }
+      },
+      {
+       "id": "xa_qujiang_field_refuse",
+       "label": "不典",
+       "text": "你说远行的人管不了田。老农点点头，又去问下一户。",
+       "cost": 0,
+       "effects": {
+        "merchant_credit": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "xa_louguan",
+   "port": "jingzhao",
+   "pending_port": true,
+   "name": "楼观",
+   "kind": "temple",
+   "pending_art": true,
+   "bg": "bg_dist_xa_louguan.jpg",
+   "description": "楼观在终南山北麓，相传老子在此授经。金末兵火烧了大半，全真道士从燕京下来重修，宫观一座座在废墟上立起来。",
+   "interactions": [
+    {
+     "id": "xa_louguan_stay",
+     "type": "favour",
+     "label": "借宿道院",
+     "text": "道士给你一间朝北的静室，晚饭只有粟粥和腌菜。夜里听见山上松涛，像潮水。",
+     "cost": 10,
+     "once_per": "month",
+     "effects": {
+      "scholar_tendency": 1,
+      "hometown_tendency": 1
+     }
+    },
+    {
+     "id": "xa_louguan_build",
+     "type": "choice",
+     "label": "助修殿",
+     "text": "知宫说说经台的殿顶还缺大梁，要从山里拖木头下来，问你肯不肯出几个脚力钱。",
+     "options": [
+      {
+       "id": "xa_louguan_build_give",
+       "label": "出钱",
+       "text": "你出了脚力钱。第二天一早，十几个山民扛着麻绳上了山。",
+       "cost": 35,
+       "effects": {
+        "fame": 1,
+        "favour": 1
+       }
+      },
+      {
+       "id": "xa_louguan_build_pass",
+       "label": "不出",
+       "text": "你说路上盘缠不宽裕。知宫也不勉强，留你喝了一碗山茶。",
+       "cost": 0,
+       "effects": {
+        "network": 1
+       }
+      }
+     ]
+    },
+    {
+     "id": "xa_louguan_rumor",
+     "type": "rumor",
+     "label": "听道士",
+     "text": "一个刚从燕京回来的道士说，大都新宫开工，各处征漆匠，温州的漆器作坊人手被调走一半，那边漆器要短。",
+     "cost": 12,
+     "cooldown_days": 45,
+     "port": "wenzhou",
+     "good": "lacquerware",
+     "mul": 1.12
+    }
+   ]
+  },
+  {
+   "id": "xa_weidu",
+   "port": "jingzhao",
+   "pending_port": true,
+   "name": "渭水渡",
+   "kind": "ferry",
+   "pending_art": true,
+   "bg": "bg_dist_xa_weidu.jpg",
+   "description": "渭水在城北三十里，水黄流急。渡口两岸都是车店，从凤翔、陇右下来的驮队在这里过河进京兆。",
+   "interactions": [
+    {
+     "id": "xa_weidu_boatman",
+     "type": "hire",
+     "label": "雇艄公",
+     "text": "艄公在渭水上撑了半辈子，哪段河底有沙洲他闭着眼都知道。",
+     "who": "艄公",
+     "cost": 45,
+     "wage": 6,
+     "attention_ease": 0,
+     "monthly_effects": {
+      "network": 1
+     }
+    },
+    {
+     "id": "xa_weidu_check",
+     "type": "choice",
+     "label": "过渡查验",
+     "text": "渡口的巡检要开你的货包看，说上头查私盐查得紧。",
+     "options": [
+      {
+       "id": "xa_weidu_check_open",
+       "label": "开包",
+       "text": "你解开货包让他翻。巡检翻了一阵，只抓出一把茶末，挥手放行。",
+       "cost": 0,
+       "effects": {
+        "merchant_credit": 1
+       }
+      },
+      {
+       "id": "xa_weidu_check_tip",
+       "label": "塞钱",
+       "text": "你往他袖里塞了一串钱。巡检看都没看货包，就让你上了船。",
+       "cost": 15,
+       "effects": {
+        "pu_attention": 1,
+        "network": 1
+       }
+      }
+     ]
+    },
+    {
+     "id": "xa_weidu_rumor",
+     "type": "rumor",
+     "label": "听脚户",
+     "text": "脚户说陇右今冬大雪，羊群冻死不少，皮货商都往南赶，兴化来收貂皮的人少了，那边皮价要跌。",
+     "cost": 10,
+     "cooldown_days": 40,
+     "port": "xinghua",
+     "good": "sable_fur",
+     "mul": 0.9
+    }
+   ]
+  },
+  {
+   "id": "xa_lishan",
+   "port": "jingzhao",
+   "pending_port": true,
+   "name": "骊山温汤",
+   "kind": "hill",
+   "pending_art": true,
+   "bg": "bg_dist_xa_lishan.jpg",
+   "description": "骊山脚下的温泉还冒着热气，唐宫的殿基埋在荒草里。泉边有座道观看守汤池，过往的人花几文钱就能泡一回。",
+   "interactions": [
+    {
+     "id": "xa_lishan_bath",
+     "type": "favour",
+     "label": "泡汤",
+     "text": "道童替你开了池边的木门。汤水带着一股硫气，泡了一刻，脚上走路磨出的泡都软了。",
+     "cost": 8,
+     "once_per": "month",
+     "effects": {
+      "hometown_tendency": 1,
+      "favour": 1
+     }
+    },
+    {
+     "id": "xa_lishan_ruins",
+     "type": "favour",
+     "label": "看殿基",
+     "text": "道士领你上坡，草里露出一排柱础，雕着莲瓣。他说春天雨大，有时还冲出碎琉璃瓦。",
+     "cost": 5,
+     "once_per": "year",
+     "effects": {
+      "scholar_tendency": 1,
+      "note": "骊山看过唐宫殿基。"
+     }
+    }
+   ]
+  }
+ ]
+}
