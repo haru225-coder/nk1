@@ -26,7 +26,7 @@
           "id": "jl_cheng_gate",
           "type": "choice",
           "label": "入城",
-          "text": "南门外的担子排到桥边，门吏挨个翻看货引。轮到你时，他问是进府城，还是沿江去沙市。",
+          "text": "南门外的担子排到桥边，门吏挨个翻看货引。轮到你时，门吏朝府城和江边各抬了抬下巴。",
           "options": [
             {
               "id": "jl_cheng_gate_city",
@@ -90,7 +90,7 @@
           "id": "jl_shashi_order",
           "type": "choice",
           "label": "评船",
-          "text": "两条米船同时靠岸，船户为了先卸争执起来。监镇的吏人让你评一句。",
+          "text": "两条米船同时靠岸，船户为了先卸争执起来。监镇的吏人朝两人各看了一眼，等你说句话。",
           "options": [
             {
               "id": "jl_shashi_order_heavy",
@@ -194,19 +194,19 @@
           "id": "jl_kaiyuan_stele",
           "type": "favour",
           "label": "看旧碑",
-          "text": "廊下立着几方旧碑，碑面被摸得发亮。道士说其中一方记着观宇迁徙的事。",
+          "text": "廊下立着几方旧碑，碑面被摸得发亮。道士说其中一方记着观宇重修的事。",
           "cost": 10,
           "once_per": "year",
           "effects": {
             "scholar_tendency": 1,
-            "note": "开元观看过迁观旧碑。"
+            "note": "开元观看过修观旧碑。"
           }
         },
         {
           "id": "jl_kaiyuan_repair",
           "type": "choice",
           "label": "修廊",
-          "text": "殿后的廊柱被雨水泡朽，道士捧着缘簿问你要不要添一份工料。",
+          "text": "殿后的廊柱被雨水泡朽，道士捧着缘簿站在廊下，说廊柱该换了。",
           "options": [
             {
               "id": "jl_kaiyuan_repair_give",
@@ -269,12 +269,12 @@
           "id": "jl_chengtian_tea",
           "type": "choice",
           "label": "吃茶",
-          "text": "知客僧留你吃茶，问你要听塔下旧事，还是去看后院新修的墙。",
+          "text": "知客僧留你吃茶，说起塔下旧事，又指了指后院新修的墙。",
           "options": [
             {
               "id": "jl_chengtian_tea_story",
               "label": "听旧事",
-              "text": "僧人说起黄庭坚写记那年，塔上的铃还换过一回。茶淡了，他又添了半盏。",
+              "text": "僧人说起黄庭坚写记的缘由，说那篇记文后来给他招了祸。茶淡了，他又添了半盏。",
               "cost": 0,
               "effects": {
                 "network": 1,
@@ -321,7 +321,7 @@
           "id": "jl_jinancheng_tile",
           "type": "choice",
           "label": "拾瓦",
-          "text": "一个放羊的孩子拾到半片绳纹瓦，问你要不要换几文钱。",
+          "text": "一个放羊的孩子拾到半片绳纹瓦，摊在手里给你看。",
           "options": [
             {
               "id": "jl_jinancheng_tile_buy",
@@ -360,7 +360,7 @@
           "id": "jl_mishi_invest",
           "type": "invest",
           "label": "入股米行",
-          "text": "米行的掌柜要添两间仓廒，问你肯不肯入本。",
+          "text": "米行的掌柜要添两间仓廒，正缺一笔本钱。",
           "shop": "沙市米行",
           "costs": [
             260,
@@ -375,7 +375,7 @@
           "id": "jl_mishi_measure",
           "type": "choice",
           "label": "看斛",
-          "text": "船户和米行争执斗斛的深浅，牙人把刮板递给你，让你说一句。",
+          "text": "船户和米行争执斗斛的深浅，牙人把刮板递给你，等你开口。",
           "options": [
             {
               "id": "jl_mishi_measure_dry",
@@ -403,7 +403,7 @@
           "id": "jl_mishi_rumor",
           "type": "rumor",
           "label": "听米行",
-          "text": "米行牙人说，荆湖米纲在鄂州候总领所调拨，庆元府的米行到货迟了。",
+          "text": "米行牙人说，庆元府今春海舶到得少，米行存货薄，那边的米价已经抬了。",
           "cost": 10,
           "cooldown_days": 30,
           "port": "mingzhou",
@@ -553,7 +553,7 @@
           "id": "jl_anfu_report",
           "type": "choice",
           "label": "报事",
-          "text": "一个从岳州回来的探子站在阶下，军吏问他先报军情，还是先交粮簿。",
+          "text": "一个从岳州回来的探子站在阶下，军吏让他把军情和粮簿一并呈上，先办哪一件，众人都看着。",
           "options": [
             {
               "id": "jl_anfu_report_war",
@@ -707,7 +707,7 @@
           "id": "jl_jinti_repair",
           "type": "choice",
           "label": "补堤",
-          "text": "堤脚被水冲出一个小口，里正招呼人搬土。他问你是出钱，还是搭手。",
+          "text": "堤脚被水冲出一个小口，里正招呼人搬土，回头看了你一眼。",
           "options": [
             {
               "id": "jl_jinti_repair_money",

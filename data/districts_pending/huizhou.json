@@ -70,7 +70,7 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_hz_fabu.jpg",
-      "description": "新安江在城南转了一个弯，筏埠就设在浅滩边。茶包、木料和纸捆从岸上抬下来，扎成筏子顺水往东，船夫先看水势再解缆。",
+      "description": "新安江在城南转了一个弯，筏埠就设在浅滩边。茶包、木料和纸捆从岸上抬下来，扎成筏子顺水往东，筏工先看水势再解缆。",
       "interactions": [
         {
           "id": "hz_fabu_raftsman",
@@ -89,7 +89,7 @@
           "id": "hz_fabu_wait",
           "type": "choice",
           "label": "候排",
-          "text": "上游放下来一列木排，埠头挤满了等下水的人。筏工问你要不要先把茶包并到他的排上。",
+          "text": "上游放下来一列木排，埠头挤满了等下水的人。筏工指着自己的排，说茶包并上去能赶在涨水前走。",
           "options": [
             {
               "id": "hz_fabu_wait_join",
@@ -134,7 +134,7 @@
       "kind": "workshop",
       "pending_art": true,
       "bg": "bg_dist_hz_longwei.jpg",
-      "description": "龙尾山在婺源西南，砚坑沿溪排开，坑口只容一人侧身进去。石工从水里凿出砚石，石面带着罗纹，得顺纹路下刀。",
+      "description": "龙尾山在婺源县境，砚坑沿溪排开，坑口只容一人侧身进去。石工从水里凿出砚石，石面带着罗纹，得顺纹路下刀。",
       "interactions": [
         {
           "id": "hz_longwei_pit",
@@ -215,7 +215,7 @@
           "id": "hz_mofang_choose",
           "type": "choice",
           "label": "选墨",
-          "text": "柜上摆着两样墨，一样是贡墨，一样是寻常条墨。墨工问你要哪一种。",
+          "text": "柜上摆着两样墨，一样是贡墨，一样是寻常条墨。墨工把两样都往前挪了挪。",
           "options": [
             {
               "id": "hz_mofang_choose_tribute",
@@ -260,7 +260,7 @@
       "kind": "workshop",
       "pending_art": true,
       "bg": "bg_dist_hz_zhifang.jpg",
-      "description": "纸坊靠溪，水碓从早响到晚。槽户把树皮煮烂、捣成浆，再用竹帘一张张抄起，纸膜贴在焙墙上烘干。",
+      "description": "纸坊靠溪，水碓从早响到晚。纸工把树皮煮烂、捣成浆，再用竹帘一张张抄起，纸膜贴在焙墙上烘干。",
       "interactions": [
         {
           "id": "hz_zhifang_look",
@@ -278,12 +278,12 @@
           "id": "hz_zhifang_try",
           "type": "choice",
           "label": "试纸",
-          "text": "槽户取出一张长幅纸，说是照着澄心堂旧样做的。他问你要不要试一笔。",
+          "text": "纸工取出一张长幅纸，说是照着澄心堂旧样做的。他把纸铺在案上，让你先试一笔。",
           "options": [
             {
               "id": "hz_zhifang_try_buy",
               "label": "买两张",
-              "text": "你买了两张长纸。槽户把纸卷紧，外面又裹了一层油纸。",
+              "text": "你买了两张长纸。纸工把纸卷紧，外面又裹了一层油纸。",
               "cost": 25,
               "effects": {
                 "scholar_tendency": 2
@@ -305,7 +305,7 @@
           "id": "hz_zhifang_wall",
           "type": "favour",
           "label": "帮焙纸",
-          "text": "焙墙烧得发烫，纸膜一张张贴上去。槽户叫你看着火口，别让风把纸边掀起来。",
+          "text": "焙墙烧得发烫，纸膜一张张贴上去。纸工叫你看着火口，别让风把纸边掀起来。",
           "cost": 0,
           "once_per": "month",
           "effects": {
@@ -323,13 +323,13 @@
       "kind": "workshop",
       "pending_art": true,
       "bg": "bg_dist_hz_chabei.jpg",
-      "description": "茶焙在城外山脚，焙灶一排，竹席上摊着新采的叶芽。山户把茶送来，焙工看火候翻焙，茶香顺着风飘到路口。",
+      "description": "茶焙在城外山脚，焙灶一排，竹席上摊着新采的叶芽。园户把茶送来，焙工看火候翻焙，茶香顺着风飘到路口。",
       "interactions": [
         {
           "id": "hz_chabei_invest",
           "type": "invest",
           "label": "入股茶焙",
-          "text": "茶焙的焙主想添两座灶，问你肯不肯入一股。秋茶下来，按月分账。",
+          "text": "茶焙的焙主想添两座灶，眼下本钱不够。秋茶下来，按月分账。",
           "shop": "茶焙",
           "costs": [
             240,
@@ -355,8 +355,8 @@
         {
           "id": "hz_chabei_taste",
           "type": "choice",
-          "label": "分茶",
-          "text": "焙主从不同的焙笼里各抓一撮，冲了两碗。他问你要哪一笼的茶。",
+          "label": "试茶",
+          "text": "焙主从不同的焙笼里各抓一撮，冲了两碗，搁在你手边。",
           "options": [
             {
               "id": "hz_chabei_taste_new",
@@ -408,7 +408,7 @@
           "id": "hz_ziyang_copy",
           "type": "choice",
           "label": "借书",
-          "text": "书楼里有一部残本，山长只许在廊下看。他问你要不要抄一页带走。",
+          "text": "书楼里有一部残本，山长只许在廊下看。他把纸笔放在案上，说抄一页可以，带出去不行。",
           "options": [
             {
               "id": "hz_ziyang_copy_page",
@@ -460,7 +460,7 @@
           "id": "hz_huangshan_climb",
           "type": "choice",
           "label": "上山",
-          "text": "上山的路分作两条，一条去汤泉，一条往峰下。挑担的人问你要走哪一条。",
+          "text": "上山的路分作两条，一条去汤泉，一条往峰下。挑担的人朝两边指了指。",
           "options": [
             {
               "id": "hz_huangshan_climb_spring",
@@ -533,8 +533,8 @@
         {
           "id": "hz_yuliang_sluice",
           "type": "favour",
-          "label": "看放闸",
-          "text": "坝上水满，闸工抽起木闸，水从缺口冲下去。候在下游的筏子一条接一条放行。",
+          "label": "看泄水",
+          "text": "坝上水满，水从泄水口冲下去。管坝的人盯着水势，候在下游的筏子一条接一条放行。",
           "cost": 0,
           "once_per": "month",
           "effects": {
@@ -637,7 +637,7 @@
           "id": "hz_ruoling_rest",
           "type": "choice",
           "label": "歇脚",
-          "text": "铺舍前摆着几张矮凳，挑担的人放下担子，问你要不要一同喝碗茶。",
+          "text": "铺舍前摆着几张矮凳，挑担的人放下担子，往旁边挪了挪，招呼你一同喝碗茶。",
           "options": [
             {
               "id": "hz_ruoling_rest_tea",
@@ -704,7 +704,7 @@
           "id": "hz_chengmen_notice",
           "type": "choice",
           "label": "看榜",
-          "text": "城门外新贴了一张榜文，墨迹还没干透。看榜的人挤在墙下，没人高声说话。",
+          "text": "城门外新贴了一张榜文，墨迹还没干透，写的是州县归附的事。看榜的人挤在墙下，没人高声说话。",
           "once": true,
           "unlock": {
             "year_min": 1276,

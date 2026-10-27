@@ -121,7 +121,7 @@
           "id": "tl_docot_ask",
           "type": "choice",
           "label": "问僧",
-          "text": "知客僧在廊下晒经，见你望着池心，问你是来问路，还是来问事。",
+          "text": "知客僧在廊下晒经，见你望着池心，把经卷往旁边挪了挪。",
           "options": [
             {
               "id": "tl_docot_ask_road",
@@ -172,7 +172,7 @@
           "id": "tl_vanmieu_copy",
           "type": "choice",
           "label": "监书",
-          "text": "监里的书不许带出，只许在廊下抄。你想抄一卷，还是只翻几页。",
+          "text": "监里的书不许带出，只许在廊下抄。案上压着纸，墨也现成。",
           "once_per": "month",
           "options": [
             {
@@ -224,7 +224,7 @@
           "id": "tl_dahu_walk",
           "type": "choice",
           "label": "湖堤",
-          "text": "暮色落下来，堤上的柳影浸在水里。守堤人问你是沿堤走，还是雇船过湖。",
+          "text": "暮色落下来，堤上的柳影浸在水里。守堤人把缆绳解开，指了指堤尽头，又指了指船。",
           "options": [
             {
               "id": "tl_dahu_walk_shore",
@@ -401,7 +401,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_tl_kaiguo.jpg",
-      "description": "开国寺在城西水边，寺基很老，相传梁时已有香火。山门临水，僧人在廊下抄经，岸边的船系在木桩上。",
+      "description": "开国寺在城西水边，寺基很老，寺僧说梁时已有香火。山门临水，僧人在廊下抄经，岸边的船系在木桩上。",
       "interactions": [
         {
           "id": "tl_kaiguo_lecture",
@@ -490,7 +490,7 @@
               12
             ]
           },
-          "text": "北边传来马队的消息，城门今日只开半扇。守门军问你，是把货留在城里，还是趁夜装船。",
+          "text": "北边传来马队的消息，城门今日只开半扇。守门军把货签翻过来，等你拿主意。",
           "options": [
             {
               "id": "tl_bacmon_stay_boat",
@@ -612,7 +612,7 @@
       "id": "tl_taixue",
       "port": "thanglong",
       "pending_port": true,
-      "name": "太学斋舍",
+      "name": "国学院斋舍",
       "kind": "academy",
       "pending_art": true,
       "bg": "bg_dist_tl_taixue.jpg",
@@ -635,7 +635,7 @@
           "type": "choice",
           "label": "问课",
           "once_per": "month",
-          "text": "斋长收课业，案上压着一叠程文。他问你今日是呈卷，还是只讨一篇回去看。",
+          "text": "斋长收课业，案上压着一叠程文。他把空卷纸推到你面前。",
           "options": [
             {
               "id": "tl_taixue_lesson_submit",
