@@ -1,0 +1,797 @@
+{
+  "districts": [
+    {
+      "id": "jzh_cheng",
+      "port": "jiangzhou",
+      "pending_port": true,
+      "name": "江州城与浔阳江码头",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_jzh_cheng.jpg",
+      "description": "江州城压在浔阳江南岸，城墙从江边折向内陆。码头的石阶被江水磨得发亮，漕船、盐船和茶船挨着泊，桅杆把江面切成一条条。",
+      "interactions": [
+        {
+          "id": "jzh_cheng_watch",
+          "type": "favour",
+          "label": "看江",
+          "text": "你站在码头上游的一段石堤，看江心的船队。船夫说，湖口起风时，这里的水会倒灌。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "sea_tendency": 1
+          }
+        },
+        {
+          "id": "jzh_cheng_berth",
+          "type": "choice",
+          "label": "让泊位",
+          "text": "一条粮船进港，泊位只剩你船边的一线。船主隔着水问，能不能并一排。",
+          "options": [
+            {
+              "id": "jzh_cheng_berth_yes",
+              "label": "并排",
+              "text": "你让船夫把缆绳抛过去。两条船靠稳，粮船上的脚夫先卸了半舱。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "jzh_cheng_berth_no",
+              "label": "不并",
+              "text": "你让船夫把缆绳收紧。粮船在江心又转了一圈，才去下游寻泊。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "jzh_cheng_rumor",
+          "type": "rumor",
+          "label": "听纲吏",
+          "text": "纲吏在码头边翻粮簿，说江防截了上江的粮纲，泉州的米行只按旧数卖。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "quanzhou",
+          "good": "grain",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "jzh_pipa",
+      "port": "jiangzhou",
+      "pending_port": true,
+      "name": "琵琶亭",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_jzh_pipa.jpg",
+      "description": "琵琶亭在城西湓浦口，亭子临着江。白居易送客的旧事刻在亭额上，柱间留着历代题诗，墨色有深有浅。",
+      "interactions": [
+        {
+          "id": "jzh_pipa_read",
+          "type": "favour",
+          "label": "读旧题",
+          "text": "你逐行读柱上的题诗。有一首只落了干支，字迹被江风吹得发白。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "琵琶亭读过柱间旧题。"
+          }
+        },
+        {
+          "id": "jzh_pipa_write",
+          "type": "choice",
+          "label": "题壁",
+          "text": "亭角还有一方空壁，守亭的老人把笔递过来，问你要不要落款。",
+          "options": [
+            {
+              "id": "jzh_pipa_write_yes",
+              "label": "题一行",
+              "text": "你写了两句，没落姓名。老人把笔收回，等墨干了才用布盖上。",
+              "cost": 10,
+              "effects": {
+                "fame": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "jzh_pipa_write_no",
+              "label": "不题",
+              "text": "你把笔还给老人，站在壁前看别人的字。江上有船过，亭角的风铃响了一阵。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jzh_bailudong",
+      "port": "jiangzhou",
+      "pending_port": true,
+      "name": "庐山白鹿洞书院",
+      "kind": "academy",
+      "pending_art": true,
+      "bg": "bg_dist_jzh_bailudong.jpg",
+      "description": "白鹿洞在五老峰下，溪水从书院门前绕过。朱熹知南康军时重开讲席，订下学规，斋舍的灯到夜里还亮着。",
+      "interactions": [
+        {
+          "id": "jzh_bailudong_lecture",
+          "type": "favour",
+          "label": "听讲",
+          "text": "讲堂里正讲《大学》，廊下挤着旁听的士子。你站在最后，听了一句便没有再走。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "jzh_bailudong_copy",
+          "type": "choice",
+          "label": "抄学规",
+          "text": "斋长把《白鹿洞书院揭示》摊在案上，问你是抄一份带走，还是留在斋里。",
+          "options": [
+            {
+              "id": "jzh_bailudong_copy_take",
+              "label": "抄走",
+              "text": "你伏案抄了半日，墨迹未干就卷起。斋长在学规末尾添了你的姓名。",
+              "cost": 12,
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "抄得白鹿洞学规一份。"
+              }
+            },
+            {
+              "id": "jzh_bailudong_copy_leave",
+              "label": "留在斋里",
+              "text": "你把纸推回案上，只读了其中几条。斋长点头，把揭示收进木匣。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "jzh_bailudong_oil",
+          "type": "favour",
+          "label": "送灯油",
+          "text": "书院的灯油见底，你从船上搬了两罐上去。斋长把空罐换下来，说夜里能多点一个时辰。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "fame": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "jzh_donglin",
+      "port": "jiangzhou",
+      "pending_port": true,
+      "name": "东林寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_jzh_donglin.jpg",
+      "description": "东林寺在庐山北麓，慧远的旧居。宋时这里已是禅寺，殿宇依山势起，寺前的虎溪水声很轻。",
+      "interactions": [
+        {
+          "id": "jzh_donglin_incense",
+          "type": "favour",
+          "label": "上香",
+          "text": "你在殿前点了一炉香。知客僧敲了一下磬，声音在廊下绕了很久。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "jzh_donglin_stay",
+          "type": "choice",
+          "label": "过虎溪",
+          "text": "天色向晚，知客僧问你是在寺里住一夜，还是趁亮过溪回船。",
+          "options": [
+            {
+              "id": "jzh_donglin_stay_yes",
+              "label": "住下",
+              "text": "你宿在客堂西间。夜里山雨打在瓦上，溪水比白天响。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "jzh_donglin_stay_no",
+              "label": "回船",
+              "text": "你谢过知客，踏着溪石回船。船夫把灯挑亮，等你坐稳才解缆。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jzh_xilin",
+      "port": "jiangzhou",
+      "pending_port": true,
+      "name": "西林寺塔",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_jzh_xilin.jpg",
+      "description": "西林寺与东林寺隔溪相望，寺后有一座砖塔。元丰七年苏轼过此，在壁上题了看山的诗，后来的人又题了许多。",
+      "interactions": [
+        {
+          "id": "jzh_xilin_tower",
+          "type": "favour",
+          "label": "登塔",
+          "text": "你沿塔内的木梯上到顶层。庐山的云从窗洞外漫过来，东林寺的屋顶只露出一点。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "jzh_xilin_wall",
+          "type": "favour",
+          "label": "读壁",
+          "text": "壁上的诗层层叠叠，最早的一行已经模糊。你凑近看了半晌，只认出一个苏字。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "西林寺读过壁间旧题。"
+          }
+        },
+        {
+          "id": "jzh_xilin_write",
+          "type": "choice",
+          "label": "题名",
+          "text": "寺僧把笔递来，说壁角还有空处。你看着那面墙，没有立刻接。",
+          "options": [
+            {
+              "id": "jzh_xilin_write_yes",
+              "label": "落笔",
+              "text": "你写了姓名和年月，字不大。寺僧等墨干了，才把笔收进匣里。",
+              "cost": 8,
+              "effects": {
+                "fame": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "jzh_xilin_write_no",
+              "label": "不写",
+              "text": "你把笔推回去，说字已经够多。寺僧笑了一下，把笔收回袖中。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jzh_jianji",
+      "port": "jiangzhou",
+      "pending_port": true,
+      "name": "简寂观",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_jzh_jianji.jpg",
+      "description": "简寂观在金鸡峰下，刘宋道士陆修静曾居于此，观名取自他的谥号。宋时殿宇几经修葺，丹井还在。",
+      "interactions": [
+        {
+          "id": "jzh_jianji_well",
+          "type": "favour",
+          "label": "汲丹井",
+          "text": "你摇着辘轳打上一桶水。井水很凉，道士说这口井从陆修静时就有了。",
+          "cost": 5,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "jzh_jianji_copy",
+          "type": "choice",
+          "label": "抄道经",
+          "text": "观里的道士取出一卷《道德经》，问你要不要抄一段带走。",
+          "options": [
+            {
+              "id": "jzh_jianji_copy_yes",
+              "label": "抄一段",
+              "text": "你在窗下抄了五千言里的一节。道士替你校了两个字，才让收卷。",
+              "cost": 15,
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "简寂观抄过道经。"
+              }
+            },
+            {
+              "id": "jzh_jianji_copy_no",
+              "label": "只看",
+              "text": "你把经卷翻了几页，放回案上。道士也不劝，只把香炉添了一撮灰。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jzh_kaixian",
+      "port": "jiangzhou",
+      "pending_port": true,
+      "name": "庐山瀑布与开先寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_jzh_kaixian.jpg",
+      "description": "开先寺在庐山南麓，寺后瀑布从崖口落下。僧人在瀑边支了茶灶，水声大时，说话要凑近才听得清。",
+      "interactions": [
+        {
+          "id": "jzh_kaixian_fall",
+          "type": "favour",
+          "label": "观瀑",
+          "text": "你站在崖下的石台上，水雾很快打湿了衣袖。僧人递来一块干布，说午后水势还会更大。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "jzh_kaixian_tea",
+          "type": "favour",
+          "label": "瀑下饮茶",
+          "text": "僧人在瀑边煮了一壶茶，茶汤略浑，回甘却长。他说水是从崖上接的。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "jzh_kaixian_poem",
+          "type": "choice",
+          "label": "题瀑",
+          "text": "石壁上已有前人题字，寺僧问你要不要也留一行。",
+          "options": [
+            {
+              "id": "jzh_kaixian_poem_write",
+              "label": "题一行",
+              "text": "你写了瀑布与江，没写自己的名字。僧人看了，说字比水声还轻。",
+              "cost": 10,
+              "effects": {
+                "fame": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "jzh_kaixian_poem_pass",
+              "label": "不题",
+              "text": "你把笔还给僧人，只看水从崖口落下。站久了，衣角全湿。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jzh_hukou",
+      "port": "jiangzhou",
+      "pending_port": true,
+      "name": "湖口与石钟山",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_jzh_hukou.jpg",
+      "description": "湖口县当鄱阳湖入江处，石钟山临水而起。苏轼送子赴任，夜泊山下，听水击石穴，后来写了《石钟山记》。",
+      "interactions": [
+        {
+          "id": "jzh_hukou_listen",
+          "type": "favour",
+          "label": "听水石",
+          "text": "你贴着崖壁听了一阵。水在石缝里进出，声音忽远忽近，分不清是钟还是浪。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "石钟山下听过水石。"
+          }
+        },
+        {
+          "id": "jzh_hukou_night",
+          "type": "choice",
+          "label": "夜泊",
+          "text": "天黑后，船夫问是泊在山下，还是趁风顺流下江。",
+          "options": [
+            {
+              "id": "jzh_hukou_night_stay",
+              "label": "泊山下",
+              "text": "船泊在石钟山下。夜里水声更响，船身跟着轻轻晃。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "jzh_hukou_night_go",
+              "label": "顺流下",
+              "text": "你让船夫解缆。船过湖口，江面忽然宽出一截，岸上的山影很快落在后面。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1,
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "jzh_hukou_rumor",
+          "type": "rumor",
+          "label": "听茶客",
+          "text": "茶棚里的人说，江州茶场的新茶被湖口的风拦在港里，明州茶行的存货只够卖到月底。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "mingzhou",
+          "good": "tea",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "jzh_dukou",
+      "port": "jiangzhou",
+      "pending_port": true,
+      "name": "鄱阳湖口候风与浔阳江渡",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_jzh_dukou.jpg",
+      "description": "鄱阳湖口水面宽，南风起时浪高。渡船在矶下候风，浔阳江上的客船也在这里等潮。",
+      "interactions": [
+        {
+          "id": "jzh_dukou_wind",
+          "type": "favour",
+          "label": "候风",
+          "text": "你坐在渡口的石阶上等风。船夫把帆索理了三遍，说今日的南风来得晚。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "sea_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "jzh_dukou_cross",
+          "type": "choice",
+          "label": "搭渡",
+          "text": "渡船要开，船夫问你是现在过江，还是等下一趟。",
+          "options": [
+            {
+              "id": "jzh_dukou_cross_now",
+              "label": "现在过",
+              "text": "你上了船。船到江心，风从侧面压过来，船夫把舵扳得很紧。",
+              "cost": 8,
+              "effects": {
+                "network": 1,
+                "sea_tendency": 1
+              }
+            },
+            {
+              "id": "jzh_dukou_cross_wait",
+              "label": "等一趟",
+              "text": "你退回石阶，看渡船摇进江心。风势稍缓，船夫才回来接第二趟。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "jzh_dukou_ask",
+          "type": "favour",
+          "label": "问风信",
+          "text": "你问矶上的老船夫，这几日湖口的风什么时候起。他指了指水面上的白线，说看见那条线就该收帆。",
+          "cost": 5,
+          "once_per": "month",
+          "effects": {
+            "sea_tendency": 1,
+            "note": "问过湖口的风信。"
+          }
+        }
+      ]
+    },
+    {
+      "id": "jzh_jiuwu",
+      "port": "jiangzhou",
+      "pending_port": true,
+      "name": "江州酒务与茶场",
+      "kind": "warehouse",
+      "pending_art": true,
+      "bg": "bg_dist_jzh_jiuwu.jpg",
+      "description": "酒务在城内，务册按日登记出库的酒。茶场临江，新焙的茶装篓，等江船北运。",
+      "interactions": [
+        {
+          "id": "jzh_jiuwu_invest",
+          "type": "invest",
+          "label": "入股酒务",
+          "text": "酒务要修一处漏雨的窖，监官把账摊开，问你肯不肯添本钱。",
+          "shop": "江州酒务",
+          "costs": [
+            280,
+            680
+          ],
+          "monthly": [
+            15,
+            36
+          ]
+        },
+        {
+          "id": "jzh_jiuwu_tea",
+          "type": "buy",
+          "label": "买新茶",
+          "text": "茶场刚开秤，茶包还带着焙火的暖气。你拆开一包，叶片完整，香气不散。",
+          "good": "tea",
+          "qty": 1,
+          "price_mul": 0.95,
+          "impact": false
+        },
+        {
+          "id": "jzh_jiuwu_wine",
+          "type": "favour",
+          "label": "打官酒",
+          "text": "你递上酒牌，库吏从大瓮里舀出一提，倒进陶壶。壶口用荷叶扎紧，又压了一块木牌。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "jzh_dehua",
+      "port": "jiangzhou",
+      "pending_port": true,
+      "name": "德化县",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_jzh_dehua.jpg",
+      "description": "德化县倚郭，县廨与州衙隔一条街。县前多是税户和脚店，衙吏按簿点验商货。",
+      "interactions": [
+        {
+          "id": "jzh_dehua_tax",
+          "type": "choice",
+          "label": "报税",
+          "text": "县前的税棚排着两队，吏人翻着簿子，问你这批货报在哪一色下。",
+          "options": [
+            {
+              "id": "jzh_dehua_tax_full",
+              "label": "照实报",
+              "text": "你把货单递上去。吏人核了数目，在簿上盖了印，又退回你一张税引。",
+              "cost": 10,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "jzh_dehua_tax_less",
+              "label": "少报两包",
+              "text": "你只报了整包，零头留在舱里。吏人看了你一眼，没翻舱，却在簿角画了一道。",
+              "cost": 0,
+              "effects": {
+                "money": 3,
+                "pu_attention": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "jzh_dehua_rumor",
+          "type": "rumor",
+          "label": "听县吏",
+          "text": "县吏在廊下说，德化县查私盐查得紧，兴化盐船的引被扣在仓里，盐行存货见底。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "xinghua",
+          "good": "sea_salt",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "jzh_qian",
+      "port": "jiangzhou",
+      "pending_port": true,
+      "name": "州衙前",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_jzh_qian.jpg",
+      "unlock": {
+        "year_min": 1275,
+        "year_max": 1275,
+        "months": [
+          1
+        ]
+      },
+      "description": "乙亥正月，江州城门未闭，州衙前换了旗。知州钱真孙出降，元使入城，市井闭户，江上船不开。",
+      "interactions": [
+        {
+          "id": "jzh_qian_watch",
+          "type": "favour",
+          "label": "看换旗",
+          "text": "你站在州衙对面的檐下，看旧旗落下。新旗的绳子卡了一次，几个军吏上去才扯开。",
+          "cost": 0,
+          "once": true,
+          "effects": {
+            "merchant_credit": 1,
+            "note": "江州换了旗。"
+          }
+        },
+        {
+          "id": "jzh_qian_choice",
+          "type": "choice",
+          "label": "闭户",
+          "text": "街边的铺子陆续上门板。你船上的货还在舱里，伙计问要不要也收篷。",
+          "once": true,
+          "options": [
+            {
+              "id": "jzh_qian_choice_shut",
+              "label": "收篷闭舱",
+              "text": "你让伙计把篷布扎紧，人留在船上看货。岸上的锣声一直响到午后。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 2
+              }
+            },
+            {
+              "id": "jzh_qian_choice_open",
+              "label": "照常开舱",
+              "text": "你没收篷，只把贵重的箱子挪进内舱。午后有元军吏来问货，你照单报了。",
+              "cost": 0,
+              "effects": {
+                "network": 2,
+                "pu_attention": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jzh_taoyuan",
+      "port": "jiangzhou",
+      "pending_port": true,
+      "name": "陶渊明栗里旧迹",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_jzh_taoyuan.jpg",
+      "description": "栗里在庐山南麓，旧传陶渊明故宅在此。田埂边有一块醉石，宋人过此多留题。",
+      "interactions": [
+        {
+          "id": "jzh_taoyuan_stone",
+          "type": "favour",
+          "label": "看醉石",
+          "text": "你蹲在田埂边看那块石头。石面被人坐得发亮，旁边插着一根竹签。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "栗里看过醉石。"
+          }
+        },
+        {
+          "id": "jzh_taoyuan_ask",
+          "type": "choice",
+          "label": "问旧宅",
+          "text": "田里有个老人直起腰，问你是来看石头的，还是来寻陶家的旧宅。",
+          "options": [
+            {
+              "id": "jzh_taoyuan_ask_guide",
+              "label": "请他带路",
+              "text": "老人领你走过两条田埂，指了一处低矮的屋基。他说这里从前有井，如今填了。",
+              "cost": 10,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1,
+                "note": "栗里寻过陶家旧宅。"
+              }
+            },
+            {
+              "id": "jzh_taoyuan_ask_leave",
+              "label": "只看石头",
+              "text": "你谢过老人，仍旧回田埂边看石头。日头偏西，庐山的影子压过来。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jzh_yulou",
+      "port": "jiangzhou",
+      "pending_port": true,
+      "name": "庾公楼",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_jzh_yulou.jpg",
+      "description": "庾公楼在州治后，旧传晋庾亮镇江州时所建。楼不高，登临可见大江。",
+      "interactions": [
+        {
+          "id": "jzh_yulou_climb",
+          "type": "favour",
+          "label": "登楼",
+          "text": "你沿木梯上到楼头。江风从窗棂间灌进来，桌上的茶很快就凉了。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "jzh_yulou_drink",
+          "type": "choice",
+          "label": "宴客",
+          "text": "楼上有几张旧案，可以摆酒。掌柜问你是请人，还是一个人坐。",
+          "options": [
+            {
+              "id": "jzh_yulou_drink_guest",
+              "label": "请一席",
+              "text": "你请了几个江上的船主。酒过两巡，有人提起湖口的风，席上忽然静了一瞬。",
+              "cost": 30,
+              "effects": {
+                "network": 2,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "jzh_yulou_drink_alone",
+              "label": "独坐",
+              "text": "你只要了一壶茶，坐到江面起雾。楼下的人声渐渐散了。",
+              "cost": 8,
+              "effects": {
+                "scholar_tendency": 1,
+                "sea_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
