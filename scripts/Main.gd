@@ -5511,5 +5511,4 @@ func _mount_districts() -> void:
 
 
 func _open_districts() -> void:
-	_COMBAT_NOTES.offer(self, "districts")
 	_DISTRICT_PAGE.open_index(self, current_scene_id)

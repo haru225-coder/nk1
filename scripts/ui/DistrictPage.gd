@@ -3,6 +3,7 @@ extends RefCounted
 ## 不改 current_scene_id，存档仍记港口。筹码在工席里，不挂在 choices_container 的直接子级上。
 
 const Book := preload("res://scripts/core/Districts.gd")
+const _NOTES := preload("res://scripts/ui/CombatNotes.gd")
 
 
 static func open_index(main, port_id: String) -> void:
@@ -10,6 +11,7 @@ static func open_index(main, port_id: String) -> void:
 	main.scene_title.text = "城中各处"
 	var pname := GameManager.get_port_name(port_id)
 	main.body_text.text = "%s城里不止码头这一处。坊巷、寺观、衙廊，各有各的事。" % pname
+	_NOTES.offer(main, "districts")
 	# 按类分组，长名单不挤成一排。
 	var rows := Book.districts_of(port_id)
 	var groups: Dictionary = {}
