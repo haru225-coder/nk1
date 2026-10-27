@@ -583,7 +583,7 @@
           "id": "gp_hanhaitang_rumor",
           "type": "rumor",
           "label": "听塘吏",
-          "text": "塘脚要打桩，泉州的铁钉被塘局买空，铁行挂出了新价。",
+          "text": "塘脚要打桩，泉州的铁器被塘吏买空，铁行挂出了新价。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "quanzhou",
@@ -693,7 +693,7 @@
           "id": "gp_shibosi_licence",
           "type": "licence",
           "label": "领元公凭",
-          "text": "司里发元公凭，纸背印着抽分则例。海舶有了这张，回帆时验货少等两日。",
+          "text": "司里发公凭，纸背印着抽分则例。海舶有了这张，回帆时验货少等两日。",
           "cost": 800,
           "licence": "lic_gp_yuan",
           "effects": {
