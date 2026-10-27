@@ -40,8 +40,8 @@
             },
             {
               "id": "pj_hequ_boat_wait",
-              "label": "叫他候潮",
-              "text": "你指了指潮信，叫他等水再退些。梢公把篙一横，索性在船头坐下。",
+              "label": "叫他稍候",
+              "text": "你指了指前头的桥洞，叫他等对面的粪船先过。梢公把篙一横，索性在船头坐下。",
               "cost": 0,
               "effects": {
                 "merchant_credit": 1
@@ -65,7 +65,7 @@
           "id": "pj_panmen_tide",
           "type": "favour",
           "label": "候水门",
-          "text": "水门要等潮平才开。你在门洞边站了两刻，把货引递上去，门吏点头放舟。",
+          "text": "水门按更点启闭。你在门洞边站了两刻，把货引递上去，门吏点头放舟。",
           "cost": 10,
           "once_per": "month",
           "effects": {
@@ -145,7 +145,7 @@
             {
               "id": "pj_fuxue_read_star",
               "label": "看天文图",
-              "text": "你在天文图碑前找北极与三垣。学正指着一处星官，说这是前年重刻的。",
+              "text": "你在天文图碑前找北极与三垣。学正指着一处星官，说这碑刻成于丁未年。",
               "cost": 0,
               "effects": {
                 "scholar_tendency": 2
@@ -367,7 +367,7 @@
       "kind": "manor",
       "pending_art": true,
       "bg": "bg_dist_pj_fanshi.jpg",
-      "description": "范氏义庄在城西，范仲淹置义田千亩，赡族中孤寡。庄门内是义仓与义学，庄正按簿发米，族中子弟在廊下读书。",
+      "description": "范氏义庄在城中，范仲淹置义田千亩，赡族中孤寡。庄门内是义仓与义学，庄正按簿发米，族中子弟在廊下读书。",
       "interactions": [
         {
           "id": "pj_fanshi_rice",
