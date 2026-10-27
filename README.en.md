@@ -19,19 +19,26 @@ It is 1255, the third year of Baoyou, at the harbor mouth of Xinghua. You play C
 
 ## The game
 
-- **Period and characters**: The story starts in 1255 and runs through the Song–Yuan transition and the Battle of Yamen (Yashan). `data/characters.json` holds 75 characters, 41 of them historical figures such as Wen Tianxiang, Zhang Shijie, Lu Xiufu, Pu Shougeng, Jia Sidao, Bayan, Kublai Khan and Hōjō Tokiyori. Notes checking dates against the sources live in `docs/`.
+- **Period and characters**: The story runs from 1255, the third year of Baoyou, to 1279, the second year of Xiangxing, and the Battle of Yamen. `data/characters.json` holds 75 characters, 41 of them historical figures such as Wen Tianxiang, Zhang Shijie, Lu Xiufu, Pu Shougeng, Jia Sidao, Bayan, Kublai Khan and Hōjō Tokiyori. Notes checking dates against the sources live in `docs/`.
+- **Historical scope**: The game runs from 1255 to 1279. China is confined to the Song, Jin and Yuan; Japan is in the Kamakura period, Tamna belongs to Goryeo, Champa is in its Hindu-Cham period, and the Ryukyu port is Gusuku-era. Mingzhou appears under its official name Qingyuan Prefecture, paper money is huizi and guanzi, and architecture, dress and ships avoid Ming–Qing forms. The Jin capital, burned in 1215, is a ruin under Mongol rule.
 - **Ports and sea chart**: 14 ports, from Xinghua, Quanzhou, Fuzhou, Wenzhou and Penghu to Mingzhou, Tamna, the Chinese quarter of Hakata, Guangzhou, Satsuma and Champa, opening up chapter by chapter. The chart is drawn from real coordinates and Natural Earth coastlines, distances follow the sea lanes, and the monsoon decides when you can sail.
+- **City districts**: Five ports — Quanzhou, Xinghua, Guangzhou, Wenzhou and the Chinese quarter of Hakata — have a City Districts entry on the port page. Inside are 71 places and 281 dealings: buying and selling, putting money into shops, hiring, sounding out the market, taking out passes and working the season, each with its own background.
 - **Economy**: 29 goods (rice, raw silk, qingbai porcelain, incense and medicines, Japanese copper, Japanese swords…) each have producing and consuming ports. Price gaps, market depth, flooding a market, contraband, maritime-customs levies, brokers' contracts and wartime prices all affect your profit. There are also 8 ship types, crew and supplies, harbor investment and five ranks of standing with the customs office.
+- **Seasons and broker credit**: Nine goods — rice, tea, raw silk, silk cloth, sea salt, sable fur, deer hide, Japanese fans and sutra scrolls — rise and fall with the month (rice is dearest in the fourth month and cheapest after the autumn harvest). Cargo can be sold to the local broker on credit at a locked price, settled two months later; default depends on mercantile credit and the war.
+- **Shipyard refits**: The yard holds one ship at a time. Sail, armor and caulking each have three grades and can be raised step by step. Sail adds daily speed, armor cuts hull damage, and caulking cuts storm and shoal damage as well as water damage to fragile cargo.
 - **Taverns and ports**: Taverns are where you hear rumors, hire crew and meet people. Ports also have the customs office, brokers' guild, shipyard, inn, merchant guild, academy, temples and more.
+- **Notes for new players**: In a fresh game, the first visit to a port, a broker, the sea chart, a pirate encounter, the customs office and the first completed voyage each bring a small note at the page edge. Six in all; once read, they do not return.
 - **Combat**: Real-time naval battles where you handle the ship yourself (wind, broadsides, ammunition, flooding and fire, boarding and hand-to-hand fighting, morale), plus shore raids, city sieges and defenses, and the Battle of Yamen. The design is in [docs/combat_realism_design.md](docs/combat_realism_design.md) (Chinese).
 - **Story**: Four main chapters (Harbor Mouth / Old Debts / Fleet Master / Southern Seas). 105 story scenes act as chapter gates, with free-form trading in between, and the endgame has four endings.
 - **Saves and cutscenes**: Three save slots (a damaged save falls back to its `.bak` copy). The opening, chapter transitions and endings have subtitled cinematic cutscenes.
+- **Art**: All 75 characters in the codex have portraits (74 paintings, one silhouette still to be painted), alongside 29 goods icons, 8 ship plates and 71 district backgrounds. The interface is in a silk-and-ink style.
 
 ## Current status
 
 - The four chapters, economy, sailing, naval combat, sieges and endings can all be played from start to finish. `tools/simulate_run.py` plays a full run automatically to catch dead ends.
-- The companion system only has a data skeleton so far (`data/companions.json`); its design is still being decided.
-- Development is driven by design documents and automated checks. The history starts in June 2026 and has over 1,600 commits.
+- City districts are open for five ports — Quanzhou, Xinghua, Guangzhou, Wenzhou and the Chinese quarter of Hakata; the other ports' districts are still being painted and are not in the game yet.
+- The companion system has a roster and portraits, but it is not yet part of play; its design is still being decided.
+- Development is driven by design documents and automated checks. The history starts in June 2026 and has nearly 1,700 commits.
 
 ## Running the game
 
@@ -73,7 +80,7 @@ godot --headless --path . -s res://tools/godot_compile_check.gd  # every script 
 godot --headless --path . -s res://tools/godot_story_check.gd    # main story line and save round-trip
 ```
 
-`tools/` also contains more than 170 `qa_*_probe.gd` runtime probes covering the sea chart, economy panels, saves, cutscenes, combat, keyboard focus, audio and more. Each one runs the same way: `godot --headless --path . -s res://tools/<probe>.gd`.
+`tools/` also contains more than 180 `qa_*_probe.gd` runtime probes covering the sea chart, economy panels, saves, cutscenes, combat, keyboard focus, audio and more. Each one runs the same way: `godot --headless --path . -s res://tools/<probe>.gd`.
 
 ## Repository layout
 
