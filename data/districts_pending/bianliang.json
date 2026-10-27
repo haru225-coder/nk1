@@ -1,0 +1,790 @@
+{
+  "districts": [
+    {
+      "id": "bl_xianguo",
+      "port": "bianliang",
+      "pending_port": true,
+      "name": "大相国寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_bl_xianguo.jpg",
+      "description": "大相国寺在州桥北，殿宇残了半边，山门里的香火没断。每月开市五回，僧人在断墙下摆出香烛旧器，来的人比城里别的街多。",
+      "interactions": [
+        {
+          "id": "bl_xianguo_incense",
+          "type": "favour",
+          "label": "添香火",
+          "text": "你在佛前添了一炷香，知客把名字写进廊下的功德簿，墨迹被香灰盖了半边。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "bl_xianguo_stall",
+          "type": "choice",
+          "label": "庙市摊脚",
+          "text": "庙市开时，断墙下只剩两处摊脚，一处靠殿门，一处靠街口。",
+          "options": [
+            {
+              "id": "bl_xianguo_stall_door",
+              "label": "占殿门",
+              "text": "你占了殿门边的摊脚，香客进进出出，先看见你的货。",
+              "cost": 20,
+              "effects": {
+                "network": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "bl_xianguo_stall_street",
+              "label": "守街口",
+              "text": "你守着街口的摊脚，人来得杂，闲话也多。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "bl_xianguo_rumor",
+          "type": "rumor",
+          "label": "听知客",
+          "text": "知客说军前把寺里的香药提走大半，泉州的香船还在海上，牙行先封了秤。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "aromatic_medicine",
+          "mul": 1.16
+        }
+      ]
+    },
+    {
+      "id": "bl_tieta",
+      "port": "bianliang",
+      "pending_port": true,
+      "name": "开宝寺铁塔",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_bl_tieta.jpg",
+      "description": "开宝寺在城东北，1049年砌的琉璃砖塔还在，砖色褐里透红。兵火过后塔院冷清，塔檐缝里长出蒿草，塔下的碑字被人拓得发白。",
+      "interactions": [
+        {
+          "id": "bl_tieta_climb",
+          "type": "favour",
+          "label": "登塔",
+          "text": "你沿塔内砖阶上到第三层，风从缺檐处灌进来，城里的残瓦一直铺到黄河边。",
+          "cost": 8,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "bl_tieta_brick",
+          "type": "choice",
+          "label": "塔檐旧砖",
+          "text": "塔下有人兜售从檐角掉下的琉璃砖，说是北宋旧物，砖侧还粘着白灰。",
+          "options": [
+            {
+              "id": "bl_tieta_brick_buy",
+              "label": "收一块",
+              "text": "你收下一块，断口在日头下泛出深绿。",
+              "cost": 25,
+              "effects": {
+                "note": "得开宝寺琉璃砖一块。",
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "bl_tieta_brick_pass",
+              "label": "还给他",
+              "text": "你把砖还回去，蹲下看了看塔基的旧石。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bl_fanta",
+      "port": "bianliang",
+      "pending_port": true,
+      "name": "繁塔",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_bl_fanta.jpg",
+      "description": "繁塔在天清寺里，北宋初年砌的砖塔，塔身残了一截。砖面佛像的衣纹还看得清，塔院住了几户军属，晾衣绳系在断碑上。",
+      "interactions": [
+        {
+          "id": "bl_fanta_rubbing",
+          "type": "favour",
+          "label": "拓砖纹",
+          "text": "你用薄纸拓了一层塔砖上的佛像，墨还没干，守塔的老僧在阶下看着。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "得繁塔砖纹拓片一张。"
+          }
+        },
+        {
+          "id": "bl_fanta_repair",
+          "type": "choice",
+          "label": "修塔缘簿",
+          "text": "塔身裂到第二层，天清寺的僧人捧出缘簿，只求把上截的碎砖清一清。",
+          "options": [
+            {
+              "id": "bl_fanta_repair_give",
+              "label": "捐三十钱",
+              "text": "你在缘簿上写了名字，僧人把铜钱倒进木柜，柜脚垫着一块残砖。",
+              "cost": 30,
+              "effects": {
+                "fame": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "bl_fanta_repair_clear",
+              "label": "帮着清砖",
+              "text": "你卷起袖子搬了半日碎砖，掌心磨出两道红印。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1,
+                "martial": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bl_zhouqiao",
+      "port": "bianliang",
+      "pending_port": true,
+      "name": "州桥旧址与御街残迹",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_bl_zhouqiao.jpg",
+      "description": "州桥横在汴河故道上，石栏断了大半，桥面还走得人。御街从桥北通到旧宫，两旁沟渠早填成土路，车辙压着宋时的砖。",
+      "interactions": [
+        {
+          "id": "bl_zhouqiao_walk",
+          "type": "favour",
+          "label": "走御街",
+          "text": "你从州桥北头走到旧宫前，街石缝里长出蒿草，鞋底沾了一层旧城的土。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "bl_zhouqiao_rumor",
+          "type": "rumor",
+          "label": "听驿卒",
+          "text": "驿卒在桥头换马，说襄樊的军报连夜北上，军前把博多来的硫黄截买一空。",
+          "cost": 15,
+          "cooldown_days": 35,
+          "port": "hakata",
+          "good": "sulfur",
+          "mul": 1.17
+        },
+        {
+          "id": "bl_zhouqiao_stone",
+          "type": "choice",
+          "label": "桥栏石",
+          "text": "有人要拆桥栏的石条去垒牲口棚，问你出不出价。",
+          "options": [
+            {
+              "id": "bl_zhouqiao_stone_buy",
+              "label": "买下石条",
+              "text": "你买下两根石条，叫人抬到书铺门前，栏上的旧刻还认得出半笔。",
+              "cost": 20,
+              "effects": {
+                "note": "得州桥石栏一段。",
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "bl_zhouqiao_stone_let",
+              "label": "由他拆去",
+              "text": "你让开路，石条被抬上板车，桥栏又短了一截。",
+              "cost": 0,
+              "effects": {
+                "money": 6,
+                "pu_attention": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bl_bianhe",
+      "port": "bianliang",
+      "pending_port": true,
+      "name": "汴河故道",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_bl_bianhe.jpg",
+      "description": "汴河在金末淤死，河床只剩一条浅沟，两岸码头石基半埋在土里。雨季积水，旱天起尘，漕船再没进来过。",
+      "interactions": [
+        {
+          "id": "bl_bianhe_well",
+          "type": "favour",
+          "label": "淘旧井",
+          "text": "你雇人把河床里的一口旧井淘开，泥水泛上来，附近的住户提着桶来打水。",
+          "cost": 25,
+          "once_per": "month",
+          "effects": {
+            "hometown_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "bl_bianhe_rumor",
+          "type": "rumor",
+          "label": "听船户",
+          "text": "河床边的老船户说，淮盐上不来，兴化的盐船在口外被人先订走，牙行只给老主顾留货。",
+          "cost": 14,
+          "cooldown_days": 40,
+          "port": "xinghua",
+          "good": "sea_salt",
+          "mul": 1.14
+        },
+        {
+          "id": "bl_bianhe_wreck",
+          "type": "choice",
+          "label": "河泥沉船",
+          "text": "河泥里露出半截船板，有人说底下是北宋的漕船。",
+          "options": [
+            {
+              "id": "bl_bianhe_wreck_dig",
+              "label": "雇人挖",
+              "text": "你雇了四个人挖到天黑，起出一只烂船钉和一角青瓷。",
+              "cost": 15,
+              "effects": {
+                "note": "得汴河沉船旧钉一枚。",
+                "sea_tendency": 1
+              }
+            },
+            {
+              "id": "bl_bianhe_wreck_leave",
+              "label": "让它埋着",
+              "text": "你把土重新踩实，站在河床上看了一会儿。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bl_gongcheng",
+      "port": "bianliang",
+      "pending_port": true,
+      "name": "金南京宫城残址",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_bl_gongcheng.jpg",
+      "description": "金宣宗南迁后，汴京作了南京，宫城就着旧大内重修。1233年崔立开城降蒙古，宫室拆毁大半，如今只剩台基断墙，蒙古兵在墙外扎营。",
+      "interactions": [
+        {
+          "id": "bl_gongcheng_pick",
+          "type": "favour",
+          "label": "拾琉璃",
+          "text": "你在宫基的草里拾到半片绿琉璃，釉面还亮，城外的古董摊按片收。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "money": 4,
+            "pu_attention": 1
+          }
+        },
+        {
+          "id": "bl_gongcheng_brick",
+          "type": "choice",
+          "label": "旧宫砖",
+          "text": "宫墙的砖被人起出来卖，军吏在旁按车抽头。你也要一车，还是空手走。",
+          "options": [
+            {
+              "id": "bl_gongcheng_brick_buy",
+              "label": "买一车",
+              "text": "你付了钱，旧砖装上车，砖侧还留着金代的戳记。",
+              "cost": 18,
+              "effects": {
+                "merchant_credit": 1,
+                "note": "得南京宫城旧砖一车。",
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "bl_gongcheng_brick_walk",
+              "label": "空手走",
+              "text": "你沿断墙根走了一圈，没要砖，也没和军吏搭话。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bl_fanlou",
+      "port": "bianliang",
+      "pending_port": true,
+      "name": "樊楼旧址",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_bl_fanlou.jpg",
+      "description": "樊楼在宋门里，北宋时是汴京正店里有名的一座，白矾楼的名号传得远。如今楼架烧剩一排石础，酒旗早没了，只有卖酒浆的小摊在旧址前支着棚。",
+      "interactions": [
+        {
+          "id": "bl_fanlou_drink",
+          "type": "favour",
+          "label": "饮一碗",
+          "text": "你在旧址前的小摊上买了一碗浊酒，摊主说这水还是从旧酒楼的后井里打上来的。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "hometown_tendency": 1
+          }
+        },
+        {
+          "id": "bl_fanlou_ledger",
+          "type": "choice",
+          "label": "旧酒账",
+          "text": "有人翻出一册樊楼的旧酒账，纸角让虫蛀了，问你要不要。",
+          "options": [
+            {
+              "id": "bl_fanlou_ledger_take",
+              "label": "收下",
+              "text": "你收下那册残账，账页上还记着某年某月某日赊出的一坛酒。",
+              "cost": 12,
+              "effects": {
+                "note": "得樊楼旧酒账残页。",
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "bl_fanlou_ledger_pass",
+              "label": "不收",
+              "text": "你把账册推回去，摊主把它塞进灶边引火。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bl_hongqiao",
+      "port": "bianliang",
+      "pending_port": true,
+      "name": "东角子门与虹桥旧址",
+      "kind": "bridge",
+      "pending_art": true,
+      "bg": "bg_dist_bl_hongqiao.jpg",
+      "description": "虹桥在汴河上，北宋时是无柱的木拱桥，桥下漕船要放倒桅杆才过得去。如今汴河干了，桥早已不存，东角子门外的土里还留着两排桥基石。",
+      "interactions": [
+        {
+          "id": "bl_hongqiao_base",
+          "type": "favour",
+          "label": "看桥基",
+          "text": "你蹲在土里摸那两排桥基石，石面被绳磨出浅槽，像还留着当年的纤痕。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "bl_hongqiao_rumor",
+          "type": "rumor",
+          "label": "听脚夫",
+          "text": "城东的脚夫说，汴河断漕以后，南边的米卸在庆元仓里发不出去，兴化的米行先落了价。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "xinghua",
+          "good": "grain",
+          "mul": 0.94
+        },
+        {
+          "id": "bl_hongqiao_mast",
+          "type": "choice",
+          "label": "桥下旧桅",
+          "text": "老人说桥基下还埋着一截旧船的桅杆，问你可要雇人挖。",
+          "options": [
+            {
+              "id": "bl_hongqiao_mast_dig",
+              "label": "雇人挖",
+              "text": "你雇人挖了半日，起出一截发黑的杉木桅，铁箍只剩半圈。",
+              "cost": 15,
+              "effects": {
+                "note": "得虹桥下沉桅一段。",
+                "sea_tendency": 1
+              }
+            },
+            {
+              "id": "bl_hongqiao_mast_leave",
+              "label": "让它埋着",
+              "text": "你把土盖回去，老人说这桅杆埋了上百年，不差这一日。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bl_huanghe",
+      "port": "bianliang",
+      "pending_port": true,
+      "name": "黄河决口与寸金淀",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_bl_huanghe.jpg",
+      "description": "寸金淀在城北，1234年端平入洛的宋军行到此处，蒙古人掘开黄河堤，水淹了整片营地。如今堤口还张着，浑水一年年漫过旧田，土里翻出锈箭头。",
+      "interactions": [
+        {
+          "id": "bl_huanghe_dike",
+          "type": "favour",
+          "label": "看堤口",
+          "text": "你站在堤口，浑水贴着新土打旋，远处有农人赶着牛在浅处试渡。",
+          "cost": 8,
+          "once_per": "year",
+          "effects": {
+            "martial": 1,
+            "hometown_tendency": 1
+          }
+        },
+        {
+          "id": "bl_huanghe_rumor",
+          "type": "rumor",
+          "label": "听里正",
+          "text": "堤下的里正说，今年的浑水又漫了淮西的早稻，庆元的米船被官府先订了大半。",
+          "cost": 14,
+          "cooldown_days": 40,
+          "port": "mingzhou",
+          "good": "grain",
+          "mul": 1.15
+        },
+        {
+          "id": "bl_huanghe_repair",
+          "type": "choice",
+          "label": "堤口填土",
+          "text": "里正招呼人往堤口填土，问你出不出工钱。",
+          "options": [
+            {
+              "id": "bl_huanghe_repair_pay",
+              "label": "出工钱",
+              "text": "你出了二十钱，里正多叫来六个挑土的，堤口当夜矮下去一截。",
+              "cost": 20,
+              "effects": {
+                "hometown_tendency": 2,
+                "fame": 1
+              }
+            },
+            {
+              "id": "bl_huanghe_repair_work",
+              "label": "只出人",
+              "text": "你跟着挑了十担土，肩膀压得发木，里正记下你的姓。",
+              "cost": 0,
+              "effects": {
+                "martial": 1,
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bl_daluhuachi",
+      "port": "bianliang",
+      "pending_port": true,
+      "name": "蒙古达鲁花赤衙署",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_bl_daluhuachi.jpg",
+      "description": "达鲁花赤的衙署设在旧宋门里，门外立着蒙文与汉文的告示牌。断事官在这里收税、点户、断斗殴，汉人吏员在廊下抄写，墨用的是南边来的松烟。",
+      "interactions": [
+        {
+          "id": "bl_daluhuachi_report",
+          "type": "choice",
+          "label": "报货单",
+          "text": "衙署要各铺报货，吏员说报多报少都有章程。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "bl_daluhuachi_report_true",
+              "label": "照实报",
+              "text": "你把货单照实填了，吏员逐项对过，在簿上画了个圈。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 2
+              }
+            },
+            {
+              "id": "bl_daluhuachi_report_less",
+              "label": "少报两成",
+              "text": "你在货单上抹去两成，吏员收了钱，没再翻箱。",
+              "cost": 12,
+              "effects": {
+                "money": 20,
+                "pu_attention": 2
+              }
+            }
+          ]
+        },
+        {
+          "id": "bl_daluhuachi_clerk",
+          "type": "hire",
+          "label": "雇书吏",
+          "text": "衙里的汉人书吏姓王，识得蒙古字，也识得各铺的底细。雇他，报货少走两趟。",
+          "who": "书吏",
+          "cost": 80,
+          "wage": 12,
+          "attention_ease": 1
+        },
+        {
+          "id": "bl_daluhuachi_rumor",
+          "type": "rumor",
+          "label": "听衙前",
+          "text": "衙前贴出括马的札子，北来的皮货担子被留下当脚力，庆元的貂皮行先断了货。",
+          "cost": 15,
+          "cooldown_days": 45,
+          "port": "mingzhou",
+          "good": "sable_fur",
+          "mul": 1.18
+        }
+      ]
+    },
+    {
+      "id": "bl_ortaq",
+      "port": "bianliang",
+      "pending_port": true,
+      "name": "回回斡脱商栈",
+      "kind": "warehouse",
+      "pending_art": true,
+      "bg": "bg_dist_bl_ortaq.jpg",
+      "description": "斡脱商栈在城北，回回商人替蒙古贵人放贷收账，栈里堆着皮毛、宝石与南边来的瓷器。门口挂着两把锁，一把是商人的，一把是贵人的。",
+      "interactions": [
+        {
+          "id": "bl_ortaq_bond",
+          "type": "choice",
+          "label": "赊单保人",
+          "text": "栈里的斡脱拿出一张赊单，说南来的瓷器商要借本钱，缺一个保人。",
+          "once": true,
+          "options": [
+            {
+              "id": "bl_ortaq_bond_sign",
+              "label": "作保",
+              "text": "你在赊单上画了押，斡脱把副本收进柜里，瓷器商朝你拱了拱手。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "pu_attention": 1,
+                "flag": "bl_ortaq_debt"
+              }
+            },
+            {
+              "id": "bl_ortaq_bond_refuse",
+              "label": "不作保",
+              "text": "你把赊单推回去，斡脱收了笑，叫人把茶碗撤了。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "bl_ortaq_porcelain",
+          "type": "sell",
+          "label": "出青白瓷",
+          "text": "栈里的回回掌柜把瓷碗对着天光看了一遍，按件点了数，叫人用毡子裹好。",
+          "good": "qingbai_porcelain",
+          "qty": 2,
+          "price_mul": 1.02,
+          "impact": false
+        },
+        {
+          "id": "bl_ortaq_rumor",
+          "type": "rumor",
+          "label": "听账房",
+          "text": "账房把索债的帖子摊在案上，泉州的回回急着出货还账，绢帛在码头上被压了价。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "quanzhou",
+          "good": "silk_fabric",
+          "mul": 0.9
+        }
+      ]
+    },
+    {
+      "id": "bl_sishi",
+      "port": "bianliang",
+      "pending_port": true,
+      "name": "北人南货的私市",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_bl_sishi.jpg",
+      "description": "私市藏在旧宋门外的巷子里，榷场废了以后，北面的皮毛、南面的茶瓷都从这里过手。天一黑就点灯，遇着巡检便收摊，墙上还留着上一回踩灭的炭印。",
+      "interactions": [
+        {
+          "id": "bl_sishi_tea",
+          "type": "sell",
+          "label": "出茶包",
+          "text": "你把茶包摊在灯下，北面的皮货客掰开一包闻了闻，按包数了钱。",
+          "good": "tea",
+          "qty": 2,
+          "price_mul": 1.05,
+          "impact": false
+        },
+        {
+          "id": "bl_sishi_fur",
+          "type": "buy",
+          "label": "收貂皮",
+          "text": "皮货客从驴背上卸下一捆貂皮，毛上沾着北边的霜，你按张验过。",
+          "good": "sable_fur",
+          "qty": 1,
+          "price_mul": 0.95,
+          "impact": false
+        },
+        {
+          "id": "bl_sishi_rumor",
+          "type": "rumor",
+          "label": "听管账",
+          "text": "管账的说，前一船宋钱刚出巷口就被巡检截了，泉州的市舶司又加了缉，钱价在码头上先起。",
+          "cost": 16,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "song_coin",
+          "mul": 1.16
+        }
+      ]
+    },
+    {
+      "id": "bl_guhua",
+      "port": "bianliang",
+      "pending_port": true,
+      "name": "遗老书铺与旧画摊",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_bl_guhua.jpg",
+      "description": "书铺在旧御街西边，主人是北宋旧族的后人，架上多是残本与拓片。门前一张旧席摆着画轴与铜器，真假各半，价钱看人。听人说《清明上河图》的旧卷在燕京贵人手里，铺里只有不知来历的临本。",
+      "interactions": [
+        {
+          "id": "bl_guhua_browse",
+          "type": "favour",
+          "label": "翻旧书",
+          "text": "你在书铺里翻了一册缺角的《东京梦华录》，主人说这是南边刻的，纸比汴梁的旧纸还新。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "bl_guhua_painting",
+          "type": "choice",
+          "label": "看画",
+          "text": "主人展开一卷雪景，说是北宋旧物，绢色却新。",
+          "options": [
+            {
+              "id": "bl_guhua_painting_buy",
+              "label": "买下",
+              "text": "你买下那卷雪景，主人用旧锦包好，没说作者是谁。",
+              "cost": 30,
+              "effects": {
+                "note": "得旧画一卷，真伪未定。",
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "bl_guhua_painting_pass",
+              "label": "只看",
+              "text": "你把画看到卷尾，还给主人，问起铺里新收的拓片。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bl_chasi",
+      "port": "bianliang",
+      "pending_port": true,
+      "name": "汴京旧茶肆",
+      "kind": "teahouse",
+      "pending_art": true,
+      "bg": "bg_dist_bl_chasi.jpg",
+      "description": "茶肆在旧樊楼南边，两间门面只剩一间，灶上的水还开着。说书人收了钱就讲东京旧事，讲到虹桥与州桥，听的人多半没见过的。",
+      "interactions": [
+        {
+          "id": "bl_chasi_listen",
+          "type": "favour",
+          "label": "听书",
+          "text": "你在一角坐下，说书人把醒木一拍，讲的是宣和年间州桥的夜市，满座没人打断。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "bl_chasi_invest",
+          "type": "invest",
+          "label": "入股茶肆",
+          "text": "茶肆的灶台要重修，店主让你入一份本钱，往后按月分茶钱。",
+          "costs": [
+            180,
+            420
+          ],
+          "monthly": [
+            8,
+            20
+          ],
+          "shop": "汴京茶肆"
+        },
+        {
+          "id": "bl_chasi_rumor",
+          "type": "rumor",
+          "label": "听说书",
+          "text": "说书人歇场时提起，襄樊的军报又到了，建茶先解军前，福州的茶引只剩半纸。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "fuzhou",
+          "good": "tea",
+          "mul": 1.12
+        }
+      ]
+    }
+  ]
+}
