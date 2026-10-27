@@ -25,7 +25,9 @@ const W := preload("res://scripts/combat/CombatNoteWatch.gd")
 const EXPECT_IDS := ["escort", "yashan", "sea", "orders", "gunnery", "intel", "roles", "boarding", "melee_decision",
 	"parley", "morale", "cut_grapple", "flood_fire", "wet_felt", "fire_load", "pursue", "bounty", "after_choices",
 	"landing", "morale_carry", "gale", "handoff", "blockade", "blockade_run", "war_prices", "siege", "siege_schedule",
-	"siege_relief"]
+	"siege_relief",
+	# lane tut2（w57）：城区与牙行四张引导旁注，不挂分开关、只认总开关 combat_notes（触发与读旗归 qa_w57_tut_probe）
+	"districts", "invest_shop", "flag_chain", "seasonal_price"]
 ## 一到六期的开关键 → 讲它的那一张（清点表：方案分期一览逐项；没有开关的底子玩法 sea / orders / boarding / morale / siege 另立）
 const KEY_NOTE := {
 	"enemy_intel": "intel", "parley_on_ship": "parley", "after_action": "bounty", "bounty_by_outcome": "bounty",

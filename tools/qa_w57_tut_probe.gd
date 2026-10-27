@@ -205,11 +205,14 @@ func _sec_triggers() -> void:
 	gs.flags = {}
 	_check(not is_equal_approx(eco.seasonal_mul("grain", 3), 1.0), "grain 节令倍数非 1")
 	await _drop_notes()
-	var info := VBoxContainer.new()
-	var pl := Label.new()
-	_main._mount_price_row(info, pl, "quanzhou", "grain")
+	_main._offer_season_note("grain")  # 成交后挂（_on_buy / _on_sell 同一行调用）
 	await _settle(12)
 	_check(gs.has_flag("combat_note_seasonal_price"), "seasonal_price 触发读旗")
+	gs.flags = {}
+	await _drop_notes()
+	_main._offer_season_note("pepper")
+	await _settle(12)
+	_check(is_equal_approx(eco.seasonal_mul("pepper", 3), 1.0) and not gs.has_flag("combat_note_seasonal_price"), "不随节令的货（胡椒）不出节令旁注")
 
 
 func _ix(id: String) -> Dictionary:

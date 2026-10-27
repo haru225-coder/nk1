@@ -1906,7 +1906,7 @@ func _on_buy(port_id: String, good_id: String, amount: int, ship_index: int) -> 
 	if not GameState.spend_money(cost):
 		return
 	Fleet.add_cargo(good_id, actual, float(cost) / float(actual), ship_index)
-	Economy.apply_buy_impact(port_id, good_id, actual)
+	Economy.apply_buy_impact(port_id, good_id, actual); _offer_season_note(good_id)  # 节令旁注挂在成交后（lane tut2；同一行，不挪 main_splits 行号）
 
 	var note := ""
 	if actual < amount:
@@ -1942,7 +1942,7 @@ func _on_sell(port_id: String, good_id: String, amount: int, ship_index: int) ->
 	if not Fleet.remove_cargo(good_id, actual, ship_index):
 		return
 	GameState.add_money(revenue)
-	Economy.apply_sell_impact(port_id, good_id, actual)
+	Economy.apply_sell_impact(port_id, good_id, actual); _offer_season_note(good_id)  # 节令旁注挂在成交后（lane tut2；同一行，不挪 main_splits 行号）
 
 	var profit := revenue - int(round(cost_basis))
 	var profit_str := "赚 %d" % profit if profit >= 0 else "亏 %d" % (-profit)
@@ -4761,8 +4761,6 @@ func _market_kept_note(good_id: String, head: String) -> String:
 ## 短注挤不下截成「…」，不把卡撑宽。放在 Main 末尾：前面多一行，tools/main_splits.txt 记的转发快照行号就对不上。
 func _mount_price_row(info: VBoxContainer, price_lbl: Label, port_id: String, good_id: String) -> void:
 	var war_note := Economy.war_price_note(port_id, good_id)
-	if not is_equal_approx(Economy.seasonal_mul(good_id), 1.0):
-		_COMBAT_NOTES.offer(self, "seasonal_price")
 	if war_note == "":
 		info.add_child(price_lbl)
 		return
@@ -5507,8 +5505,14 @@ func _mount_districts() -> void:
 	if actions == null:
 		return
 	actions.add_child(_shore_action("城中各处", Vector2(160, 42), false, _open_districts))
-	_COMBAT_NOTES.offer(self, "districts")
 
 
 func _open_districts() -> void:
 	_DISTRICT_PAGE.open_index(self, current_scene_id)
+
+
+## lane tut2：头一回在牙行买卖一样随节令涨落的货（SEASONAL_MUL 本月不为 1），出一张「节令行情」旁注。
+## 挂在成交之后而不在柜面排货时：进牙行那一刻让给新手小笺「牙行」，老档进门也不平白多排一张。
+func _offer_season_note(good_id: String) -> void:
+	if not is_equal_approx(Economy.seasonal_mul(good_id), 1.0):
+		_COMBAT_NOTES.offer(self, "seasonal_price")
