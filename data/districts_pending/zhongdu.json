@@ -25,7 +25,7 @@
           "id": "zd_lize_repair",
           "type": "invest",
           "label": "修门楼",
-          "text": "门楼漏雨，你入一股修缮。",
+          "text": "门楼漏雨，你出资修缮。",
           "shop": "门税",
           "costs": [
             300
@@ -88,7 +88,7 @@
           "id": "zd_zhangyi_repair",
           "type": "invest",
           "label": "修门楼",
-          "text": "门楼漏雨，你入一股修缮。",
+          "text": "门楼旧砖剥落，你入一股修补。",
           "shop": "门税",
           "costs": [
             260
@@ -150,7 +150,7 @@
           "id": "zd_jingfeng_shop",
           "type": "invest",
           "label": "门市",
-          "text": "门洞边有空房，你入一股做门市。",
+          "text": "景风门洞残屋招租，你投一股做门市。",
           "shop": "门市",
           "costs": [
             280
@@ -163,7 +163,7 @@
           "id": "zd_jingfeng_guard",
           "type": "hire",
           "label": "雇门子",
-          "text": "门子肯跟你守门。他在时，过路的人少些吵。",
+          "text": "门子肯跟你守门。他在时，门洞少些喧嚷。",
           "who": "门子",
           "cost": 80,
           "wage": 12,
@@ -220,7 +220,7 @@
           "id": "zd_huicheng_post",
           "type": "invest",
           "label": "驿铺",
-          "text": "门洞边有空房，你入一股做驿铺。",
+          "text": "会城门洞残屋招租，你投一股做驿铺。",
           "shop": "驿铺",
           "costs": [
             320
@@ -282,7 +282,7 @@
           "id": "zd_palace_yard",
           "type": "invest",
           "label": "残料场",
-          "text": "残料堆成场，你入一股做买卖。",
+          "text": "宫基残料堆成场，你入股做买卖。",
           "shop": "残料",
           "costs": [
             400
@@ -343,7 +343,7 @@
           "id": "zd_qianbu_porter",
           "type": "hire",
           "label": "雇廊役",
-          "text": "廊役肯跟你挑东西。他在时，街面上好说话。",
+          "text": "廊役肯跟你挑东西。他在时，街面上少些喧嚷。",
           "who": "廊役",
           "cost": 60,
           "wage": 10,
@@ -377,7 +377,7 @@
           "id": "zd_longjin_market",
           "type": "invest",
           "label": "桥市",
-          "text": "桥头有空地，你入一股做桥市。",
+          "text": "龙津桥头空地招租，你入股做桥市。",
           "shop": "桥市",
           "costs": [
             350
@@ -439,7 +439,7 @@
           "id": "zd_lugou_toll",
           "type": "invest",
           "label": "桥头税",
-          "text": "桥头税不薄，你入一股。",
+          "text": "卢沟桥头税契，你投一股。",
           "shop": "桥税",
           "costs": [
             380
@@ -512,7 +512,7 @@
           "id": "zd_qionghua_pavilion",
           "type": "invest",
           "label": "岛亭",
-          "text": "岛上有空亭，你入一股。",
+          "text": "琼华岛上空亭，你入股。",
           "shop": "岛亭",
           "costs": [
             420
@@ -574,7 +574,7 @@
           "id": "zd_taiye_fisher",
           "type": "hire",
           "label": "雇渔户",
-          "text": "渔户肯跟你下网。他在时，池边好说话。",
+          "text": "渔户肯跟你下网。他在时，池边少些喧嚷。",
           "who": "渔户",
           "cost": 70,
           "wage": 11,
@@ -608,7 +608,7 @@
           "id": "zd_taining_licence",
           "type": "licence",
           "label": "领度牒",
-          "text": "寺里给了一张度牒，算个身分。",
+          "text": "天宁寺给了一纸度牒，权作身分。",
           "cost": 200,
           "licence": "lic_zd_degree",
           "effects": {
@@ -620,7 +620,7 @@
           "id": "zd_taining_estate",
           "type": "invest",
           "label": "寺产",
-          "text": "寺里有空房，你入一股。",
+          "text": "天宁寺空房作库，你入股。",
           "shop": "寺产",
           "costs": [
             300
@@ -657,7 +657,7 @@
           "id": "zd_baiyun_priest",
           "type": "hire",
           "label": "雇道人",
-          "text": "道人肯跟你走。他在时，北边好说话。",
+          "text": "道人肯跟你去。他在时，道观里少些盘问。",
           "who": "道人",
           "cost": 100,
           "wage": 16,
@@ -741,7 +741,7 @@
           "id": "zd_minzhong_oil",
           "type": "invest",
           "label": "香油",
-          "text": "寺里有空房，你入一股。",
+          "text": "悯忠寺空房作香油库，你入股。",
           "shop": "香油",
           "costs": [
             250
@@ -792,7 +792,7 @@
             {
               "id": "zd_qingshou_brick_pass",
               "label": "不买",
-              "text": "你没买。",
+              "text": "你没接，转身去了。",
               "effects": {
                 "network": 1
               }
@@ -803,7 +803,7 @@
           "id": "zd_qingshou_court",
           "type": "invest",
           "label": "塔院",
-          "text": "塔院有空房，你入一股。",
+          "text": "庆寿寺塔院空房，你投一股。",
           "shop": "塔院",
           "costs": [
             280
@@ -828,7 +828,7 @@
           "id": "zd_quanzhen_licence",
           "type": "licence",
           "label": "领度牒",
-          "text": "道场给了一张度牒，算个身分。",
+          "text": "全真道场给了一纸度牒，权作身分。",
           "cost": 150,
           "licence": "lic_zd_quanzhen",
           "effects": {
@@ -840,7 +840,7 @@
           "id": "zd_quanzhen_priest",
           "type": "hire",
           "label": "雇道人",
-          "text": "道人肯跟你走。他在时，北边好说话。",
+          "text": "全真道人肯跟你走。他在时，道观里少些盘问。",
           "who": "全真道人",
           "cost": 110,
           "wage": 17,
@@ -855,7 +855,7 @@
             {
               "id": "zd_quanzhen_degree_buy",
               "label": "买",
-              "text": "你买了度牒，算个身分。",
+              "text": "你买了度牒，留个身分。",
               "cost": 150,
               "effects": {
                 "scholar_tendency": 2
@@ -864,7 +864,7 @@
             {
               "id": "zd_quanzhen_degree_pass",
               "label": "不买",
-              "text": "你没买。",
+              "text": "你谢过，没买。",
               "effects": {
                 "hometown_tendency": 1
               }
@@ -912,7 +912,7 @@
           "id": "zd_wanli_broker",
           "type": "hire",
           "label": "雇斡脱",
-          "text": "斡脱商人肯跟你走。他在时，北边好说话。",
+          "text": "斡脱商人肯跟你走。他在时，巷子里少些盘问。",
           "who": "斡脱商人",
           "cost": 150,
           "wage": 20,
@@ -922,7 +922,7 @@
           "id": "zd_wanli_stack",
           "type": "invest",
           "label": "货栈",
-          "text": "巷子里有空房，你入一股做货栈。",
+          "text": "斡脱巷空房作货栈，你入股。",
           "shop": "货栈",
           "costs": [
             450
@@ -959,7 +959,7 @@
           "id": "zd_oldkiln_yard",
           "type": "invest",
           "label": "料场",
-          "text": "场院有空地，你入一股。",
+          "text": "旧宫残料场空地，你入股。",
           "shop": "料场",
           "costs": [
             320
@@ -987,7 +987,7 @@
             {
               "id": "zd_oldkiln_glass_pass",
               "label": "不买",
-              "text": "你没买。",
+              "text": "你没要，走了。",
               "effects": {
                 "network": 1
               }
@@ -1046,7 +1046,7 @@
           "id": "zd_mongol_market",
           "type": "invest",
           "label": "军市",
-          "text": "军衙边有空房，你入一股做军市。",
+          "text": "军衙边空房作军市，你入股。",
           "shop": "军市",
           "costs": [
             400
@@ -1088,7 +1088,7 @@
           "id": "zd_dadu_section",
           "type": "invest",
           "label": "工段",
-          "text": "工地上有空段，你入一股。",
+          "text": "大都工段空地，你入股。",
           "shop": "工段",
           "costs": [
             500
@@ -1135,7 +1135,7 @@
       "kind": "gate",
       "bg": "bg_dist_zd_zhonglou.jpg",
       "pending_art": true,
-      "description": "钟鼓楼在城中心，鼓声一响，全城都知道时辰。",
+      "description": "钟鼓楼在大都新城中心，鼓声一响，全城都知道时辰。",
       "interactions": [
         {
           "id": "zd_zhonglou_listen",
@@ -1152,7 +1152,7 @@
           "id": "zd_zhonglou_drummer",
           "type": "hire",
           "label": "雇鼓手",
-          "text": "鼓手肯跟你打鼓。他在时，夜里安心些。",
+          "text": "鼓手肯跟你打鼓。他在时，夜里少些喧嚷。",
           "who": "鼓手",
           "cost": 80,
           "wage": 12,
@@ -1162,7 +1162,7 @@
           "id": "zd_zhonglou_tax",
           "type": "invest",
           "label": "鼓楼税",
-          "text": "鼓楼边有空房，你入一股。",
+          "text": "钟鼓楼边空房，你投一股。",
           "shop": "鼓楼",
           "costs": [
             300
@@ -1181,7 +1181,7 @@
       "kind": "dam",
       "bg": "bg_dist_zd_haizi.jpg",
       "pending_art": true,
-      "description": "积水潭是漕运终点，但通惠河还没通。水边船多，人也多。",
+      "description": "积水潭水阔，是将来漕运的终点，通惠河还没通。水边船多，人也多。",
       "interactions": [
         {
           "id": "zd_haizi_mooring",
@@ -1211,7 +1211,7 @@
             {
               "id": "zd_haizi_berth_pass",
               "label": "不买",
-              "text": "你没买。",
+              "text": "你没买船位。",
               "effects": {
                 "hometown_tendency": 1
               }
@@ -1222,7 +1222,7 @@
           "id": "zd_haizi_pier",
           "type": "invest",
           "label": "船埠",
-          "text": "潭边有空地，你入一股做船埠。",
+          "text": "积水潭边空地作船埠，你入股。",
           "shop": "船埠",
           "costs": [
             420
@@ -1257,7 +1257,7 @@
           "id": "zd_hanjiang_workshop",
           "type": "invest",
           "label": "工坊",
-          "text": "坊里有空房，你入一股。",
+          "text": "汉人匠坊空房，你入股。",
           "shop": "工坊",
           "costs": [
             350
@@ -1303,7 +1303,7 @@
           "id": "zd_yizhan_inn",
           "type": "invest",
           "label": "驿栈",
-          "text": "驿里有空房，你入一股。",
+          "text": "官驿空房作驿栈，你入股。",
           "shop": "驿栈",
           "costs": [
             360
