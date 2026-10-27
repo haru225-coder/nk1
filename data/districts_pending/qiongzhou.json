@@ -1,0 +1,643 @@
+{
+  "districts": [
+    {
+      "id": "hn_fucheng",
+      "port": "qiongzhou",
+      "pending_port": true,
+      "name": "琼州府城",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_hn_fucheng.jpg",
+      "description": "琼管安抚司设在琼山县，土城周长不足三里，谯门朝南。海北的公文先递到门下，再分送诸州。",
+      "interactions": [
+        {
+          "id": "hn_fucheng_pass",
+          "type": "licence",
+          "label": "领渡海公凭",
+          "text": "书吏验过保状，写了一张渡海公凭。纸角压着朱印，嘱咐到白沙津再验。",
+          "cost": 240,
+          "licence": "lic_hn_crossing",
+          "effects": {
+            "fame": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "hn_fucheng_petition",
+          "type": "favour",
+          "label": "递状子",
+          "text": "你把船户的状子递进厢廊。书吏翻到末页，在日子上划了一道。",
+          "cost": 18,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "hn_fucheng_gate",
+          "type": "choice",
+          "label": "点门籍",
+          "text": "门吏摊开门籍，问你的船户名册带没带。",
+          "options": [
+            {
+              "id": "hn_fucheng_gate_show",
+              "label": "呈上名册",
+              "text": "你把名册摊在案上。门吏逐页对过，在船号旁点了朱点。",
+              "cost": 10,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "hn_fucheng_gate_tell",
+              "label": "只报船号",
+              "text": "你只报了船号。门吏看了你一眼，仍把门让开。",
+              "cost": 0,
+              "effects": {
+                "fame": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hn_baisha",
+      "port": "qiongzhou",
+      "pending_port": true,
+      "name": "白沙津",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_hn_baisha.jpg",
+      "description": "白沙津旧名神应港。戊申年飓风冲开沙嘴，大船才进得来。渡海的船在这里候潮，盐包与米袋堆在沙埂上。",
+      "interactions": [
+        {
+          "id": "hn_baisha_salt",
+          "type": "buy",
+          "label": "收盐包",
+          "text": "盐包从雷州船上卸下，沙埂上过秤。你收了几包，绳结还是湿的。",
+          "good": "sea_salt",
+          "qty": 6,
+          "price_mul": 0.95,
+          "impact": false
+        },
+        {
+          "id": "hn_baisha_ferryman",
+          "type": "hire",
+          "label": "雇渡子",
+          "text": "渡子识得神应港的沙线。雇他，潮未到也能把船摆出港。",
+          "who": "渡子",
+          "cost": 50,
+          "wage": 9,
+          "attention_ease": 1
+        },
+        {
+          "id": "hn_baisha_rumor",
+          "type": "rumor",
+          "label": "问盐船",
+          "text": "雷州盐船避风泊了三天。梢公说，广州的盐价要抬。",
+          "cost": 14,
+          "cooldown_days": 40,
+          "port": "guangzhou",
+          "good": "sea_salt",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "hn_sushi",
+      "port": "qiongzhou",
+      "pending_port": true,
+      "name": "儋州载酒堂",
+      "kind": "academy",
+      "pending_art": true,
+      "bg": "bg_dist_hn_sushi.jpg",
+      "description": "载酒堂在儋州城东黎子云宅前，元符元年落成。苏轼在此会友讲学，堂名取自《汉书》的载酒问字。旁有桄榔庵旧基。",
+      "interactions": [
+        {
+          "id": "hn_sushi_visit",
+          "type": "favour",
+          "label": "访堂",
+          "text": "你在载酒堂前站了片刻。堂上挂着一幅旧拓，字迹已淡。",
+          "cost": 6,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 2,
+            "note": "到过儋州载酒堂。"
+          }
+        },
+        {
+          "id": "hn_sushi_copy",
+          "type": "choice",
+          "label": "听讲",
+          "text": "塾师把苏轼旧稿摊在案上，问你要抄哪一段。",
+          "options": [
+            {
+              "id": "hn_sushi_copy_shu",
+              "label": "抄《书传》",
+              "text": "你抄了半页《书传》。墨未干，纸角被海风吹起。",
+              "cost": 8,
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "在载酒堂抄过《书传》。"
+              }
+            },
+            {
+              "id": "hn_sushi_copy_listen",
+              "label": "只听讲",
+              "text": "你坐在末席听讲。塾师讲到《论语》，声音不高。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hn_limiao",
+      "port": "qiongzhou",
+      "pending_port": true,
+      "name": "熟黎市",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_hn_limiao.jpg",
+      "description": "城西的熟黎市，逢市日开。峒里的人背来沉香、槟榔与吉贝布，换盐和米。牙人按老规矩过秤，不问来路。",
+      "interactions": [
+        {
+          "id": "hn_limiao_hide",
+          "type": "buy",
+          "label": "收鹿皮",
+          "text": "鹿皮摊在竹席上，毛色不一。牙人按张收，价钱比城里低。",
+          "good": "deer_hide",
+          "qty": 2,
+          "price_mul": 0.92,
+          "impact": false
+        },
+        {
+          "id": "hn_limiao_exchange",
+          "type": "choice",
+          "label": "换盐",
+          "text": "峒里人把一匹吉贝布摊开，问能换多少盐。",
+          "options": [
+            {
+              "id": "hn_limiao_exchange_take",
+              "label": "换两包盐",
+              "text": "你从舱里搬出两包盐。对方把布卷好，绳结打得紧。",
+              "cost": 0,
+              "effects": {
+                "cargo_take": {
+                  "good": "sea_salt",
+                  "qty": 2
+                },
+                "network": 1,
+                "hometown_tendency": 1,
+                "note": "在熟黎市换得一匹吉贝布。"
+              }
+            },
+            {
+              "id": "hn_limiao_exchange_ask",
+              "label": "只问价",
+              "text": "你问了布价，没有换。牙人把布收回竹篮。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "hn_limiao_weave",
+          "type": "favour",
+          "label": "看织",
+          "text": "你在织机旁看了一匹吉贝布下机。线是染过的，边上留着一截纬头。",
+          "cost": 6,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "hn_chenxiang",
+      "port": "qiongzhou",
+      "pending_port": true,
+      "name": "沉香栈",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_hn_chenxiang.jpg",
+      "description": "香栈在城南，收黎峒与万安来的沉香。香木按沉水、半沉、不沉分三等，刀口新削的才看得出油线。",
+      "interactions": [
+        {
+          "id": "hn_chenxiang_buy",
+          "type": "buy",
+          "label": "收香木",
+          "text": "栈里把香木劈成小块，按等过秤。你收了两斤，纸包上写着山名。",
+          "good": "aromatic_medicine",
+          "qty": 2,
+          "price_mul": 0.93,
+          "impact": false
+        },
+        {
+          "id": "hn_chenxiang_invest",
+          "type": "invest",
+          "label": "入股香栈",
+          "text": "香栈要添本钱收山香。你入了一股，按月分账。",
+          "costs": [
+            320,
+            760
+          ],
+          "monthly": [
+            14,
+            40
+          ],
+          "shop": "沉香栈"
+        },
+        {
+          "id": "hn_chenxiang_rumor",
+          "type": "rumor",
+          "label": "问香价",
+          "text": "香栈的掌柜说，泉州的香药行在等货，船到得少，价先动了。",
+          "cost": 16,
+          "cooldown_days": 45,
+          "port": "quanzhou",
+          "good": "aromatic_medicine",
+          "mul": 1.16
+        }
+      ]
+    },
+    {
+      "id": "hn_binglang",
+      "port": "qiongzhou",
+      "pending_port": true,
+      "name": "槟榔林",
+      "kind": "grove",
+      "pending_art": true,
+      "bg": "bg_dist_hn_binglang.jpg",
+      "description": "槟榔林在城东坡上，树干直，叶鞘落在根边。春取嫩果，夏秋采下晒干，盐渍的装进竹篓。",
+      "interactions": [
+        {
+          "id": "hn_binglang_visit",
+          "type": "favour",
+          "label": "看园",
+          "text": "园户割下一串青果，递给你看。果皮还带着白霜。",
+          "cost": 5,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "hometown_tendency": 1
+          }
+        },
+        {
+          "id": "hn_binglang_pick",
+          "type": "choice",
+          "label": "收青果",
+          "text": "园户问你要青果还是干果。青果当天就得出手，干果能压到冬。",
+          "options": [
+            {
+              "id": "hn_binglang_pick_green",
+              "label": "收青果",
+              "text": "你收下两篓青果，叫伙计先送进城。",
+              "cost": 12,
+              "effects": {
+                "merchant_credit": 1,
+                "note": "在槟榔林收过青果。"
+              }
+            },
+            {
+              "id": "hn_binglang_pick_dry",
+              "label": "订干果",
+              "text": "你订了秋后晒干的果，园户在竹牌上刻了一道。",
+              "cost": 8,
+              "effects": {
+                "network": 1,
+                "note": "在槟榔林订过干果。"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hn_yantian",
+      "port": "qiongzhou",
+      "pending_port": true,
+      "name": "儋州盐田",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_hn_yantian.jpg",
+      "description": "盐田在儋州西面的滩涂上，石槽里盛着卤水。盐工趁晴收盐，白盐装进竹筐，海风一吹就干。",
+      "interactions": [
+        {
+          "id": "hn_yantian_salt",
+          "type": "buy",
+          "label": "收盐",
+          "text": "盐工把新收的盐倒进筐里。你称了五包，盐粒还带着日头气。",
+          "good": "sea_salt",
+          "qty": 5,
+          "price_mul": 0.9,
+          "impact": false
+        },
+        {
+          "id": "hn_yantian_worker",
+          "type": "hire",
+          "label": "雇盐工",
+          "text": "盐工熟这里的潮候。雇他，收盐时少踩坏几槽。",
+          "who": "盐工",
+          "cost": 45,
+          "wage": 8,
+          "attention_ease": 1
+        },
+        {
+          "id": "hn_yantian_rumor",
+          "type": "rumor",
+          "label": "听盐船",
+          "text": "盐船赶在风前到了广州。押船的说不必等行，盐价要落。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "guangzhou",
+          "good": "sea_salt",
+          "mul": 0.91
+        }
+      ]
+    },
+    {
+      "id": "hn_haikou",
+      "port": "qiongzhou",
+      "pending_port": true,
+      "name": "海口浦",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_hn_haikou.jpg",
+      "description": "海口浦在琼山县北十里，南渡江的水在这里会潮。涨潮时船进浦，退潮时滩上露出一线黑泥。",
+      "interactions": [
+        {
+          "id": "hn_haikou_tide",
+          "type": "favour",
+          "label": "候潮",
+          "text": "你在浦口等到潮平。船底擦过沙脊，水手把篙一点，船就进了港。",
+          "cost": 7,
+          "once_per": "month",
+          "effects": {
+            "sea_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "hn_haikou_puhu",
+          "type": "hire",
+          "label": "雇浦户",
+          "text": "浦户识得南渡江口的沙脊。雇他，退潮时也不会搁住船。",
+          "who": "浦户",
+          "cost": 55,
+          "wage": 10,
+          "attention_ease": 1
+        },
+        {
+          "id": "hn_haikou_unload",
+          "type": "choice",
+          "label": "卸货",
+          "text": "浦口只有一条窄栈桥。先卸米，还是先卸盐，脚夫看着你。",
+          "options": [
+            {
+              "id": "hn_haikou_unload_rice",
+              "label": "先卸米",
+              "text": "米包先过栈桥。脚夫踩得桥板直响，盐包留在船上等下一潮。",
+              "cost": 8,
+              "effects": {
+                "network": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "hn_haikou_unload_salt",
+              "label": "先卸盐",
+              "text": "盐包先卸。米包受了些潮气，押船的人皱眉。",
+              "cost": 0,
+              "effects": {
+                "money": 8,
+                "merchant_credit": -1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hn_duhai",
+      "port": "qiongzhou",
+      "pending_port": true,
+      "name": "琼海渡",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_hn_duhai.jpg",
+      "description": "琼海渡的船不等客满，只等风。北岸是徐闻沓磊港，晴天看得见一线山影。",
+      "interactions": [
+        {
+          "id": "hn_duhai_rite",
+          "type": "favour",
+          "label": "祭海",
+          "text": "船主在船头摆了一碗酒。你跟着把酒洒进海里，浪头把纸灰卷走。",
+          "cost": 9,
+          "once_per": "month",
+          "effects": {
+            "sea_tendency": 2,
+            "favour": 1
+          }
+        },
+        {
+          "id": "hn_duhai_huozhang",
+          "type": "hire",
+          "label": "雇火长",
+          "text": "火长走过几回琼州海峡。雇他，北岸的沓磊港不会认错。",
+          "who": "渡船火长",
+          "cost": 60,
+          "wage": 11,
+          "attention_ease": 1
+        },
+        {
+          "id": "hn_duhai_wind",
+          "type": "choice",
+          "label": "候风",
+          "text": "风从东北来，船主问走不走。走，今日能到徐闻；等，明日风更顺。",
+          "needs_licence": "lic_hn_crossing",
+          "options": [
+            {
+              "id": "hn_duhai_wind_go",
+              "label": "今日开船",
+              "text": "船解了缆。浪打在舷边，徐闻的山影一点点近。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1,
+                "note": "从琼海渡口过了海。"
+              }
+            },
+            {
+              "id": "hn_duhai_wind_wait",
+              "label": "再等一日",
+              "text": "你让船主再等。夜里风转了，船篷响了一宿。",
+              "cost": 4,
+              "effects": {
+                "network": 1,
+                "sea_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hn_fanbo",
+      "port": "qiongzhou",
+      "pending_port": true,
+      "name": "外舶候风",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_hn_fanbo.jpg",
+      "description": "蕃舶从占城、三佛齐来，到了琼州洋面先泊下候风。船身黑，帆脚卷着，甲板上晾着胡椒与香木。",
+      "interactions": [
+        {
+          "id": "hn_fanbo_pilot",
+          "type": "favour",
+          "label": "引港",
+          "text": "你替蕃舶指了白沙津的沙线。通事把一块香木塞到你手里。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {
+            "network": 2,
+            "sea_tendency": 1,
+            "note": "替蕃舶引过港。"
+          }
+        },
+        {
+          "id": "hn_fanbo_tongshi",
+          "type": "hire",
+          "label": "雇通事",
+          "text": "通事会说占城话，也认得蕃舶的旗号。雇他，问价少绕一道弯。",
+          "who": "通事",
+          "cost": 90,
+          "wage": 16,
+          "attention_ease": 1
+        },
+        {
+          "id": "hn_fanbo_rumor",
+          "type": "rumor",
+          "label": "问蕃舶",
+          "text": "蕃舶在洋面等风，船上的香木压着舱。通事说，新州的香价要松。",
+          "cost": 18,
+          "cooldown_days": 45,
+          "port": "champa",
+          "good": "aromatic_medicine",
+          "mul": 0.94
+        }
+      ]
+    },
+    {
+      "id": "hn_lingci",
+      "port": "qiongzhou",
+      "pending_port": true,
+      "name": "灵慈庙",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_hn_lingci.jpg",
+      "description": "灵慈庙在城北，门朝海。庙里只供一块木主，香案上搁着船户送的小木船。闽商到港，先来添一炷香。",
+      "interactions": [
+        {
+          "id": "hn_lingci_incense",
+          "type": "favour",
+          "label": "添香",
+          "text": "你往香案前添了一炷香。庙祝把船户的名字念了一遍，声音很低。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "sea_tendency": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "hn_lingci_wind",
+          "type": "choice",
+          "label": "问风",
+          "text": "庙祝把竹签筒推过来，问你要问哪一路风。",
+          "options": [
+            {
+              "id": "hn_lingci_wind_north",
+              "label": "问北风",
+              "text": "你抽了一支北风签。庙祝说，回雷州的船三日内可开。",
+              "cost": 3,
+              "effects": {
+                "sea_tendency": 1,
+                "note": "在灵慈庙问过北风。"
+              }
+            },
+            {
+              "id": "hn_lingci_wind_south",
+              "label": "问南风",
+              "text": "你抽了一支南风签。庙祝把签放回筒里，没有多话。",
+              "cost": 3,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hn_zhouxue",
+      "port": "qiongzhou",
+      "pending_port": true,
+      "name": "琼州州学",
+      "kind": "academy",
+      "pending_art": true,
+      "bg": "bg_dist_hn_zhouxue.jpg",
+      "description": "琼州州学在府城西，讲堂前种着两株榕。淳熙年间韩璧修过学舍，朱熹为它作《琼州学记》。",
+      "interactions": [
+        {
+          "id": "hn_zhouxue_paper",
+          "type": "favour",
+          "label": "送纸笔",
+          "text": "你把一担纸笔送到学舍。斋长收下，叫学生在簿上记了你的名字。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "hn_zhouxue_lecture",
+          "type": "choice",
+          "label": "听讲",
+          "text": "讲堂上正在讲《论语》。斋长问你是旁听，还是留下抄经。",
+          "options": [
+            {
+              "id": "hn_zhouxue_lecture_listen",
+              "label": "旁听",
+              "text": "你在廊下听完一章。学生散时，讲堂里还留着墨味。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "hn_zhouxue_lecture_copy",
+              "label": "抄经",
+              "text": "你抄了一页《论语》。斋长看过，说笔意还稳。",
+              "cost": 6,
+              "effects": {
+                "scholar_tendency": 2,
+                "note": "在琼州州学抄过《论语》。"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
