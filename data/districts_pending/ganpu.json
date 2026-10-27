@@ -1,0 +1,770 @@
+{
+  "districts": [
+    {
+      "id": "gp_zhenshi",
+      "port": "ganpu",
+      "pending_port": true,
+      "name": "澉浦镇市",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_gp_zhenshi.jpg",
+      "description": "澉浦镇东西十二里，南北五里。阜民坊与广福坊夹着镇前街，招宝塘穿市而过，闸桥下潮涨时，米船就靠到塘上。",
+      "interactions": [
+        {
+          "id": "gp_zhenshi_walk",
+          "type": "favour",
+          "label": "走镇市",
+          "text": "你从阜民坊走到广福坊，沿街看了米行、盐铺与竹器摊，袖中塞了几张招子。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "gp_zhenshi_invest",
+          "type": "invest",
+          "label": "合本塌房",
+          "text": "镇市西头的塌房漏雨，牙人问你肯不肯合本修葺，添两间栈房。",
+          "costs": [
+            320,
+            760
+          ],
+          "monthly": [
+            15,
+            36
+          ],
+          "shop": "澉浦塌房"
+        },
+        {
+          "id": "gp_zhenshi_rumor",
+          "type": "rumor",
+          "label": "听牙人",
+          "text": "收米的牙人摊开温州来信，说秋潦淹了晚稻，米行封仓，米船都停在港里。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "wenzhou",
+          "good": "grain",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "gp_shibochang",
+      "port": "ganpu",
+      "pending_port": true,
+      "name": "澉浦市舶场",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_gp_shibochang.jpg",
+      "unlock": {
+        "year_max": 1276
+      },
+      "description": "市舶场在镇东海岸。海舶入浦，先到这里报货，竹木与香药各有则例，抽解后许其货卖。",
+      "interactions": [
+        {
+          "id": "gp_shibochang_declare",
+          "type": "choice",
+          "label": "报货",
+          "text": "海舶靠岸，场吏把货单铺在案上，问你香药与竹木各报几成。",
+          "options": [
+            {
+              "id": "gp_shibochang_declare_true",
+              "label": "照货单报",
+              "text": "你照单实报。场吏核过竹木与香药，在单尾盖了朱记。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "gp_shibochang_declare_hide",
+              "label": "少报两箱",
+              "text": "你让伙计把两箱香药挪到舱底。场吏看了舱口一眼，没有开箱。",
+              "cost": 0,
+              "effects": {
+                "money": 30,
+                "pu_attention": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gp_shibochang_licence",
+          "type": "licence",
+          "label": "领公凭",
+          "text": "场里出新公凭，朱印未干。有了这张纸，海舶入浦不必再等保状。",
+          "cost": 600,
+          "licence": "lic_gp_ship",
+          "unlock": {
+            "favour_min": 1
+          },
+          "effects": {
+            "fame": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "gp_shibochang_rumor",
+          "type": "rumor",
+          "label": "听番商",
+          "text": "番商说广州市舶司查验加严，香药船转泊别处，广州仓里的香药出不了手。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "guangzhou",
+          "good": "aromatic_medicine",
+          "mul": 0.9
+        }
+      ]
+    },
+    {
+      "id": "gp_gangkou",
+      "port": "ganpu",
+      "pending_port": true,
+      "name": "澉浦港",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_gp_gangkou.jpg",
+      "description": "海在镇东五里。潮自东南来，一潮至浙江，一潮归泊黄湾，又一潮到镇岸。海舟候潮入浦，转输临安。",
+      "interactions": [
+        {
+          "id": "gp_gangkou_hire",
+          "type": "hire",
+          "label": "雇火长",
+          "text": "火长姓周，识得杭州湾的沙线，知潮到第几刻该转舵。",
+          "who": "火长",
+          "cost": 90,
+          "wage": 12,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "gp_gangkou_tide",
+          "type": "choice",
+          "label": "候潮",
+          "text": "船到口外，潮头还没起。船户问你是趁头潮进浦，还是落帆再等一潮。",
+          "options": [
+            {
+              "id": "gp_gangkou_tide_enter",
+              "label": "趁潮进浦",
+              "text": "你催船工趁潮进浦。水涨得急，船身擦着沙线进了港口。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1
+              }
+            },
+            {
+              "id": "gp_gangkou_tide_wait",
+              "label": "落帆等潮",
+              "text": "你让船在口外落帆。下一潮到午后才起，浦内的桅杆已经密了。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gp_gangkou_rumor",
+          "type": "rumor",
+          "label": "听船户",
+          "text": "瓯江上游山洪冲散木排，温州漆匠缺胎木，漆器作坊停了两成。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "wenzhou",
+          "good": "lacquerware",
+          "mul": 1.14
+        }
+      ]
+    },
+    {
+      "id": "gp_xiancheng",
+      "port": "ganpu",
+      "pending_port": true,
+      "name": "海盐县城",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_gp_xiancheng.jpg",
+      "description": "海盐县属嘉兴府，县治去海无三百步。县学在治西南，市河绕衙后，盐课与秋税都在这里过。",
+      "interactions": [
+        {
+          "id": "gp_xiancheng_tax",
+          "type": "favour",
+          "label": "抄税簿",
+          "text": "秋税上榜，县吏缺人抄写。你替他抄了半日税簿，墨迹沾到袖口。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "gp_xiancheng_dispute",
+          "type": "choice",
+          "label": "争塘田",
+          "text": "咸潮坏了塘内田，两户人家争田界，县吏叫你作保。",
+          "options": [
+            {
+              "id": "gp_xiancheng_dispute_sign",
+              "label": "作保",
+              "text": "你在保状上按了指印。两家各退半步，田界重埋界石。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "gp_xiancheng_dispute_decline",
+              "label": "推辞",
+              "text": "你说界址未明，不敢作保。县吏把保状收回，另去问塘长。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gp_xiancheng_hire",
+          "type": "hire",
+          "label": "雇书手",
+          "text": "县衙的书手肯替你抄账，他认得盐课与秋税的旧例。",
+          "who": "书手",
+          "cost": 50,
+          "wage": 7,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "merchant_credit": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "gp_qinzhu",
+      "port": "ganpu",
+      "pending_port": true,
+      "name": "秦驻山与长墙山",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_gp_qinzhu_changqiang.jpg",
+      "description": "秦驻山在镇东北十五里，有始皇庙，山下聚落与荒草荡。长墙山在镇东三里，山阿有黄道祠，山下有造船场，山巅立烽燧，山外即大海。",
+      "interactions": [
+        {
+          "id": "gp_qinzhu_beacon",
+          "type": "favour",
+          "label": "登烽燧",
+          "text": "守烽的兵卒认得你，许你上长墙山顶看一回海口。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "martial": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "gp_qinzhu_shipyard",
+          "type": "choice",
+          "label": "赊木",
+          "text": "长墙山造船场的匠头说杉木被雨淋了，问你能否先赊一批。",
+          "options": [
+            {
+              "id": "gp_qinzhu_shipyard_lend",
+              "label": "赊杉木",
+              "text": "你让木商把杉木先送到船场。匠头在木头上画了记号，说月底结账。",
+              "cost": 40,
+              "effects": {
+                "network": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "gp_qinzhu_shipyard_refuse",
+              "label": "不赊",
+              "text": "你说手头没有余钱。匠头把湿木翻了翻，转身去寻别家。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gp_yunxiu",
+      "port": "ganpu",
+      "pending_port": true,
+      "name": "鹰窠顶与云岫庵",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_gp_yunxiu.jpg",
+      "description": "云岫庵在鹰窠顶山腰，供观音。香客沿山径而上，庵前松风与海涛相闻。",
+      "interactions": [
+        {
+          "id": "gp_yunxiu_incense",
+          "type": "favour",
+          "label": "添香",
+          "text": "庵里的香案正缺香，你添了一匣。知客取簿，写下你的船号。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "gp_yunxiu_stay",
+          "type": "choice",
+          "label": "借宿",
+          "text": "暮色压下来，山径湿滑。知客把客堂的灯点上，问你住不住。",
+          "options": [
+            {
+              "id": "gp_yunxiu_stay_room",
+              "label": "住一夜",
+              "text": "你留在客堂。夜里松涛压着海涛，天亮才辨得清。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "gp_yunxiu_stay_boat",
+              "label": "下山回船",
+              "text": "你提灯下山，潮声一直跟到浦口。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gp_yanchang",
+      "port": "ganpu",
+      "pending_port": true,
+      "name": "鲍郎盐场",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_gp_yanchang.jpg",
+      "description": "鲍郎盐场在镇西北，东亭四灶，南亭五灶。亭户取海水煎盐，官给草荡，盐成入仓。",
+      "interactions": [
+        {
+          "id": "gp_yanchang_fire",
+          "type": "favour",
+          "label": "帮煎盐",
+          "text": "亭户天未亮就起火煎盐，你替他们递了一夜柴。",
+          "cost": 0,
+          "once_per": "month",
+          "unlock": {
+            "months": [
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          },
+          "effects": {
+            "network": 1,
+            "hometown_tendency": 1
+          }
+        },
+        {
+          "id": "gp_yanchang_private",
+          "type": "choice",
+          "label": "私盐",
+          "text": "盐仓外的亭户把一包盐塞给你，说是没上秤的。",
+          "options": [
+            {
+              "id": "gp_yanchang_private_take",
+              "label": "收下",
+              "text": "你把盐包收进舱底。亭户接过钱，转身钻进草荡。",
+              "cost": 0,
+              "effects": {
+                "money": 25,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "gp_yanchang_private_refuse",
+              "label": "退回",
+              "text": "你把盐包推回去，说仓里有账。亭户把包掖进衣襟，没再说话。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gp_yanchang_rumor",
+          "type": "rumor",
+          "label": "听亭户",
+          "text": "东亭塌了两灶，浙西盐课缺额，福州的盐船被调来补。",
+          "cost": 10,
+          "cooldown_days": 35,
+          "port": "fuzhou",
+          "good": "sea_salt",
+          "mul": 1.13
+        }
+      ]
+    },
+    {
+      "id": "gp_yonganhu",
+      "port": "ganpu",
+      "pending_port": true,
+      "name": "永安湖",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_gp_yonganhu.jpg",
+      "description": "永安湖在镇西南五里，周围十二里，四围皆山。湖东石砌斗门，木板为闸，旱则放水，灌湖侧三村田。",
+      "interactions": [
+        {
+          "id": "gp_yonganhu_sluice",
+          "type": "favour",
+          "label": "开斗门",
+          "text": "天旱，湖东斗门要开。你帮里正抬闸板，水顺着沟流到田里。",
+          "cost": 0,
+          "once_per": "month",
+          "unlock": {
+            "months": [
+              4,
+              5,
+              6
+            ]
+          },
+          "effects": {
+            "hometown_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "gp_yonganhu_water",
+          "type": "choice",
+          "label": "分水",
+          "text": "湖水上岸，南北两村的农人争着挖沟，里正问你帮哪一边。",
+          "options": [
+            {
+              "id": "gp_yonganhu_water_down",
+              "label": "先灌下游",
+              "text": "你让下游先放水。上游的农人骂了两句，到底没有动手。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 2,
+                "network": -1
+              }
+            },
+            {
+              "id": "gp_yonganhu_water_share",
+              "label": "按亩分水",
+              "text": "你请里正按亩分水，两村各出一人看闸。水声到半夜才匀。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gp_haishenmiao",
+      "port": "ganpu",
+      "pending_port": true,
+      "name": "镇上海神庙",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_gp_haishenmiao.jpg",
+      "description": "庙旧在长墙山后石帆村，村陷于潮，迁出山头。宝庆中封显应侯，庙中另祀杨太尉，客舟渡海，先来祈祷。",
+      "interactions": [
+        {
+          "id": "gp_haishenmiao_incense",
+          "type": "favour",
+          "label": "上海香",
+          "text": "开洋前，你在庙里添了一匣香。庙祝问清船号，在黄纸上写了几个字，收进案匣。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "gp_haishenmiao_divine",
+          "type": "choice",
+          "label": "问风",
+          "text": "船主来问开洋吉日，庙祝从案下取出一只签筒。",
+          "options": [
+            {
+              "id": "gp_haishenmiao_divine_lot",
+              "label": "抽一签",
+              "text": "你摇出一支签。庙祝看了签文，说三日后的东北风可用。",
+              "cost": 20,
+              "effects": {
+                "sea_tendency": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "gp_haishenmiao_divine_quiet",
+              "label": "只焚香",
+              "text": "你没有问签，只上了香。船主自己去看风旗。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gp_hanhaitang",
+      "port": "ganpu",
+      "pending_port": true,
+      "name": "捍海塘",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_gp_hanhaitang.jpg",
+      "description": "海盐县东捍海塘，去海仅半里。咸淳中，邑人常氏以两浙转运使筑新塘三千六百二十五丈，名海晏塘。塘内田庐，全赖此一线。",
+      "interactions": [
+        {
+          "id": "gp_hanhaitang_earth",
+          "type": "favour",
+          "label": "挑土护塘",
+          "text": "塘吏敲锣喊人，你挑了两担土上塘，补住一处渗水。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "hometown_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "gp_hanhaitang_choice",
+          "type": "choice",
+          "label": "塘脚",
+          "text": "潮啮塘脚，塘吏问你是先补外坡，还是先移塘内的民户。",
+          "options": [
+            {
+              "id": "gp_hanhaitang_choice_stone",
+              "label": "先补外坡",
+              "text": "你让民夫先下石护坡。潮退时，塘脚露出新砌的石棱。",
+              "cost": 30,
+              "effects": {
+                "martial": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "gp_hanhaitang_choice_move",
+              "label": "先移民户",
+              "text": "你帮塘内人家把箱笼搬上高地。塘吏翻开簿子，写下你的名字。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1,
+                "fame": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gp_hanhaitang_rumor",
+          "type": "rumor",
+          "label": "听塘吏",
+          "text": "塘脚要打桩，泉州的铁钉被塘局买空，铁行挂出了新价。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "ironware",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "gp_haikou",
+      "port": "ganpu",
+      "pending_port": true,
+      "name": "杭州湾海口",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_gp_haikou.jpg",
+      "unlock": {
+        "year_min": 1276,
+        "year_max": 1276
+      },
+      "description": "一二七六年正月，临安纳款。元军舟师过杭州湾南下，海口桅樯相连。镇上商船收帆，避入浦内。",
+      "interactions": [
+        {
+          "id": "gp_haikou_yield",
+          "type": "choice",
+          "label": "让船",
+          "text": "海口传来锣声，元军船队要过深水，津吏催商船解缆让路。",
+          "options": [
+            {
+              "id": "gp_haikou_yield_in",
+              "label": "避入浦内",
+              "text": "你把船撑进浦内，桅杆放倒。元军船队从口外过去，甲板上的人没有回头。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "gp_haikou_yield_watch",
+              "label": "泊岸观望",
+              "text": "你泊在岸边，看船队一队队过。直到日暮，海口才静下来。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "martial": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gp_haikou_water",
+          "type": "favour",
+          "label": "送水",
+          "text": "塘上挤满看船的人，你抬了一桶水上去，分给守塘的弓手。",
+          "cost": 20,
+          "once": true,
+          "effects": {
+            "hometown_tendency": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "gp_shibosi",
+      "port": "ganpu",
+      "pending_port": true,
+      "name": "澉浦市舶司",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_gp_shibosi.jpg",
+      "unlock": {
+        "year_min": 1277
+      },
+      "description": "至元十四年，元于澉浦置市舶司，与泉州、庆元、上海并立。福建杨发督之，镇东旧场改司。",
+      "interactions": [
+        {
+          "id": "gp_shibosi_declare",
+          "type": "choice",
+          "label": "抽解",
+          "text": "番舶入口，司吏把货单摊开，问你香药与象牙各报几成。",
+          "options": [
+            {
+              "id": "gp_shibosi_declare_true",
+              "label": "照实报",
+              "text": "你照货单报了。司吏在单尾用了印，叫人把货抬进验棚。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "gp_shibosi_declare_hide",
+              "label": "藏两箱",
+              "text": "你命人把两篓香药藏进压舱石缝。司吏点过货单，挥手放行。",
+              "cost": 0,
+              "effects": {
+                "money": 35,
+                "pu_attention": 2
+              }
+            }
+          ]
+        },
+        {
+          "id": "gp_shibosi_licence",
+          "type": "licence",
+          "label": "领元公凭",
+          "text": "司里发元公凭，纸背印着抽分则例。海舶有了这张，回帆时验货少等两日。",
+          "cost": 800,
+          "licence": "lic_gp_yuan",
+          "effects": {
+            "fame": 2,
+            "merchant_credit": 2
+          }
+        },
+        {
+          "id": "gp_shibosi_rumor",
+          "type": "rumor",
+          "label": "听舶吏",
+          "text": "元廷禁金银铜钱下海，泉州舶商把钱箱藏进舱底，市上铜钱少了。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "song_coin",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "gp_yangshi",
+      "port": "ganpu",
+      "pending_port": true,
+      "name": "杨氏货栈",
+      "kind": "warehouse",
+      "pending_art": true,
+      "bg": "bg_dist_gp_yangshi.jpg",
+      "unlock": {
+        "year_min": 1277
+      },
+      "description": "杨发，福建人，宋末归元。至元十四年督澉浦市舶，占籍澉川，筑室造船，招集海商。杨氏货栈临浦，船桅常排到闸口。",
+      "interactions": [
+        {
+          "id": "gp_yangshi_card",
+          "type": "favour",
+          "label": "递名帖",
+          "text": "你递了名帖。杨家的管事看了船号，引你到货栈廊下坐了一盏茶。",
+          "cost": 30,
+          "once": true,
+          "effects": {
+            "network": 2,
+            "merchant_credit": 1,
+            "flag": "gp_yang_visit"
+          }
+        },
+        {
+          "id": "gp_yangshi_hire",
+          "type": "hire",
+          "label": "雇舵工",
+          "text": "杨家的舵工姓林，随船去过博多，识得日本海的针路。",
+          "who": "舵工",
+          "cost": 80,
+          "wage": 11,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "gp_yangshi_rumor",
+          "type": "rumor",
+          "label": "听舵工",
+          "text": "博多今年熄了两座硫黄窑，唐房收不满载，硫黄在栈里压着。",
+          "cost": 18,
+          "cooldown_days": 45,
+          "port": "hakata",
+          "good": "sulfur",
+          "mul": 1.16
+        }
+      ]
+    }
+  ]
+}
