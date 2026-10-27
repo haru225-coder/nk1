@@ -59,7 +59,7 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_jl_shashi.jpg",
-      "description": "沙市在江陵府城南，宋时设监镇，筑沙市城。江岸泊着米船和盐船，商税在熙宁十年居江陵府各务之首。",
+      "description": "沙市在江陵府城南，宋时设监镇，筑沙市城。江岸泊着米船和盐船，熙宁年间的商税簿上，沙市一务的额数排在前头。",
       "interactions": [
         {
           "id": "jl_shashi_tax",
@@ -77,7 +77,7 @@
           "id": "jl_shashi_hire",
           "type": "hire",
           "label": "雇牙人",
-          "text": "监镇厅前有个老牙人，认得住来船户。雇他，米船靠岸时先得一份行情。",
+          "text": "监镇厅前有个老牙人，认得往来船户。有他递话，米船靠岸时先得一份行情。",
           "who": "牙人",
           "cost": 60,
           "wage": 8,
@@ -124,7 +124,7 @@
       "kind": "dam",
       "pending_art": true,
       "bg": "bg_dist_jl_sanhai.jpg",
-      "description": "三海在江陵府城北，一二零七年刘甲筑上中下三海，引沮漳水灌成一片水网。一二四五年孟珙又修内外隘，蓄水护城。",
+      "description": "三海在江陵府城北，宋人蓄沮漳之水成上中下三海，一片水网挡在城北。理宗朝孟珙镇江陵，又增筑堰隘，蓄水护城。",
       "interactions": [
         {
           "id": "jl_sanhai_walk",
@@ -176,7 +176,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_jl_kaiyuan.jpg",
-      "description": "开元观在江陵府城西南，唐开元年间始建。绍兴五年，观宇移到现址，殿门对着一条小巷。",
+      "description": "开元观在江陵府城西南，唐开元年间始建，殿门对着一条小巷。",
       "interactions": [
         {
           "id": "jl_kaiyuan_incense",
@@ -239,7 +239,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_jl_chengtian.jpg",
-      "description": "承天寺与妙应塔在江陵府城东。崇宁元年，黄庭坚为寺里写下塔记；绍兴年间智珠重修塔身。",
+      "description": "承天寺与妙应塔在江陵府城东。崇宁元年，黄庭坚为寺里写下塔记，后来竟因这篇记文被除名，羁管宜州。",
       "interactions": [
         {
           "id": "jl_chengtian_circle",
@@ -403,7 +403,7 @@
           "id": "jl_mishi_rumor",
           "type": "rumor",
           "label": "听米行",
-          "text": "米行牙人说，荆湖米纲在鄂州候总领所调拨，明州米行到得迟。",
+          "text": "米行牙人说，荆湖米纲在鄂州候总领所调拨，庆元府的米行到货迟了。",
           "cost": 10,
           "cooldown_days": 30,
           "port": "mingzhou",
@@ -420,7 +420,7 @@
       "kind": "academy",
       "pending_art": true,
       "bg": "bg_dist_jl_fuxue.jpg",
-      "description": "江陵府学在府城西南，榜墙临街。北宋元丰年间置府学学官，赴试的士子常来看题名碑。",
+      "description": "江陵府学在府城西南，榜墙临街。北宋已置府学，赴试的士子常来看题名碑。",
       "interactions": [
         {
           "id": "jl_fuxue_list",
@@ -540,7 +540,7 @@
           "id": "jl_anfu_hire",
           "type": "hire",
           "label": "雇书吏",
-          "text": "衙外有个老书吏，写得一手细字。雇他，军报和粮簿能少错两笔。",
+          "text": "衙外有个老书吏，写得一手细字。军报和粮簿过他的手，能少错两笔。",
           "who": "书吏",
           "cost": 60,
           "wage": 8,
@@ -558,7 +558,7 @@
             {
               "id": "jl_anfu_report_war",
               "label": "先报军情",
-              "text": "探子把沙盘上的旗挪了挪，说岳州方向的船比上月多。廊下的人都不说话了。",
+              "text": "探子在地图上点了点，说岳州方向的船比上月多。廊下的人都不说话了。",
               "cost": 0,
               "effects": {
                 "martial": 1,
@@ -749,7 +749,7 @@
           4
         ]
       },
-      "description": "至元十二年三月，元军下岳州；四月，沙市破，进至江陵城下。制置高达以城降。",
+      "description": "一二七五年三月，元军下岳州；四月，沙市破，进至江陵城下。制置高达以城降。",
       "interactions": [
         {
           "id": "jl_xiang_watch",
