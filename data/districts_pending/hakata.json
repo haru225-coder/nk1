@@ -7,13 +7,13 @@
       "kind": "gate",
       "pending_art": true,
       "bg": "bg_dist_hk_ishigaki.jpg",
-      "description": "博多海边新筑的石垒，元寇防垒未完，石块堆在沙滩上。",
+      "description": "博多海边正在筑石垒，防垒未合，石块沿沙滩排开。",
       "interactions": [
         {
           "id": "hk_ishigaki_sulfur",
           "type": "buy",
           "label": "收硫黄",
-          "text": "石垒边的硫黄按船边价收，还没进唐房的账。",
+          "text": "石垒边硫黄照船边价收，唐房的账上还没记。",
           "good": "sulfur",
           "qty": 4,
           "price_mul": 0.95,
@@ -23,7 +23,7 @@
           "id": "hk_ishigaki_stall",
           "type": "invest",
           "label": "垒边铺",
-          "text": "石垒边一间铺，卖水与草鞋给筑垒的人。入了本，按月分铺钱。",
+          "text": "石垒边一间铺子，卖水与草鞋给筑垒人。你凑一份本钱，按月分铺钱。",
           "shop": "垒边铺",
           "costs": [
             220,
@@ -38,7 +38,7 @@
           "id": "hk_ishigaki_rumor",
           "type": "rumor",
           "label": "问石工",
-          "text": "石工说，筑石垒征了沿海的船去运石料，萨摩的硫黄船来得稀，唐房的硫黄不够分。",
+          "text": "石工说筑垒征了沿海船运石料，萨摩硫黄船来得稀，唐房硫黄不够分。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "kagoshima",

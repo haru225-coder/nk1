@@ -512,7 +512,7 @@
           "id": "jj_watch_coin",
           "type": "sell",
           "label": "卖宋钱",
-          "text": "台下有人暗中收宋钱。铜钱属禁物，官府晓得要记一笔。",
+          "text": "台下有人私下收宋钱。铜钱在耽罗属禁物，官府晓得要记一笔。",
           "good": "song_coin",
           "qty": 2,
           "price_mul": 1.15,
