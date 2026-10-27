@@ -66,17 +66,17 @@
       "id": "ez_huanghelou",
       "port": "ezhou",
       "pending_port": true,
-      "name": "黄鹤楼",
+      "name": "黄鹤楼故址",
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_ez_huanghelou.jpg",
-      "description": "黄鹤楼在黄鹄山黄鹤矶头，木构重檐，灰瓦朱柱。楼基压在矶石上，登楼要过一段窄石阶。",
+      "description": "黄鹤楼故址在黄鹄山黄鹤矶头，楼已废，故址难寻，矶头只剩几方旧刻。江边一段窄石阶通向矶头，登临的人仍来这里看江。",
       "interactions": [
         {
           "id": "ez_huanghelou_climb",
           "type": "favour",
-          "label": "登楼",
-          "text": "你沿石阶上到楼头，江风把檐角的风铃吹得直响。汉水从西边来，在脚下汇进大江。",
+          "label": "登矶",
+          "text": "你沿石阶走上矶头，江风把岸边船上的铃吹得直响。汉水从西边来，在脚下汇进大江。",
           "cost": 10,
           "once_per": "month",
           "effects": {
@@ -88,7 +88,7 @@
           "id": "ez_huanghelou_view",
           "type": "choice",
           "label": "望江",
-          "text": "楼头有几个蜀商在指认江上的船，问你要不要一起看。",
+          "text": "矶头有几个蜀商在指认江上的船，问你要不要一起看。",
           "options": [
             {
               "id": "ez_huanghelou_view_together",
@@ -103,7 +103,7 @@
             {
               "id": "ez_huanghelou_view_alone",
               "label": "独看",
-              "text": "你退到栏边，独自看江。风把楼下的市声一阵阵送上来。",
+              "text": "你退到矶边，独自看江。风把矶下的市声一阵阵送上来。",
               "cost": 0,
               "effects": {
                 "scholar_tendency": 1
@@ -115,7 +115,7 @@
           "id": "ez_huanghelou_rumor",
           "type": "rumor",
           "label": "听茶摊",
-          "text": "楼下茶摊上，一个从临安回来的牙人说，明州今春蚕好，丝户争着出手，生丝价该松了。",
+          "text": "矶下茶摊上，一个从临安回来的牙人说，庆元今春蚕好，丝户争着出手，生丝价该松了。",
           "cost": 10,
           "cooldown_days": 30,
           "port": "mingzhou",
@@ -339,11 +339,11 @@
       "id": "ez_zhizhi",
       "port": "ezhou",
       "pending_port": true,
-      "name": "荆湖制置司与都统司水军",
+      "name": "湖广总领所与都统司水军",
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_ez_zhizhi.jpg",
-      "description": "都统司的水军寨扎在江边，湖广总领所管着诸军钱粮。景定元年，荆湖制置司移治鄂州，衙廊就设在寨北。",
+      "description": "都统司的水军寨扎在江边，湖广总领所管着诸军钱粮。总领所的衙廊设在寨北，吏员抱着账册从码头过。",
       "interactions": [
         {
           "id": "ez_zhizhi_rudder",
@@ -408,7 +408,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_ez_toutuo.jpg",
-      "description": "头陀寺在城东石城山，兵火后重修，殿宇不多。廊下还堆着新斫的木料。",
+      "description": "头陀寺在城东石城山，兵火后重修，殿宇不多。廊下堆着修补用的木料。",
       "interactions": [
         {
           "id": "ez_toutuo_incense",
@@ -453,7 +453,7 @@
           "id": "ez_toutuo_rumor",
           "type": "rumor",
           "label": "听寺僧",
-          "text": "寺僧说，东南几处大寺都在重刊藏经，明州的刻经铺接了单子，经卷要涨。",
+          "text": "寺僧说，东南几处大寺都在重刊藏经，庆元的刻经铺接了单子，经卷要涨。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "mingzhou",
@@ -522,7 +522,7 @@
       "kind": "ferry",
       "pending_art": true,
       "bg": "bg_dist_ez_dukou.jpg",
-      "description": "渡口在城南江岸，蜀船、淮船都在这儿候风。跳板搭上石阶，蜀锦、药材和茶包一担担挑下来。",
+      "description": "渡口在城下江岸，蜀船、淮船都在这儿候风。跳板搭上石阶，蜀锦、药材和茶包一担担挑下来。",
       "interactions": [
         {
           "id": "ez_dukou_buy_medicine",
@@ -613,13 +613,13 @@
       "pending_art": true,
       "bg": "bg_dist_ez_cheng_pengfei.jpg",
       "unlock": {
-        "year_min": 1275,
-        "year_max": 1275,
+        "year_min": 1274,
+        "year_max": 1274,
         "months": [
-          1
+          12
         ]
       },
-      "description": "上年腊月，元军从阳逻堡渡江。都统程鹏飞在江上迎战，身被七创，退到鄂州城下。知鄂州张晏然、知汉阳军王仪以城降，程鹏飞以本军降。",
+      "description": "咸淳十年十二月，元军自青山矶渡江。都统程鹏飞在江上迎战，身被七创，退到鄂州城下。知汉阳军王仪先以城降，知鄂州张晏然随即开城，程鹏飞以本军降。",
       "interactions": [
         {
           "id": "ez_cheng_pengfei_boat",

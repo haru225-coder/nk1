@@ -109,7 +109,7 @@
           "id": "xy_fancheng_fall",
           "type": "choice",
           "label": "正月",
-          "text": "咸淳九年正月，北兵破樊城。城头火起，汉水上的小船挤着往南岸退。",
+          "text": "咸淳九年正月，元军破樊城。城头火起，汉水上的小船挤着往南岸退。",
           "once": true,
           "unlock": {
             "year_min": 1273,
@@ -187,7 +187,7 @@
           "id": "xy_fuqiao_zhang",
           "type": "choice",
           "label": "援师",
-          "text": "咸淳八年五月，援师自下游来。张顺战殁，张贵入城，后来又突围被俘。浮桥边的守卒说起这两个名字，声音都低下去。",
+          "text": "咸淳八年五月，援师自上游来。张顺战殁，张贵入城。浮桥边的守卒说起这两个名字，声音都低下去。",
           "once": true,
           "unlock": {
             "year_min": 1272,
@@ -205,13 +205,13 @@
               "effects": {
                 "fame": 1,
                 "martial": 1,
-                "note": "咸淳八年五月，在浮桥边祭过张顺、张贵。"
+                "note": "咸淳八年五月，在浮桥边祭过张顺与援师死者。"
               }
             },
             {
               "id": "listen",
               "label": "听守卒说",
-              "text": "守卒说张贵突围时被俘，再没有回来。你把这两个名字记在船簿背面。",
+              "text": "守卒说张贵入城时，船队只剩一半。你把这两个名字记在船簿背面。",
               "cost": 0,
               "effects": {
                 "network": 1,
@@ -233,7 +233,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_xy_yamen.jpg",
-      "description": "安抚司衙在襄阳城中，庭中立着戒石，廊下堆着军报与粮簿。吕文焕守城时，这里昼夜有人候令。",
+      "description": "安抚司衙在襄阳城中，庭中立着戒石，廊下堆着军报与粮簿，昼夜有人候令。",
       "interactions": [
         {
           "id": "xy_yamen_card",
@@ -327,11 +327,11 @@
       "id": "xy_lumen",
       "port": "xiangyang",
       "pending_port": true,
-      "name": "鹿门山与元军围城长堡",
+      "name": "鹿门山",
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_xy_lumen.jpg",
-      "description": "鹿门山在襄阳东南，山脚临汉水。咸淳四年以后，阿术在山下筑长堡，连营直到水边，城里的樵采一日难似一日。",
+      "description": "鹿门山在襄阳东南，山脚临汉水。山上松柏密，樵路一直通到水边。",
       "interactions": [
         {
           "id": "xy_lumen_before",
@@ -655,7 +655,7 @@
       "kind": "workshop",
       "pending_art": true,
       "bg": "bg_dist_xy_huihui.jpg",
-      "description": "咸淳九年正月，回回炮推到樊城下。你从襄阳城头望过去，炮架以巨木为臂，石弹堆在阵前，亦思马因在旁看人发炮。",
+      "description": "咸淳九年正月，回回炮推到樊城下。你从襄阳城头望过去，炮架以巨木为臂，石弹堆在阵前，西域匠人在旁看人发炮。",
       "interactions": [
         {
           "id": "xy_huihui_watch",
@@ -730,7 +730,7 @@
       "kind": "gate",
       "pending_art": true,
       "bg": "bg_dist_xy_jiang.jpg",
-      "description": "咸淳九年二月，襄阳城门开了。吕文焕出降，北兵列队入城，街上的旗一夜之间换了颜色。",
+      "description": "咸淳九年二月，襄阳城门开了。吕文焕出降，元军列队入城，街上的旗一夜之间换了颜色。",
       "interactions": [
         {
           "id": "xy_jiang_surrender",
@@ -749,7 +749,7 @@
             {
               "id": "out",
               "label": "随众出城",
-              "text": "你随着人流走到城门外。北兵的甲胄在日头下反光，吕文焕的马已经进了北兵营门。",
+              "text": "你随着人流走到城门外。元军的甲胄在日头下反光，吕文焕的马已经进了元军大营。",
               "cost": 0,
               "effects": {
                 "martial": 1,
@@ -804,7 +804,7 @@
       "kind": "street",
       "pending_art": true,
       "bg": "bg_dist_xy_shijing.jpg",
-      "description": "襄阳城里的市井沿十字街铺开，竹器、木料、麻绳堆在檐下。围城日久，拆屋作薪的人多了，竹木价一日高过一日。",
+      "description": "襄阳城里的市井沿十字街铺开，竹器、木料、麻绳堆在檐下。竹木价随时令起落，兵事一紧，拆屋作薪的人也多。",
       "interactions": [
         {
           "id": "xy_shijing_invest",

@@ -8,7 +8,7 @@
       "kind": "gate",
       "pending_art": true,
       "bg": "bg_dist_yz_dacheng.jpg",
-      "description": "宋大城是扬州三城的外郭，城门临着市河，街巷沿河铺开。城砖多年未换，墙根被盐车磨出白痕。",
+      "description": "宋大城是扬州三城中的南城，城门临着市河，街巷沿河铺开。城砖多年未换，墙根被盐车磨出白痕。",
       "interactions": [
         {
           "id": "yz_dacheng_brick",
@@ -136,7 +136,7 @@
           "id": "yz_jiancheng_rumor",
           "type": "rumor",
           "label": "听传令",
-          "text": "传令兵在夹城下换马，说淮南的粮纲都拨去守城，明州来的米船在江口压着。",
+          "text": "传令兵在夹城下换马，说淮南的粮纲都拨去守城，庆元来的米船在江口压着。",
           "cost": 14,
           "cooldown_days": 40,
           "unlock": {
@@ -156,7 +156,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_yz_zhiyamen.jpg",
-      "description": "制置司衙在宋大城北，门前列着两排木架。文书房昼夜点灯，淮东的军报和盐牒都从这里过。",
+      "description": "制置司衙在宋大城里，门前列着两排木架。文书房昼夜点灯，淮东的军报和盐牒都从这里过。",
       "interactions": [
         {
           "id": "yz_zhiyamen_report",
@@ -177,7 +177,7 @@
           "id": "yz_zhiyamen_council",
           "type": "choice",
           "label": "围城议事",
-          "text": "堂上摊着扬州舆图，制置使问诸将：守大城，还是退保堡城。",
+          "text": "堂上摊着扬州舆图，制置使问诸将：守大城，还是分兵守堡城。",
           "once_per": "month",
           "unlock": {
             "year_min": 1276
@@ -229,7 +229,7 @@
       "kind": "warehouse",
       "pending_art": true,
       "bg": "bg_dist_yz_yanchang.jpg",
-      "description": "盐仓在运河西岸，仓门一开，咸气顺着河风扑过来。亭户挑着盐包在廊下等秤，盐吏把钞引摊了一案。",
+      "description": "盐仓在运河边，仓门一开，咸气顺着河风扑过来。亭户挑着盐包在廊下等秤，盐吏把钞引摊了一案。",
       "interactions": [
         {
           "id": "yz_yanchang_salt",
@@ -257,7 +257,7 @@
           "id": "yz_yanchang_rumor",
           "type": "rumor",
           "label": "问盐价",
-          "text": "盐吏翻着钞引簿，说两淮的盐要先到真州转纲，泉州的盐船这阵子少了。",
+          "text": "盐吏翻着钞引簿，说两淮的盐要转纲，泉州的盐船这阵子少了。",
           "cost": 16,
           "cooldown_days": 45,
           "port": "quanzhou",
@@ -359,7 +359,7 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_yz_yunhe.jpg",
-      "description": "运河码头从南门一直铺到钞关，石阶被纤绳磨出深槽。北上的纲船在这里换闸，粮袋和盐包堆得比人高。",
+      "description": "运河码头从南门一直铺到税场，石阶被纤绳磨出深槽。北上的纲船在这里换闸，粮袋和盐包堆得比人高。",
       "interactions": [
         {
           "id": "yz_yunhe_unload",
@@ -419,11 +419,11 @@
       "id": "yz_dongguan",
       "port": "yangzhou",
       "pending_port": true,
-      "name": "东关街",
+      "name": "东门街市",
       "kind": "street",
       "pending_art": true,
       "bg": "bg_dist_yz_dongguan.jpg",
-      "description": "东关街从城门一直通到市河，铺面门板一早卸下。卖绒花的、箍桶的、写船契的挤在一条檐下，脚下全是湿菜叶。",
+      "description": "东门街市从城门一直通到市河，铺面门板一早卸下。卖绢花的、箍桶的、写船契的挤在一条檐下，脚下全是湿菜叶。",
       "interactions": [
         {
           "id": "yz_dongguan_stall",
@@ -476,7 +476,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_yz_pingshan.jpg",
-      "description": "大明寺在蜀冈中峰，平山堂踞其西。堂前没有高墙，凭栏能看见江南的远山，堂下只余栖灵塔的塔基。",
+      "description": "大明寺在蜀冈中峰，平山堂踞其西。堂前没有高墙，凭栏能看见江南的远山，堂后只余栖灵塔的塔基。",
       "interactions": [
         {
           "id": "yz_pingshan_sweep",
@@ -594,7 +594,7 @@
       "kind": "grove",
       "pending_art": true,
       "bg": "bg_dist_yz_shaoyao.jpg",
-      "description": "城西的芍药圃一畦接一畦，花户在篱下剪枝。花开时城里人来看，花谢后只剩药锄和草绳。",
+      "description": "城外的芍药圃一畦接一畦，花户在篱下剪枝。花开时城里人来看，花谢后只剩药锄和草绳。",
       "interactions": [
         {
           "id": "yz_shaoyao_invest",
@@ -615,7 +615,7 @@
           "id": "yz_shaoyao_rumor",
           "type": "rumor",
           "label": "问花器",
-          "text": "花户说明州的花器最好卖，青白瓷瓶跟着芍药一起走，春市一开就要涨。",
+          "text": "花户说庆元转来的青白瓷瓶最好卖，跟着芍药一起走，春市一开就要涨。",
           "cost": 12,
           "cooldown_days": 30,
           "unlock": {
@@ -638,7 +638,7 @@
       "kind": "academy",
       "pending_art": true,
       "bg": "bg_dist_yz_zhouxue.jpg",
-      "description": "州学在城北，门前一排石碑，东墙糊着历年榜纸。廊下没有石人，只有两块被摸得发亮的柱础。",
+      "description": "州学在城内，门前一排石碑，东墙糊着历年榜纸。廊下没有石人，只有两块被摸得发亮的柱础。",
       "interactions": [
         {
           "id": "yz_zhouxue_list",
@@ -781,7 +781,7 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_yz_zhenzhou.jpg",
-      "description": "真州在长江北岸，纲船从仪真堰下来，在这里换载。仓场前的米袋堆成矮墙，押纲官拿着筹牌点数。",
+      "description": "真州在长江北岸，纲船从堰闸下来，在这里换载。仓场前的米袋堆成矮墙，押纲官拿着筹牌点数。",
       "interactions": [
         {
           "id": "yz_zhenzhou_rice",

@@ -71,7 +71,7 @@
       "kind": "ferry",
       "pending_art": true,
       "bg": "bg_dist_hn_baisha.jpg",
-      "description": "白沙津旧名神应港。戊申年飓风冲开沙嘴，大船才进得来。渡海的船在这里候潮，盐包与米袋堆在沙埂上。",
+      "description": "白沙津又名神应港。相传戊申年飓风冲开沙嘴，大船才进得来。渡海的船在这里候潮，盐包与米袋堆在沙埂上。",
       "interactions": [
         {
           "id": "hn_baisha_salt",
@@ -114,7 +114,7 @@
       "kind": "academy",
       "pending_art": true,
       "bg": "bg_dist_hn_sushi.jpg",
-      "description": "载酒堂在儋州城东黎子云宅前，元符元年落成。苏轼在此会友讲学，堂名取自《汉书》的载酒问字。旁有桄榔庵旧基。",
+      "description": "载酒堂在儋州城东南黎子云宅前，元符元年落成。苏轼在此会友讲学，堂名取自《汉书》扬雄传里的载酒问字。城南另有桄榔庵旧基。",
       "interactions": [
         {
           "id": "hn_sushi_visit",
@@ -132,7 +132,7 @@
           "id": "hn_sushi_copy",
           "type": "choice",
           "label": "听讲",
-          "text": "塾师把苏轼旧稿摊在案上，问你要抄哪一段。",
+          "text": "塾师把苏轼旧稿的抄本摊在案上，问你要抄哪一段。",
           "options": [
             {
               "id": "hn_sushi_copy_shu",
@@ -165,7 +165,7 @@
       "kind": "market",
       "pending_art": true,
       "bg": "bg_dist_hn_limiao.jpg",
-      "description": "城西的熟黎市，逢市日开。峒里的人背来沉香、槟榔与吉贝布，换盐和米。牙人按老规矩过秤，不问来路。",
+      "description": "城西的熟黎市，逢市日开。峒里的人背来沉香、槟榔与吉贝布，换盐和米。牙人按老规矩过秤，只认货色。",
       "interactions": [
         {
           "id": "hn_limiao_hide",
@@ -262,7 +262,7 @@
           "id": "hn_chenxiang_rumor",
           "type": "rumor",
           "label": "问香价",
-          "text": "香栈掌柜说，黎峒与官军相攻，山路断了两个月，运往泉州的沉香只发出一船。",
+          "text": "香栈掌柜说，黎峒里山路塌了两个月，香木下不来，运往泉州的沉香只发出一船。",
           "cost": 16,
           "cooldown_days": 45,
           "port": "quanzhou",
@@ -357,7 +357,7 @@
           "id": "hn_yantian_rumor",
           "type": "rumor",
           "label": "听盐船",
-          "text": "押船的人说，儋州盐田今春晴日多，一冬的盐都赶在北风前运过了海，广州盐仓堆不下。",
+          "text": "押船的人说，儋州盐田今春晴日多，盐收得厚，都赶着运过了海，广州盐仓堆不下。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "guangzhou",
@@ -454,7 +454,7 @@
           "id": "hn_duhai_huozhang",
           "type": "hire",
           "label": "雇火长",
-          "text": "火长渡过十几回海北渡，北岸的沓磊港，夜里也认得灯火。",
+          "text": "火长跑过十几回海，北岸的沓磊港，夜里也认得灯火。",
           "who": "渡船火长",
           "cost": 60,
           "wage": 11,
@@ -464,7 +464,7 @@
           "id": "hn_duhai_wind",
           "type": "choice",
           "label": "候风",
-          "text": "风从东北来，船主问走不走。走，今日能到徐闻；等，明日风更顺。",
+          "text": "风从南来，船主问走不走。走，今日能到徐闻；等，明日风更顺。",
           "needs_licence": "lic_hn_crossing",
           "options": [
             {
@@ -499,7 +499,7 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_hn_fanbo.jpg",
-      "description": "蕃舶从占城、三佛齐来，到了琼州洋面先泊下候风。船身黑，帆脚卷着，甲板上晾着胡椒与香木。",
+      "description": "蕃舶从占城、三佛齐来，过琼州洋面时，常泊下候风。船身深黑，帆脚卷着，甲板上晾着胡椒与香木。",
       "interactions": [
         {
           "id": "hn_fanbo_pilot",
@@ -541,11 +541,11 @@
       "id": "hn_lingci",
       "port": "qiongzhou",
       "pending_port": true,
-      "name": "灵慈庙",
+      "name": "海神小庙",
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_hn_lingci.jpg",
-      "description": "灵慈庙在城北，门朝海。庙里只供一块木主，香案上搁着船户送的小木船。闽商到港，先来添一炷香。",
+      "description": "海神小庙在城北，门朝海。庙里只供一块木主，香案上搁着船户送的小木船。闽商到港，先来添一炷香。",
       "interactions": [
         {
           "id": "hn_lingci_incense",
@@ -568,17 +568,17 @@
             {
               "id": "hn_lingci_wind_north",
               "label": "问北风",
-              "text": "你抽了一支北风签。庙祝说，回雷州的船三日内可开。",
+              "text": "你抽了一支北风签。庙祝说，雷州来琼州的船三日内可到。",
               "cost": 3,
               "effects": {
                 "sea_tendency": 1,
-                "note": "在灵慈庙问过北风。"
+                "note": "在海神小庙问过北风。"
               }
             },
             {
               "id": "hn_lingci_wind_south",
               "label": "问南风",
-              "text": "你抽了一支南风签。庙祝把签放回筒里，没有多话。",
+              "text": "你抽了一支南风签。庙祝说，回雷州的船三日内可开。",
               "cost": 3,
               "effects": {
                 "network": 1
@@ -596,7 +596,7 @@
       "kind": "academy",
       "pending_art": true,
       "bg": "bg_dist_hn_zhouxue.jpg",
-      "description": "琼州州学在州城西，讲堂前种着两株榕。淳熙年间韩璧修过学舍，朱熹为它作《琼州学记》。",
+      "description": "琼州州学在州城东南，讲堂前种着两株榕。淳熙九年，帅守韩璧重修明伦堂，朱熹为它作《琼州学记》。",
       "interactions": [
         {
           "id": "hn_zhouxue_paper",
@@ -614,7 +614,7 @@
           "id": "hn_zhouxue_lecture",
           "type": "choice",
           "label": "听讲",
-          "text": "讲堂上正在讲《论语》。斋长问你是旁听，还是留下抄经。",
+          "text": "讲堂上正在讲《论语》。斋长问你是旁听，还是留下抄书。",
           "options": [
             {
               "id": "hn_zhouxue_lecture_listen",
@@ -627,7 +627,7 @@
             },
             {
               "id": "hn_zhouxue_lecture_copy",
-              "label": "抄经",
+              "label": "抄书",
               "text": "你抄了一页《论语》。斋长看过，说笔意还稳。",
               "cost": 6,
               "effects": {
