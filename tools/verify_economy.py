@@ -633,7 +633,7 @@ check(_pa_fn.count("PRICE_SPREAD_MIN") >= 3
 
 
 def sell_revenue(pid, gid, amount, rate=1.0):
-    depth = ports[pid]["depth"]
+    depth = ports[pid]["depth"] * goods[gid].get("depth_mul", 1.0)
     total, r = 0, rate
     for _ in range(amount):
         total += sell_price(pid, gid, r)
@@ -642,7 +642,7 @@ def sell_revenue(pid, gid, amount, rate=1.0):
 
 def buy_cost(pid, gid, amount, rate=1.0):
     """镜像 Economy.estimate_buy_cost：逐件加价累计。"""
-    depth = ports[pid]["depth"]
+    depth = ports[pid]["depth"] * goods[gid].get("depth_mul", 1.0)
     total, r = 0, rate
     for _ in range(amount):
         total += buy_price(pid, gid, r)
@@ -2503,7 +2503,7 @@ check(all(r[1] <= 1.10 and r[2] <= 1.15 for r in _route_rows),
       f"{len(_route_rows)} 个翻牌月开开关后，每料最好航线涨幅 ≤ 一成、前十条均值涨幅 ≤ 一成半"
       f"（最高 {_worst[0]}：最好 {(_worst[1] - 1) * 100:+.1f}%、前十 {(_worst[2] - 1) * 100:+.1f}%）")
 print(f"  回本率最好一条开 / 关之比最高 {max(r[3] for r in _route_rows):.2f}（{max(_route_rows, key=lambda r: r[3])[0]}；"
-      f"本钱紧时奢侈货运进降元港最见涨，舱满时仍是砂金领先）")
+      f"本钱紧时奢侈货运进降元港最见涨，按单件价差舱满时仍是砂金领先；实际整舱深浅另见 docs/balance_w57.md）")
 
 # 关键价位（commit 说明照抄这几行）
 print("  关键价位（行情 1.0、光杆；关 → 开）：")

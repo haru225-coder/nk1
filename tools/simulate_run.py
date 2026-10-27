@@ -582,7 +582,7 @@ def do_buy(gid, want, floor_price=None, budget=None):
     """理性买入：逐件推高行情，装到空舱最大的船（多船分装），
     一旦买价逼近目标港卖价就收手。
     budget 限制本次投入——真人玩家不会把全部身家押在一船违禁货上。"""
-    depth = ports[G.port]["depth"]
+    depth = ports[G.port]["depth"] * goods[gid].get("depth_mul", 1.0)
     if budget is None: budget = G.money
     got, spent = 0, 0
     while got < want:
@@ -606,7 +606,7 @@ def do_buy(gid, want, floor_price=None, budget=None):
 
 def do_sell(gid, qty):
     """跨船卖出：优先从货最多的船扣（模拟玩家清仓）"""
-    depth = ports[G.port]["depth"]
+    depth = ports[G.port]["depth"] * goods[gid].get("depth_mul", 1.0)
     rev, sold = 0, 0
     while sold < qty:
         cands = [i for i in range(len(G.ships)) if G.ships[i]["cargo"].get(gid, [0])[0] > 0]
@@ -1569,7 +1569,7 @@ if cgid:
     check(abs(rates[cdst][cgid] - dest_rate) < 1e-9, "航行本身不改目的港行情")
     sale = 0
     r = dest_rate
-    depth = ports[cdst]["depth"]
+    depth = ports[cdst]["depth"] * goods[cgid].get("depth_mul", 1.0)
     for _ in range(got):
         sale += round(goods[cgid]["base_value"] * ROLE_MOD["consumer"] * r * (1 - BROKER))
         r = max(RATE_MIN, min(RATE_MAX, r - 1.0 / depth))

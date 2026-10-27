@@ -102,7 +102,7 @@ func _settle(n: int) -> void:
 
 
 ## 深度 = ports.json depth × (1 + 修埠加深 × 等)，自算不借 Economy._depth
-func _depth(port_id: String) -> float:
+func _depth(port_id: String, good_id: String = "") -> float:
 	var base := 100.0
 	for p in gm.ports_data.get("ports", []):
 		if str(p.get("id", "")) == port_id:
@@ -110,13 +110,19 @@ func _depth(port_id: String) -> float:
 			break
 	var cfg = gm.titles_data.get("invest", {})
 	var per := float(cfg.get("depth_per_level", 0.12)) if typeof(cfg) == TYPE_DICTIONARY else 0.12
-	return base * (1.0 + per * float(eco.investment_level(port_id)))
+	var mul := 1.0
+	if good_id != "":
+		for g in gm.goods_data.get("goods", []):
+			if str(g.get("id", "")) == good_id:
+				mul = float(g.get("depth_mul", 1.0))
+				break
+	return base * (1.0 + per * float(eco.investment_level(port_id))) * mul
 
 
 ## 探针自带的逐件买入推演：每件报价后行情 +1/depth（钳在 RATE_MIN..RATE_MAX），买满 cap 件或 money ≥ 0 时付不起下一件即停
 func _brute_buy(pid: String, gid: String, cap: int, money: int) -> Array:
 	var r: float = eco.get_rate(pid, gid)
-	var d := _depth(pid)
+	var d := _depth(pid, gid)
 	var n := 0
 	var total := 0
 	while n < cap:
@@ -131,7 +137,7 @@ func _brute_buy(pid: String, gid: String, cap: int, money: int) -> Array:
 
 func _brute_sell(pid: String, gid: String, amount: int) -> int:
 	var r: float = eco.get_rate(pid, gid)
-	var d := _depth(pid)
+	var d := _depth(pid, gid)
 	var total := 0
 	for i in amount:
 		total += eco.price_at_rate(pid, gid, r, false)
@@ -176,7 +182,7 @@ func _walk_matches() -> void:
 				var got_c: int = eco.estimate_buy_cost(pid, gid, amount)
 				if got_c != want_c and bad_buy.size() < 4:
 					bad_buy.append("%s/%s 行情%.2f 买 %d：%d（应 %d）" % [pid, gid, rate, amount, got_c, want_c])
-				if rate + float(amount) / _depth(pid) > eco.RATE_MAX:
+				if rate + float(amount) / _depth(pid, gid) > eco.RATE_MAX:
 					saturated += 1
 				n_sell += 1
 				var want_s := _brute_sell(pid, gid, amount)

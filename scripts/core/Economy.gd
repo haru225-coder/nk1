@@ -357,9 +357,12 @@ func apply_news_market(m: Dictionary) -> Array:
 
 # ── 交易冲击 ──────────────────────────────────────────
 
-func _depth(port_id: String) -> float:
+func _depth(port_id: String, good_id: String = "") -> float:
 	var base := float(_port_def(port_id).get("depth", 100))
-	return base * (1.0 + float(_invest_cfg().get("depth_per_level", 0.12)) * float(investment_level(port_id)))
+	var mul := 1.0
+	if good_id != "":
+		mul = float(_good_def(good_id).get("depth_mul", 1.0))
+	return base * (1.0 + float(_invest_cfg().get("depth_per_level", 0.12)) * float(investment_level(port_id))) * mul
 
 
 func _shift_rate(port_id: String, good_id: String, delta: float) -> void:
@@ -371,19 +374,19 @@ func _shift_rate(port_id: String, good_id: String, delta: float) -> void:
 
 ## 玩家买入 amount 单位后推高价格
 func apply_buy_impact(port_id: String, good_id: String, amount: int) -> void:
-	_shift_rate(port_id, good_id, float(amount) / _depth(port_id))
+	_shift_rate(port_id, good_id, float(amount) / _depth(port_id, good_id))
 
 
 ## 玩家卖出 amount 单位后压低价格——一次性倾销会砸盘
 func apply_sell_impact(port_id: String, good_id: String, amount: int) -> void:
-	_shift_rate(port_id, good_id, -float(amount) / _depth(port_id))
+	_shift_rate(port_id, good_id, -float(amount) / _depth(port_id, good_id))
 
 
 ## 预估卖出总收入，逐单位结算以体现砸盘效应。行情砸到 RATE_MIN 之后单价不再变，余下件数一次乘完
 ## （与逐件累加同数；大舱轻货一次卖上千件也不逐件推）。
 func estimate_sell_revenue(port_id: String, good_id: String, amount: int) -> int:
 	var total := 0
-	var depth := _depth(port_id)
+	var depth := _depth(port_id, good_id)
 	var r := get_rate(port_id, good_id)
 	for i in range(amount):
 		if r == RATE_MIN:
@@ -410,7 +413,7 @@ func affordable_qty(port_id: String, good_id: String, money: int, cap: int) -> i
 func _walk_buy(port_id: String, good_id: String, cap: int, budget: int) -> Array:
 	var qty := 0
 	var total := 0
-	var depth := _depth(port_id)
+	var depth := _depth(port_id, good_id)
 	var r := get_rate(port_id, good_id)
 	while qty < cap:
 		var p := price_at_rate(port_id, good_id, r, true)
@@ -633,7 +636,7 @@ func blockade_grain_unit(port_id: String) -> float:
 ## 一趟城里收得下几件：本港行情深浅（_depth，含修埠加深）。城里缺粮也只吃得下这么多——不封顶，收粮钱随舱位线性涨，
 ## 大舱一趟就成了摇钱树
 func blockade_grain_cap(port_id: String) -> int:
-	return int(_depth(port_id))
+	return int(_depth(port_id, "grain"))
 
 # ── 季节需求（节令）：与 tools/verify_economy.py SEASONAL_MUL 同表 ──
 # 月 → 货 → 倍数；未列的货/月一律 1.0。宋人口气：春茶新、夏扇、冬裘、秋收米贱等。

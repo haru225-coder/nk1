@@ -128,7 +128,7 @@ func _buy_like_main(port_id: String, gid: String, amount: int, ship_index: int) 
 # ── 一、大买入逐件抬价与分船装舱 ───────────────────────
 
 ## 深度 = ports.json depth × (1 + 修埠加深 × 等)，独立重算不借 Economy._depth
-func _depth(port_id: String) -> float:
+func _depth(port_id: String, good_id: String = "") -> float:
 	var base := 100.0
 	for p in gm.ports_data.get("ports", []):
 		if str(p.get("id", "")) == port_id:
@@ -136,7 +136,13 @@ func _depth(port_id: String) -> float:
 			break
 	var cfg = gm.titles_data.get("invest", {})
 	var per := float(cfg.get("depth_per_level", 0.12)) if typeof(cfg) == TYPE_DICTIONARY else 0.12
-	return base * (1.0 + per * float(eco.investment_level(port_id)))
+	var mul := 1.0
+	if good_id != "":
+		for g in gm.goods_data.get("goods", []):
+			if str(g.get("id", "")) == good_id:
+				mul = float(g.get("depth_mul", 1.0))
+				break
+	return base * (1.0 + per * float(eco.investment_level(port_id))) * mul
 
 
 func _fresh_slot_reconciliation() -> void:
@@ -150,7 +156,7 @@ func _fresh_slot_reconciliation() -> void:
 	# 1a. estimate_buy_cost 的逐件抬价：独立序列（depth 自重算，逐件报价后行情推到 r+1/depth）比对
 	eco.rates = rates0.duplicate(true)
 	eco.rates["hakata"][gid] = 1.0
-	var depth := _depth("hakata")
+	var depth := _depth("hakata", "placer_gold")
 	var n_big := 20
 	var want_total := 0
 	var r := 1.0

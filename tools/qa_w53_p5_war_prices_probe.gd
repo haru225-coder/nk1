@@ -151,7 +151,7 @@ func _old_price_at_rate(port_id: String, good_id: String, rate: float, is_buy: b
 ## 改前 estimate_sell_revenue 的逐件推演，单价走改前原式
 func _old_sell_revenue(port_id: String, good_id: String, amount: int) -> int:
 	var total := 0
-	var depth: float = eco._depth(port_id)
+	var depth: float = eco._depth(port_id, good_id)
 	var r: float = eco.get_rate(port_id, good_id)
 	for i in range(amount):
 		if r == eco.RATE_MIN:
