@@ -156,7 +156,7 @@
     {
      "kind": "foretell",
      "event": "xinghua_falls_1276",
-     "note": "意气 ≥60 离队时留口信，见 fate 余泽"
+     "note": "意气 ≥60 离队时留一句口信，日后自有回响。"
     }
    ],
    "stance": "neutral",
@@ -168,7 +168,7 @@
     "song_coin"
    ],
    "climax": {
-    "scholar": "1276 年兴化守城（_siege_lin_hua）",
+    "scholar": "1276 年兴化守城",
     "merchant": "1276 年十二月城破新闻（按余泽档）",
     "hometown": "1277 年二三月涵江海口卡里一句：陈瓒复城、林华被杀"
    },
@@ -243,7 +243,7 @@
        "mingzhou"
       ],
       "mode": "tavern",
-      "note": "邂逅之后可在庆元一处酒馆再见（requires events_done zhu_qing_sea）"
+      "note": "邂逅之后可在庆元一处酒馆再见（需先完成朱清海上遭遇）"
      }
     ],
     "scene": "庆元航段昌国外海：三条无旗快船围住你，为首的汉子不劫货，只要借你的市舶公凭用一趟",
@@ -594,7 +594,7 @@
     },
     {
      "kind": "event_flag",
-     "note": "第二段运粮完成：名声 +5，写 ledger_note「替乡兵运粮」"
+     "note": "第二段运粮完成：名声 +5，札记里记一笔「替乡兵运粮」"
     }
    ],
    "stance": "song",
@@ -1003,7 +1003,7 @@
     },
     {
      "kind": "climax",
-     "note": "厓山潮沟：见 fate"
+     "note": "厓山潮沟：结局另有下文"
     }
    ],
    "stance": "song",
@@ -1429,7 +1429,7 @@
      "kind": "tariff",
      "ports_state": "fallen",
      "factor": 0.9,
-     "note": "吏牍：在已降元港口，抽解的战况倍率 ×0.9（2.0 → 1.8）；只作 _effective_tariff 的输入，过价差地板，不与蒲家八折叠过 0.8"
+     "note": "吏牍：在已降元港口，抽解的战况倍率按九成计；不与蒲家八折相叠"
     }
    ],
    "stance": "yuan",
@@ -2437,7 +2437,7 @@
      {
       "src": "event:pham_book",
       "value": 20,
-      "note": "委托：替他带一卷书（sutra_scrolls）来"
+      "note": "委托：替他带一卷经卷来"
      },
      {
       "src": "visit:2",
@@ -2818,7 +2818,7 @@
      {
       "src": "event:zheng11_herbs",
       "value": 20,
-      "note": "委托：带 aromatic_medicine ×10 到云屯"
+      "note": "委托：带十份香药到云屯"
      },
      {
       "src": "gift:aromatic_medicine×3",
@@ -4031,7 +4031,7 @@
     },
     {
      "kind": "event_flag",
-     "note": "托番舶往渤泥一季（away）：回来时带回麻漾，并提前她的登场"
+     "note": "托番舶往渤泥一季（外出）：回来时带回麻漾，她也会早些露面"
     }
    ],
    "stance": "neutral",
@@ -4796,7 +4796,7 @@
      "invest": 1000,
      "dividend_per_year": 150,
      "cap_total": 1500,
-     "note": "船股：1275 年转盟友后每年分红 150，累计封顶 1500（ROI 50%，进 verify_economy §十同类断言）"
+     "note": "船股：1275 年转盟友后每年分红 150，累计封顶 1500"
     }
    ],
    "stance": "neutral",
@@ -5660,7 +5660,7 @@
      {
       "src": "event:pu_shiwen_lang",
       "value": 20,
-      "note": "在番商场合替他圆一回语言（tongshi 在船）"
+      "note": "在番商场合替他圆一回语言（通事在船）"
      },
      {
       "src": "event:pu_shiwen_convoy",
@@ -6180,7 +6180,7 @@
      {
       "src": "event:abu_ali_sea",
       "value": 20,
-      "note": "西洋水道答得他连连点头（tongshi 在船）"
+      "note": "西洋水道答得他连连点头（通事在船）"
      },
      {
       "src": "gift:aromatic_medicine×1",
@@ -6449,7 +6449,7 @@
      {
       "src": "event:ayaz_tariff",
       "value": 20,
-      "note": "市舶抽份的门道谈了一整夜（zongguan 在船）"
+      "note": "市舶抽份的门道谈了一整夜（总管在船）"
      },
      {
       "src": "event:ayaz_convoy",
@@ -6687,7 +6687,7 @@
    "name": "孛由補剌者吾",
    "region": "vietnam_champa",
    "category": "史实",
-   "identity": "占城国王因陀罗跋摩五世（Indravarman V）；拒元亲朝亲降，1283 年遁入鸦候山",
+   "identity": "占城国王因陀罗跋摩五世；拒元亲朝亲降，1283 年遁入鸦候山",
    "langs": [
     "cham",
     "khmer"
