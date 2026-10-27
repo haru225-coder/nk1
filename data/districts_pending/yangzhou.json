@@ -257,7 +257,7 @@
           "id": "yz_yanchang_rumor",
           "type": "rumor",
           "label": "问盐价",
-          "text": "盐吏翻着钞引簿，说两淮的盐要先去镇江转纲，泉州的盐船这阵子少了。",
+          "text": "盐吏翻着钞引簿，说两淮的盐要先到真州转纲，泉州的盐船这阵子少了。",
           "cost": 16,
           "cooldown_days": 45,
           "port": "quanzhou",
@@ -615,7 +615,7 @@
           "id": "yz_shaoyao_rumor",
           "type": "rumor",
           "label": "问花器",
-          "text": "花户说明州的花器最好卖，青瓷瓶跟着芍药一起走，春市一开就要涨。",
+          "text": "花户说明州的花器最好卖，青白瓷瓶跟着芍药一起走，春市一开就要涨。",
           "cost": 12,
           "cooldown_days": 30,
           "unlock": {
