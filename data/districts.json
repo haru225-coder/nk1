@@ -1231,6 +1231,86 @@
           "unlock": {
             "require_flag": "xh_mulan_weir"
           }
+        },
+        {
+          "id": "npc_zhengyan_meet",
+          "type": "favour",
+          "label": "陂司书手",
+          "text": "木兰陂的陂司里，郑堰正在校水则。他说陂成于元丰六年，李宏和僧冯智日把溪水拦在这里，钱四娘的事，乡人至今还说。",
+          "once": true,
+          "effects": {
+            "flag": "npc_zhengyan_met"
+          }
+        },
+        {
+          "id": "npc_zhengyan_ledger",
+          "type": "favour",
+          "label": "对水租簿",
+          "text": "陂司的簿上，修陂派工按田亩摊，水租却有三户拖着。郑堰把朱笔搁下，说今年溪水急，堰脚又松了。",
+          "once": true,
+          "unlock": {
+            "require_flag": "npc_zhengyan_met"
+          },
+          "effects": {
+            "flag": "npc_zhengyan_ledger"
+          }
+        },
+        {
+          "id": "npc_zhengyan_invest",
+          "type": "invest",
+          "label": "认修陂工",
+          "text": "郑堰按田亩派工，缺的是石料和人工。认一份修陂工，堰修成之后按月分水租。",
+          "shop": "修陂工",
+          "costs": [
+            200,
+            460
+          ],
+          "monthly": [
+            10,
+            24
+          ],
+          "unlock": {
+            "require_flag": "npc_zhengyan_ledger"
+          },
+          "effects": {
+            "flag": "npc_zhengyan_invested"
+          }
+        },
+        {
+          "id": "npc_zhengyan_split",
+          "type": "choice",
+          "label": "分水租",
+          "text": "头一季水租收上来了。郑堰把两份账推过来：一份补堰，一份按契分。",
+          "once": true,
+          "unlock": {
+            "require_flag": "npc_zhengyan_invested"
+          },
+          "options": [
+            {
+              "id": "weir",
+              "label": "留作堰工",
+              "text": "你把这一份留在陂司。郑堰记在修陂簿上，说堰脚能再撑几年。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 2,
+                "favour": 2,
+                "flag": "npc_zhengyan_weir",
+                "note": "木兰陂的修陂簿上添了一笔。"
+              }
+            },
+            {
+              "id": "share",
+              "label": "按契分",
+              "text": "你按契取了自己那一份。郑堰把账页合上，没有多说。",
+              "cost": 0,
+              "effects": {
+                "money": 80,
+                "merchant_credit": 1,
+                "flag": "npc_zhengyan_share",
+                "note": "木兰陂的水租按契分过。"
+              }
+            }
+          ]
         }
       ]
     },
@@ -1647,6 +1727,70 @@
               "effects": {
                 "hometown_tendency": 1,
                 "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "npc_xudai_meet",
+          "type": "favour",
+          "label": "盐包过秤",
+          "text": "涵江渡的盐包刚过秤。许岱说今年卤重，盐场出的盐白，只是引价一日一变。",
+          "once": true,
+          "effects": {
+            "flag": "npc_xudai_met"
+          }
+        },
+        {
+          "id": "npc_xudai_contract",
+          "type": "favour",
+          "label": "立盐契",
+          "text": "许岱把盐引和草契摊在渡口的石阶上。他要一个保人，写明汛期先供城里，余下的才下泉州的船。",
+          "once": true,
+          "unlock": {
+            "require_flag": "npc_xudai_met"
+          },
+          "effects": {
+            "flag": "npc_xudai_contract"
+          }
+        },
+        {
+          "id": "npc_xudai_bargain",
+          "type": "choice",
+          "label": "战时的盐价",
+          "text": "景炎以后，盐价一日三变。许岱把盐引压在秤砣下，说旧价和关子，只肯认一样。",
+          "once": true,
+          "unlock": {
+            "require_flag": "npc_xudai_contract",
+            "year_min": 1276,
+            "war_in": [
+              "besieged",
+              "fallen"
+            ]
+          },
+          "options": [
+            {
+              "id": "old",
+              "label": "认旧价",
+              "text": "你让许岱照旧价卖与城里。盐包过了秤，他没有加价。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 2,
+                "favour": 2,
+                "flag": "npc_xudai_oldprice",
+                "note": "涵江的盐按旧价进了城。"
+              }
+            },
+            {
+              "id": "paper",
+              "label": "折关子",
+              "text": "你把盐价折成关子，扣下一成贴水。许岱数了数纸，收进袖里。",
+              "cost": 0,
+              "effects": {
+                "money": 100,
+                "merchant_credit": 1,
+                "flag": "npc_xudai_guanzi",
+                "note": "涵江的盐价折成了关子。"
               }
             }
           ]
