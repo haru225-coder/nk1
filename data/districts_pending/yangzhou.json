@@ -1,0 +1,811 @@
+{
+  "districts": [
+    {
+      "id": "yz_dacheng",
+      "port": "yangzhou",
+      "pending_port": true,
+      "name": "宋大城",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_yz_dacheng.jpg",
+      "description": "宋大城是扬州三城的外郭，城门临着市河，街巷沿河铺开。城砖多年未换，墙根被盐车磨出白痕。",
+      "interactions": [
+        {
+          "id": "yz_dacheng_brick",
+          "type": "favour",
+          "label": "补城砖",
+          "text": "城下堆着新烧的青砖，守城兵正往城头递。你搭手搬了一车，衣襟蹭满砖灰。",
+          "cost": 24,
+          "once_per": "month",
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "yz_dacheng_dredge",
+          "type": "choice",
+          "label": "市河清淤",
+          "text": "市河淤了半尺，沿岸铺户各出人工。吏人拿着簿子问你出人还是出钱。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "yz_dacheng_dredge_labor",
+              "label": "出人",
+              "text": "你带伙计下了河，把淤泥一箕一箕递上岸。吏人在簿上添了你的名字。",
+              "cost": 0,
+              "effects": {
+                "favour": 1,
+                "martial": 1
+              }
+            },
+            {
+              "id": "yz_dacheng_dredge_money",
+              "label": "出钱",
+              "text": "你数了三十钱交给吏人，他另雇了脚夫。河岸上的泥当天清出一条沟。",
+              "cost": 30,
+              "effects": {
+                "favour": 1,
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "yz_baocheng",
+      "port": "yangzhou",
+      "pending_port": true,
+      "name": "堡城",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_yz_baocheng.jpg",
+      "description": "堡城筑在蜀冈上，城墙比大城高，北望淮东的驿路。守军把粮袋堆在门洞两侧，风一过，糠皮扑人。",
+      "interactions": [
+        {
+          "id": "yz_baocheng_grain",
+          "type": "favour",
+          "label": "分粮",
+          "text": "军中分米，堡城下的民户排成长队。你从舱里匀出两石，倒在门洞外的席上。",
+          "cost": 40,
+          "once_per": "month",
+          "unlock": {
+            "year_min": 1276
+          },
+          "effects": {
+            "fame": 1,
+            "favour": 2
+          }
+        },
+        {
+          "id": "yz_baocheng_beacon",
+          "type": "choice",
+          "label": "演烽",
+          "text": "北面烽燧试火，两把烟一高一低。守垛兵喊人上去认，风把烟压得很低。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "yz_baocheng_beacon_climb",
+              "label": "登垛",
+              "text": "你爬上土垛，按守兵教的法子数烟柱。报过方位，垛下的鼓才停。",
+              "cost": 0,
+              "effects": {
+                "martial": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "yz_baocheng_beacon_oil",
+              "label": "送灯油",
+              "text": "你提了一罐灯油上去。守兵把火拨亮，说夜里再看这一处。",
+              "cost": 12,
+              "effects": {
+                "favour": 1,
+                "martial": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "yz_jiancheng",
+      "port": "yangzhou",
+      "pending_port": true,
+      "name": "夹城",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_yz_jiancheng.jpg",
+      "description": "夹城夹在大城与堡城之间，一条军道从南门直抵蜀冈。两侧土墙低，马蹄声在墙间来回撞。",
+      "interactions": [
+        {
+          "id": "yz_jiancheng_road",
+          "type": "favour",
+          "label": "垫军道",
+          "text": "军道被雨水冲出沟，辎重车陷了半轴。你带人担土填平，车轮才过去。",
+          "cost": 18,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "martial": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "yz_jiancheng_rumor",
+          "type": "rumor",
+          "label": "听传令",
+          "text": "传令兵在夹城下换马，说淮南的粮纲都拨去守城，明州来的米船在江口压着。",
+          "cost": 14,
+          "cooldown_days": 40,
+          "unlock": {
+            "year_min": 1275
+          },
+          "port": "mingzhou",
+          "good": "grain",
+          "mul": 1.13
+        }
+      ]
+    },
+    {
+      "id": "yz_zhiyamen",
+      "port": "yangzhou",
+      "pending_port": true,
+      "name": "两淮制置司衙",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_yz_zhiyamen.jpg",
+      "description": "制置司衙在宋大城北，门前列着两排木架。文书房昼夜点灯，淮东的军报和盐牒都从这里过。",
+      "interactions": [
+        {
+          "id": "yz_zhiyamen_report",
+          "type": "favour",
+          "label": "递军报",
+          "text": "你替驿兵把一封淮东军报送进文书房。值房官拆封看了一眼，让你在回执上按了指印。",
+          "cost": 18,
+          "once_per": "month",
+          "unlock": {
+            "year_min": 1275
+          },
+          "effects": {
+            "network": 2,
+            "favour": 1
+          }
+        },
+        {
+          "id": "yz_zhiyamen_council",
+          "type": "choice",
+          "label": "围城议事",
+          "text": "堂上摊着扬州舆图，制置使问诸将：守大城，还是退保堡城。",
+          "once_per": "month",
+          "unlock": {
+            "year_min": 1276
+          },
+          "options": [
+            {
+              "id": "yz_zhiyamen_council_big",
+              "label": "守大城",
+              "text": "你主张守大城，把盐仓与市河都护在墙内。堂上有人点头，也有人看向北面。",
+              "cost": 0,
+              "effects": {
+                "fame": 1,
+                "network": 1,
+                "martial": 1
+              }
+            },
+            {
+              "id": "yz_zhiyamen_council_fort",
+              "label": "守堡城",
+              "text": "你说蜀冈地势高，粮秣先上堡城。制置使在图上画了一道线，没有再问。",
+              "cost": 0,
+              "effects": {
+                "favour": 1,
+                "hometown_tendency": 1,
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "yz_zhiyamen_copy",
+          "type": "favour",
+          "label": "抄盐牒",
+          "text": "文书房缺人抄盐牒，你写坏了三张纸，值房官仍把剩下的交给你。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "yz_yanchang",
+      "port": "yangzhou",
+      "pending_port": true,
+      "name": "两淮盐仓",
+      "kind": "warehouse",
+      "pending_art": true,
+      "bg": "bg_dist_yz_yanchang.jpg",
+      "description": "盐仓在运河西岸，仓门一开，咸气顺着河风扑过来。亭户挑着盐包在廊下等秤，盐吏把钞引摊了一案。",
+      "interactions": [
+        {
+          "id": "yz_yanchang_salt",
+          "type": "buy",
+          "label": "收盐",
+          "text": "仓外刚过完秤，盐包还热。盐吏按引上的数给你点货，麻绳勒进掌心。",
+          "good": "sea_salt",
+          "qty": 3,
+          "price_mul": 0.94,
+          "impact": false
+        },
+        {
+          "id": "yz_yanchang_boiler",
+          "type": "favour",
+          "label": "帮亭户",
+          "text": "亭户的盐船被闸水挡住，你借出两条缆绳，帮他们把船拖进仓湾。",
+          "cost": 22,
+          "once_per": "month",
+          "effects": {
+            "favour": 2,
+            "network": 1
+          }
+        },
+        {
+          "id": "yz_yanchang_rumor",
+          "type": "rumor",
+          "label": "问盐价",
+          "text": "盐吏翻着钞引簿，说两淮的盐要先去镇江转纲，泉州的盐船这阵子少了。",
+          "cost": 16,
+          "cooldown_days": 45,
+          "port": "quanzhou",
+          "good": "sea_salt",
+          "mul": 1.14
+        }
+      ]
+    },
+    {
+      "id": "yz_guazhou",
+      "port": "yangzhou",
+      "pending_port": true,
+      "name": "瓜洲渡",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_yz_guazhou.jpg",
+      "description": "瓜洲渡在江边沙洲上，渡船靠一条窄栈桥。对岸京口的山影压在雾里，等风的人蹲在芦棚下。",
+      "interactions": [
+        {
+          "id": "yz_guazhou_ferry",
+          "type": "favour",
+          "label": "摆渡",
+          "text": "江风把渡船推离栈桥，你拽住缆绳，帮船户把最后一批客商送上岸。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "yz_guazhou_close",
+          "type": "choice",
+          "label": "封渡",
+          "text": "北岸传来马蹄声，津吏要封渡。几个盐商还挤在栈桥头，问你走不走。",
+          "once_per": "month",
+          "unlock": {
+            "year_min": 1275
+          },
+          "options": [
+            {
+              "id": "yz_guazhou_close_wait",
+              "label": "候官令",
+              "text": "你让盐商退回芦棚，等津吏传完令。封渡的木牌挂上栈桥，没人再争。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "yz_guazhou_close_cross",
+              "label": "先渡货",
+              "text": "你让船户先渡盐包，津吏赶到时船已离岸。木牌在岸上敲了三下。",
+              "cost": 20,
+              "effects": {
+                "network": 1,
+                "pu_attention": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "yz_guazhou_north",
+          "type": "choice",
+          "label": "雾中来船",
+          "text": "雾里有一只小船从北岸来，船头不点灯。津吏问你辨不辨得出来路。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "yz_guazhou_north_hail",
+              "label": "近前问话",
+              "text": "你走到栈桥尽头喊了一嗓子。船上回了一句江北土音，说是送药的。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "martial": 1
+              }
+            },
+            {
+              "id": "yz_guazhou_north_report",
+              "label": "报与津吏",
+              "text": "你把小船指给津吏。两个弓手下了栈桥，船在雾里停了半晌。",
+              "cost": 0,
+              "effects": {
+                "favour": 1,
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "yz_yunhe",
+      "port": "yangzhou",
+      "pending_port": true,
+      "name": "运河码头",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_yz_yunhe.jpg",
+      "description": "运河码头从南门一直铺到钞关，石阶被纤绳磨出深槽。北上的纲船在这里换闸，粮袋和盐包堆得比人高。",
+      "interactions": [
+        {
+          "id": "yz_yunhe_unload",
+          "type": "favour",
+          "label": "卸纲船",
+          "text": "纲船靠岸，船户缺人递包。你接了两趟，肩头留下麻袋的印子。",
+          "cost": 26,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "merchant_credit": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "yz_yunhe_rumor",
+          "type": "rumor",
+          "label": "问米船",
+          "text": "船户说淮南截了北上粮纲，福州的米船改走海道，泊到扬州来问价。",
+          "cost": 14,
+          "cooldown_days": 35,
+          "port": "fuzhou",
+          "good": "grain",
+          "mul": 1.11
+        },
+        {
+          "id": "yz_yunhe_tow",
+          "type": "choice",
+          "label": "闸前拉纤",
+          "text": "闸前水浅，纲船要人拉纤。纤头问你雇几个人，还是自家下水。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "yz_yunhe_tow_self",
+              "label": "自家下水",
+              "text": "你脱了鞋踩进浅水，把纤绳搭上肩。船动了半丈，岸上有人叫好。",
+              "cost": 0,
+              "effects": {
+                "martial": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "yz_yunhe_tow_hire",
+              "label": "雇六人",
+              "text": "你数了三十钱给纤头，六个脚夫一齐发力。纲船顺着闸口滑了进去。",
+              "cost": 30,
+              "effects": {
+                "network": 2
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "yz_dongguan",
+      "port": "yangzhou",
+      "pending_port": true,
+      "name": "东关街",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_yz_dongguan.jpg",
+      "description": "东关街从城门一直通到市河，铺面门板一早卸下。卖绒花的、箍桶的、写船契的挤在一条檐下，脚下全是湿菜叶。",
+      "interactions": [
+        {
+          "id": "yz_dongguan_stall",
+          "type": "favour",
+          "label": "看摊",
+          "text": "布铺伙计去后巷搬货，托你看一炷香的摊。你替他收了两笔零钱，一文不差。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "yz_dongguan_credit",
+          "type": "choice",
+          "label": "赊布",
+          "text": "邻铺嫁女，来赊一匹红布。柜上现钱不凑手，掌柜看着你。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "yz_dongguan_credit_full",
+              "label": "借他现钱",
+              "text": "你替邻铺垫了布钱。掌柜把红布包好，送亲的人从街上过。",
+              "cost": 35,
+              "effects": {
+                "favour": 2,
+                "network": 1
+              }
+            },
+            {
+              "id": "yz_dongguan_credit_half",
+              "label": "只赊半匹",
+              "text": "你让掌柜先赊半匹，余下的等秋后。邻铺主妇谢了一声，抱着布走了。",
+              "cost": 15,
+              "effects": {
+                "merchant_credit": 1,
+                "favour": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "yz_pingshan",
+      "port": "yangzhou",
+      "pending_port": true,
+      "name": "大明寺与平山堂",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_yz_pingshan.jpg",
+      "description": "大明寺在蜀冈中峰，平山堂踞其西。堂前没有高墙，凭栏能看见江南的远山，堂下只余栖灵塔的塔基。",
+      "interactions": [
+        {
+          "id": "yz_pingshan_sweep",
+          "type": "favour",
+          "label": "扫堂",
+          "text": "你借了寺里的竹帚，把平山堂前的落叶扫成两堆。僧人送来一盏温水。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "yz_pingshan_base",
+          "type": "choice",
+          "label": "寻塔基",
+          "text": "塔基在堂后荒草里，砖缝间露着几块旧石。守寺的老僧问你找什么。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "yz_pingshan_base_measure",
+              "label": "量塔基",
+              "text": "你拿绳量了塔基的边长，把数记在纸上。老僧说从前塔影能压到山门。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "yz_pingshan_base_listen",
+              "label": "听旧事",
+              "text": "你给老僧添了一盏茶，听他讲塔毁后只剩这一圈石脚。",
+              "cost": 10,
+              "effects": {
+                "fame": 1,
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "yz_pingshan_tea",
+          "type": "favour",
+          "label": "供茶",
+          "text": "堂上来了几位过路的士人，你让寺僧煮了一壶茶。他们临去时问了你船上的货。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {
+            "network": 2,
+            "merchant_credit": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "yz_ershiqiao",
+      "port": "yangzhou",
+      "pending_port": true,
+      "name": "二十四桥",
+      "kind": "bridge",
+      "pending_art": true,
+      "bg": "bg_dist_yz_ershiqiao.jpg",
+      "description": "二十四桥在城西水道上，宋时已说不清是哪一座。桥面低，石栏换过几回，桥下只有卖藕的划子。",
+      "interactions": [
+        {
+          "id": "yz_ershiqiao_ask",
+          "type": "choice",
+          "label": "问桥",
+          "text": "桥头有个撑船的老人，说前面那道低桥就是旧时的二十四桥。你问他凭什么认得。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "yz_ershiqiao_ask_listen",
+              "label": "听他讲",
+              "text": "老人指着桥边的旧石桩，说小时候这里还有一道栏。你给了他一盏茶钱。",
+              "cost": 8,
+              "effects": {
+                "scholar_tendency": 1,
+                "fame": 1
+              }
+            },
+            {
+              "id": "yz_ershiqiao_ask_search",
+              "label": "自己找",
+              "text": "你沿河走了一里，只找到两块换下来的桥栏。石上的字已经磨平。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "yz_ershiqiao_moor",
+          "type": "favour",
+          "label": "系舟",
+          "text": "藕船在桥下打转，你替船娘把缆绳系到石桩上。她塞给你两节嫩藕。",
+          "cost": 6,
+          "once_per": "month",
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "yz_shaoyao",
+      "port": "yangzhou",
+      "pending_port": true,
+      "name": "扬州芍药",
+      "kind": "grove",
+      "pending_art": true,
+      "bg": "bg_dist_yz_shaoyao.jpg",
+      "description": "城西的芍药圃一畦接一畦，花户在篱下剪枝。花开时城里人来看，花谢后只剩药锄和草绳。",
+      "interactions": [
+        {
+          "id": "yz_shaoyao_invest",
+          "type": "invest",
+          "label": "入股花圃",
+          "text": "花户要添一副新篱，缺一笔本钱。你按老规矩入股，秋后按股分红。",
+          "shop": "芍药圃",
+          "costs": [
+            320,
+            760
+          ],
+          "monthly": [
+            16,
+            38
+          ]
+        },
+        {
+          "id": "yz_shaoyao_rumor",
+          "type": "rumor",
+          "label": "问花器",
+          "text": "花户说明州的花器最好卖，青瓷瓶跟着芍药一起走，春市一开就要涨。",
+          "cost": 12,
+          "cooldown_days": 30,
+          "unlock": {
+            "months": [
+              3,
+              4
+            ]
+          },
+          "port": "mingzhou",
+          "good": "qingbai_porcelain",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "yz_zhouxue",
+      "port": "yangzhou",
+      "pending_port": true,
+      "name": "州学与榜墙",
+      "kind": "academy",
+      "pending_art": true,
+      "bg": "bg_dist_yz_zhouxue.jpg",
+      "description": "州学在城北，门前一排石碑，东墙糊着历年榜纸。廊下没有石人，只有两块被摸得发亮的柱础。",
+      "interactions": [
+        {
+          "id": "yz_zhouxue_list",
+          "type": "favour",
+          "label": "看榜",
+          "text": "今秋的榜贴在州学东墙。看榜的人从廊下排到街口，有人念，有人只看自己的名字。",
+          "exam": true,
+          "once_per": "year",
+          "cost": 0,
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "yz_zhouxue_rub",
+          "type": "favour",
+          "label": "拓碑",
+          "text": "学正许你拓一张旧碑。纸按在石面上，墨包一捶，字口里的尘土飞起来。",
+          "cost": 18,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "yz_zhouxue_wall",
+          "type": "choice",
+          "label": "修榜墙",
+          "text": "东墙的榜纸被雨泡卷了边，学正问你要不要出钱重糊。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "yz_zhouxue_wall_full",
+              "label": "出钱重糊",
+              "text": "你出了四十钱，匠人把旧纸揭下，重新刷了一层面糊。",
+              "cost": 40,
+              "effects": {
+                "favour": 2,
+                "fame": 1
+              }
+            },
+            {
+              "id": "yz_zhouxue_wall_corner",
+              "label": "只补一角",
+              "text": "你让匠人只补卷起的一角。学正看了看，说下回再整墙重糊。",
+              "cost": 10,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "yz_haoqian",
+      "port": "yangzhou",
+      "pending_port": true,
+      "name": "北壕与弩台",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_yz_haoqian.jpg",
+      "description": "北壕沿城根往东，水不深，壕底插着削尖的木桩。城上弩台用夯土加高，守军每日试弦，箭垛上留着白痕。",
+      "interactions": [
+        {
+          "id": "yz_haoqian_patrol",
+          "type": "favour",
+          "label": "巡壕",
+          "text": "你跟着巡壕队走了一夜。壕水漫过脚踝，守兵把松动的木桩重新砸紧。",
+          "cost": 12,
+          "once_per": "month",
+          "unlock": {
+            "year_min": 1275
+          },
+          "effects": {
+            "martial": 1,
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "yz_haoqian_night",
+          "type": "choice",
+          "label": "夜巡",
+          "text": "三更北面有火光，巡兵问你带不带人出壕去看。",
+          "once_per": "month",
+          "unlock": {
+            "year_min": 1276
+          },
+          "options": [
+            {
+              "id": "yz_haoqian_night_out",
+              "label": "出壕",
+              "text": "你带两人摸到壕外，只看见一堆烧过的草灰。回城时吊桥已经放下一半。",
+              "cost": 0,
+              "effects": {
+                "martial": 2,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "yz_haoqian_night_stay",
+              "label": "守台",
+              "text": "你留在弩台上，把火把往垛口外伸了伸。壕外没有再响。",
+              "cost": 0,
+              "effects": {
+                "favour": 1,
+                "network": 1,
+                "martial": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "yz_zhenzhou",
+      "port": "yangzhou",
+      "pending_port": true,
+      "name": "真州纲船",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_yz_zhenzhou.jpg",
+      "description": "真州在长江北岸，纲船从仪真堰下来，在这里换载。仓场前的米袋堆成矮墙，押纲官拿着筹牌点数。",
+      "interactions": [
+        {
+          "id": "yz_zhenzhou_rice",
+          "type": "buy",
+          "label": "收米",
+          "text": "纲船刚卸完一舱，米还带着江上的潮气。押纲官按筹牌给你量了四石。",
+          "good": "grain",
+          "qty": 4,
+          "price_mul": 0.97,
+          "impact": false
+        },
+        {
+          "id": "yz_zhenzhou_line",
+          "type": "favour",
+          "label": "帮纲船",
+          "text": "纲船的纤绳断了，你借给船户一盘新索。他把你写在卸货簿的头一行。",
+          "cost": 18,
+          "once_per": "month",
+          "effects": {
+            "network": 2,
+            "favour": 1
+          }
+        }
+      ]
+    }
+  ]
+}
