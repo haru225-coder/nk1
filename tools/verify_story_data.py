@@ -101,6 +101,16 @@ for ch in chapters:
 # 就在哪里了结——simulate_run 那局第 28 趟在泉州够了八万即弹「占城的灯比泉州疏」，按「回占城港上」不过一日就到占城。
 # 现在 ending_requires.settle_at 钉住了结之地：结局幕所在的港、回去的港都须等于它，它也得是本章开着的港。
 scene_by_id = {s["id"]: s for s in scenes}
+# 旗标来源分两处：序章剧情选项（SCENE_FLAGS）与 scripts 里的 set_flag（CODE_FLAGS）。
+# 终章新结局用的是崖山 / 泉州站队这类在 Main 里落的旗，序章落港路径看不见；
+# 这类结局的可达性由 qa_w57_endings_probe 摆真旗验，下面的静态路只要求旗确实有人立。
+CODE_FLAGS = {f for p in pathlib.Path(ROOT, "scripts").rglob("*.gd")
+              for f in re.findall(r'set_flag\("([a-z0-9_]+)"\)', p.read_text(encoding="utf-8"))}
+SCENE_FLAGS = {c.get("effects", {}).get("flag")
+               for s in scenes for lst in ("choices", "investigations")
+               for c in (s.get(lst) or [])
+               if isinstance(c, dict) and isinstance(c.get("effects"), dict)}
+SCENE_FLAGS.discard(None)
 for ch in chapters:
     cid = int(ch["id"])
     end_ports = set()
@@ -183,6 +193,8 @@ for ch in chapters:
 # 第一章问兴化的人（history_pressure_seen）到第二章那封信总会再写下 letter_to_xinghua / merchant_caution /
 # temple_route 之一，史册未落笔一条路都走不到（全部 139968 条路只出海口信路与账上的距离）。
 # 末条无旗标的兜底（南海一纲）只接住没有剧情旗标的局面，不要求可达。
+# 终章由 Main.set_flag 落的旗（如 yashan_turned_back / sided_pu）不在序章路里：这类结局不拿静态路判，
+# 另由 qa_w57_endings_probe 摆真旗验 id / 标题 / 场景 / 次序与互斥；本门只确认这些旗确有人立。
 start_id = load("scenes.json").get("start_scene", "")
 
 
@@ -237,10 +249,19 @@ for ch in chapters:
                 hit.add(e.get("id"))
                 break
     for e in ends:
-        if e.get("require_any") or e.get("require_flag"):
-            check(e.get("id") in hit,
-                  f"chapters {ch['id']} 结局「{e.get('title')}」（{e.get('id')}）一条剧情路都走不到："
-                  f"它的旗标总被 endings 里排在前面的结局先截走（各路落港实得 {sorted(hit)}）")
+        positive = set(e.get("require_any") or [])
+        if e.get("require_flag"):
+            positive.add(e["require_flag"])
+        if not positive:
+            continue
+        if not (positive & SCENE_FLAGS):
+            check(positive <= CODE_FLAGS,
+                  f"chapters {ch['id']} 结局「{e.get('title')}」（{e.get('id')}）旗标 "
+                  f"{sorted(positive)} 既不在序章选项、也不是 scripts 里的 set_flag")
+            continue
+        check(e.get("id") in hit,
+              f"chapters {ch['id']} 结局「{e.get('title')}」（{e.get('id')}）一条剧情路都走不到："
+              f"它的旗标总被 endings 里排在前面的结局先截走（各路落港实得 {sorted(hit)}）")
 
 # ── 边记令牌须有上屏字（lane w53-4）──
 # scenes.json effects 的 ledger_note 是令牌（tangfang_parcel_and_sulfur_ledger_received 一类），住处「边记」与终局
@@ -1389,8 +1410,7 @@ SCENE_CTX = {
     "discoveries": {x for d in load("discoveries.json").get("discoveries", []) for x in (d.get("id"), d.get("name"))},
     "remapped": set(_main_const_list("REMAPPED_FACILITIES")),
     "prologue_only": set(_main_const_list("PROLOGUE_ONLY_FACILITIES")),
-    "code_flags": {f for p in pathlib.Path(ROOT, "scripts").rglob("*.gd")
-                   for f in re.findall(r'set_flag\("([a-z0-9_]+)"\)', p.read_text(encoding="utf-8"))},
+    "code_flags": CODE_FLAGS,
     "archive": SCENE_ARCHIVE,
 }
 check(len(SCENE_CTX["remapped"]) >= 9 and SCENE_CTX["prologue_only"], "Main.REMAPPED / PROLOGUE_ONLY_FACILITIES 解析失败")
