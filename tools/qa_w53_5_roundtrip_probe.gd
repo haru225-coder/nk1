@@ -106,6 +106,7 @@ func _run() -> void:
 		"flags": {"exam_sat": true, "exam_sat_ch2": true, "guild_quanzhou": true},
 		"ledger_notes": ["里正的旧账"],
 		"discoveries_found": ["d_reef_east"], "discoveries_reported": ["d_shoal_south"],
+		"treasures_owned": ["ru_ware_washer"], "treasures_appraised": [], "treasures_donated": ["guan_ware_vase"],
 		"ending_id": "", "ended": "", "ended_at": "", "ended_text": "", "ended_head": "",
 		"contract": {"good_id": "pepper", "qty": 8, "remaining": 5, "dest": "mingzhou",
 			"from": "quanzhou", "purse": 800, "unit_purse": 100.0, "paid": 300,

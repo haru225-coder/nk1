@@ -7,6 +7,13 @@ static func setup(main: Control, port_id: String) -> void:
 	var stock: Array = GameManager.treasures_at_shop(port_id)
 	if not stock.is_empty():
 		main.body_text.text += "\n\n唐物铺另设侧柜，单件不入舱。"
+	# 先在树外搭好一排卡，再整块静默挂上（字后填），整页重排不卡（qa_w53_3）
+	var shelf := HFlowContainer.new()
+	shelf.name = "TreasureShelf"
+	shelf.add_theme_constant_override("h_separation", 12)
+	shelf.alignment = FlowContainer.ALIGNMENT_CENTER
+	var old_host = main._slip_host
+	main._slip_host = shelf
 	for t in stock:
 		if typeof(t) != TYPE_DICTIONARY:
 			continue
@@ -37,6 +44,11 @@ static func setup(main: Control, port_id: String) -> void:
 		var chip2: Button = main._slip_chip(main._slip_row(body2, true), "鉴定　%d" % fee,
 			main._on_appraise_treasure.bind(str(tid)), true)
 		chip2.tooltip_text = "鉴定后可在市舶司献纳名声宝物"
+	main._slip_host = old_host
+	if shelf.get_child_count() > 0:
+		main._attach_quiet(main.choices_container, shelf)
+	else:
+		shelf.free()
 
 
 static func on_buy(main: Control, tid: String, port_id: String) -> void:
