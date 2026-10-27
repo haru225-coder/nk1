@@ -1,0 +1,832 @@
+{
+  "districts": [
+    {
+      "id": "jl_cheng",
+      "port": "jiangling",
+      "pending_port": true,
+      "name": "江陵府城",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_jl_cheng.jpg",
+      "description": "江陵府城倚江而筑，城内有府治、县衙和长街。城墙几经修葺，南门外的码头通沙市。",
+      "interactions": [
+        {
+          "id": "jl_cheng_wall",
+          "type": "favour",
+          "label": "登城",
+          "text": "你沿马道上城，守卒把垛口让出一段。江在城南，沙市的屋脊在下游铺开。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "martial": 1
+          }
+        },
+        {
+          "id": "jl_cheng_gate",
+          "type": "choice",
+          "label": "入城",
+          "text": "南门外的担子排到桥边，门吏挨个翻看货引。轮到你时，他问是进府城，还是沿江去沙市。",
+          "options": [
+            {
+              "id": "jl_cheng_gate_city",
+              "label": "进府城",
+              "text": "你进了南门，街边有米铺、纸铺和一间卖漆器的小店。门吏在簿上记下你的船号。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "jl_cheng_gate_shashi",
+              "label": "去沙市",
+              "text": "你沿江往下游走，沙市的桅杆渐渐多起来。江风带着米糠和鱼腥味。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jl_shashi",
+      "port": "jiangling",
+      "pending_port": true,
+      "name": "沙市镇",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_jl_shashi.jpg",
+      "description": "沙市在江陵府城南，宋时设监镇，筑沙市城。江岸泊着米船和盐船，商税在熙宁十年居江陵府各务之首。",
+      "interactions": [
+        {
+          "id": "jl_shashi_tax",
+          "type": "favour",
+          "label": "看税亭",
+          "text": "税亭的吏人翻着簿子，按船载的米数抽税。岸上脚夫把米包一包包扛进仓。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "jl_shashi_hire",
+          "type": "hire",
+          "label": "雇牙人",
+          "text": "监镇厅前有个老牙人，认得住来船户。雇他，米船靠岸时先得一份行情。",
+          "who": "牙人",
+          "cost": 60,
+          "wage": 8,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "jl_shashi_order",
+          "type": "choice",
+          "label": "评船",
+          "text": "两条米船同时靠岸，船户为了先卸争执起来。监镇的吏人让你评一句。",
+          "options": [
+            {
+              "id": "jl_shashi_order_heavy",
+              "label": "先卸重载",
+              "text": "你说重船吃水深，先卸可以少担风险。先到的船户沉着脸，把缆绳往桩上多绕了一圈。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "jl_shashi_order_first",
+              "label": "按先后",
+              "text": "你说按到岸先后卸，谁也不必争。监镇的吏人点头，船户各自把跳板搭好。",
+              "cost": 0,
+              "effects": {
+                "favour": 1,
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jl_sanhai",
+      "port": "jiangling",
+      "pending_port": true,
+      "name": "三海",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_jl_sanhai.jpg",
+      "description": "三海在江陵府城北，一二零七年刘甲筑上中下三海，引沮漳水灌成一片水网。一二四五年孟珙又修内外隘，蓄水护城。",
+      "interactions": [
+        {
+          "id": "jl_sanhai_walk",
+          "type": "favour",
+          "label": "巡堤",
+          "text": "你沿堤走了一段，水面上浮着菱叶。守堤的老兵指着远处的闸口，说今年水涨得早。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "martial": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "jl_sanhai_sluice",
+          "type": "choice",
+          "label": "开闸",
+          "text": "上游水涨，守堤的人拿不准开不开闸。老兵把水尺指给你看。",
+          "options": [
+            {
+              "id": "jl_sanhai_sluice_open",
+              "label": "开闸",
+              "text": "闸板抬起，水顺着沟渠往田里走。堤下的秧田先漫过一层。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "jl_sanhai_sluice_shut",
+              "label": "闭闸",
+              "text": "闸板落回槽里，水停在堤内。下游的船家骂了一句，撑船走了。",
+              "cost": 0,
+              "effects": {
+                "martial": 1,
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jl_kaiyuan",
+      "port": "jiangling",
+      "pending_port": true,
+      "name": "开元观",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_jl_kaiyuan.jpg",
+      "description": "开元观在江陵府城西南，唐开元年间始建。绍兴五年，观宇移到现址，殿门对着一条小巷。",
+      "interactions": [
+        {
+          "id": "jl_kaiyuan_incense",
+          "type": "favour",
+          "label": "上香",
+          "text": "你进殿上香，香案上的铜炉擦得很亮。道士在廊下敲了一声磬，声音在院里散开。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "jl_kaiyuan_stele",
+          "type": "favour",
+          "label": "看旧碑",
+          "text": "廊下立着几方旧碑，碑面被摸得发亮。道士说其中一方记着观宇迁徙的事。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "开元观看过迁观旧碑。"
+          }
+        },
+        {
+          "id": "jl_kaiyuan_repair",
+          "type": "choice",
+          "label": "修廊",
+          "text": "殿后的廊柱被雨水泡朽，道士捧着缘簿问你要不要添一份工料。",
+          "options": [
+            {
+              "id": "jl_kaiyuan_repair_give",
+              "label": "捐工料",
+              "text": "你提笔在缘簿末尾写了名字。道士把铜钱倒进木柜，说入秋就换柱子。",
+              "cost": 30,
+              "effects": {
+                "fame": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "jl_kaiyuan_repair_pass",
+              "label": "不捐",
+              "text": "你把缘簿推回去，转身去看廊下的碑。道士也不多劝，只把笔收好。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jl_chengtian",
+      "port": "jiangling",
+      "pending_port": true,
+      "name": "承天寺与妙应塔",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_jl_chengtian.jpg",
+      "description": "承天寺与妙应塔在江陵府城东。崇宁元年，黄庭坚为寺里写下塔记；绍兴年间智珠重修塔身。",
+      "interactions": [
+        {
+          "id": "jl_chengtian_circle",
+          "type": "favour",
+          "label": "绕塔",
+          "text": "你绕塔走了一圈，塔身新补的砖色比旧砖浅。殿前香案上放着三炷香，知客僧替你点着。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "jl_chengtian_rubbing",
+          "type": "favour",
+          "label": "看旧拓",
+          "text": "塔记的旧拓收在僧房里。知客僧把卷子摊在廊下，只许你看，不许带走。",
+          "cost": 20,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 2,
+            "note": "承天寺看过黄庭坚塔记旧拓。"
+          }
+        },
+        {
+          "id": "jl_chengtian_tea",
+          "type": "choice",
+          "label": "吃茶",
+          "text": "知客僧留你吃茶，问你要听塔下旧事，还是去看后院新修的墙。",
+          "options": [
+            {
+              "id": "jl_chengtian_tea_story",
+              "label": "听旧事",
+              "text": "僧人说起黄庭坚写记那年，塔上的铃还换过一回。茶淡了，他又添了半盏。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "jl_chengtian_tea_wall",
+              "label": "看新墙",
+              "text": "你随僧人走到后院，墙脚还堆着碎砖。匠人正在调灰，说再晒两日就能收工。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jl_jinancheng",
+      "port": "jiangling",
+      "pending_port": true,
+      "name": "纪南故城",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_jl_jinancheng.jpg",
+      "description": "纪南故城在江陵府城北，夯土城垣还高出地面。城内有旧宫殿台基，雨后常能拾到残瓦。",
+      "interactions": [
+        {
+          "id": "jl_jinancheng_walk",
+          "type": "favour",
+          "label": "寻城垣",
+          "text": "你沿城垣走，脚下是夯土，城外护城河已经浅了。草丛里露出一截陶管。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "jl_jinancheng_tile",
+          "type": "choice",
+          "label": "拾瓦",
+          "text": "一个放羊的孩子拾到半片绳纹瓦，问你要不要换几文钱。",
+          "options": [
+            {
+              "id": "jl_jinancheng_tile_buy",
+              "label": "买下",
+              "text": "你把残瓦买下，用布包好。孩子把铜钱攥在手里，赶着羊往城垣下走。",
+              "cost": 10,
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "纪南城买过半片绳纹瓦。"
+              }
+            },
+            {
+              "id": "jl_jinancheng_tile_pass",
+              "label": "不买",
+              "text": "你把瓦翻过来看了看，还给孩子。他蹲在地上，用瓦片刮鞋底的泥。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jl_mishi",
+      "port": "jiangling",
+      "pending_port": true,
+      "name": "沙市米行",
+      "kind": "warehouse",
+      "pending_art": true,
+      "bg": "bg_dist_jl_mishi.jpg",
+      "description": "沙市米行在江岸，荆湖的漕米顺江而下，到鄂州换船。仓前堆着米包，牙人按船次开秤。",
+      "interactions": [
+        {
+          "id": "jl_mishi_invest",
+          "type": "invest",
+          "label": "入股米行",
+          "text": "米行的掌柜要添两间仓廒，问你肯不肯入本。",
+          "shop": "沙市米行",
+          "costs": [
+            260,
+            620
+          ],
+          "monthly": [
+            15,
+            34
+          ]
+        },
+        {
+          "id": "jl_mishi_measure",
+          "type": "choice",
+          "label": "看斛",
+          "text": "船户和米行争执斗斛的深浅，牙人把刮板递给你，让你说一句。",
+          "options": [
+            {
+              "id": "jl_mishi_measure_dry",
+              "label": "说米干",
+              "text": "你说米是刚晒过的，斛面不必再刮。米行的人看了你一眼。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "network": -1
+              }
+            },
+            {
+              "id": "jl_mishi_measure_damp",
+              "label": "说米潮",
+              "text": "你说江上潮气重，让船户把斛摊平再量。船户朝你拱了拱手。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1,
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "jl_mishi_rumor",
+          "type": "rumor",
+          "label": "听米行",
+          "text": "米行牙人说，荆湖米纲在鄂州候总领所调拨，明州米行到得迟。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "mingzhou",
+          "good": "grain",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "jl_fuxue",
+      "port": "jiangling",
+      "pending_port": true,
+      "name": "江陵府学",
+      "kind": "academy",
+      "pending_art": true,
+      "bg": "bg_dist_jl_fuxue.jpg",
+      "description": "江陵府学在府城西南，榜墙临街。北宋元丰年间置府学学官，赴试的士子常来看题名碑。",
+      "interactions": [
+        {
+          "id": "jl_fuxue_list",
+          "type": "favour",
+          "label": "看榜",
+          "text": "榜墙下有人念名字，念到一个熟名时停住。你顺着他的目光看过去，榜纸被风掀起一角。",
+          "exam": true,
+          "once_per": "year",
+          "cost": 0,
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "jl_fuxue_stele",
+          "type": "favour",
+          "label": "拓题名",
+          "text": "学吏把纸按在碑上，墨包轻轻捶过，字口一条条显出来。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "江陵府学拓过题名碑。"
+          }
+        },
+        {
+          "id": "jl_fuxue_lodging",
+          "type": "choice",
+          "label": "借宿",
+          "text": "天色晚了，一个士子还站在府学门口。他问你的船今晚靠不靠岸。",
+          "exam": true,
+          "once_per": "year",
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "options": [
+            {
+              "id": "jl_fuxue_lodging_yes",
+              "label": "让他上船",
+              "text": "你把他带到船上，腾出半张席。他借着桅灯看书，天亮前把舱板擦净。",
+              "cost": 0,
+              "effects": {
+                "network": 2,
+                "fame": 1
+              }
+            },
+            {
+              "id": "jl_fuxue_lodging_no",
+              "label": "指客店",
+              "text": "你给他指了城南的客店。他拱手道谢，转身走进灯影里。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jl_anfu",
+      "port": "jiangling",
+      "pending_port": true,
+      "name": "京湖制置司衙",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_jl_anfu.jpg",
+      "unlock": {
+        "year_min": 1258,
+        "year_max": 1259
+      },
+      "description": "京湖制置司在江陵府城中。一二五八年，马光祖以京湖制置使知江陵府，衙前立着军旗，廊下堆着粮簿和檄文。",
+      "interactions": [
+        {
+          "id": "jl_anfu_dispatch",
+          "type": "favour",
+          "label": "抄檄文",
+          "text": "书吏把新到的檄文摊在廊下，墨还没干。他让你帮着抄一份，送到府治去。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "jl_anfu_hire",
+          "type": "hire",
+          "label": "雇书吏",
+          "text": "衙外有个老书吏，写得一手细字。雇他，军报和粮簿能少错两笔。",
+          "who": "书吏",
+          "cost": 60,
+          "wage": 8,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "jl_anfu_report",
+          "type": "choice",
+          "label": "报事",
+          "text": "一个从岳州回来的探子站在阶下，军吏问他先报军情，还是先交粮簿。",
+          "options": [
+            {
+              "id": "jl_anfu_report_war",
+              "label": "先报军情",
+              "text": "探子把沙盘上的旗挪了挪，说岳州方向的船比上月多。廊下的人都不说话了。",
+              "cost": 0,
+              "effects": {
+                "martial": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "jl_anfu_report_grain",
+              "label": "先交粮簿",
+              "text": "书吏接过粮簿，一页页对仓号。探子站在旁边，把腰带又紧了一扣。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jl_dukou",
+      "port": "jiangling",
+      "pending_port": true,
+      "name": "长江渡与公安石首",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_jl_dukou.jpg",
+      "description": "江陵城南临大江，往公安、石首的渡船在岸边候风。水涨时跳板搭上石阶，船夫先看江心的沙线。",
+      "interactions": [
+        {
+          "id": "jl_dukou_cross",
+          "type": "favour",
+          "label": "候渡",
+          "text": "你把行李放在石阶上，等渡船拢岸。船夫用竹篙试了试水，说今日江心流急。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "sea_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "jl_dukou_boat",
+          "type": "choice",
+          "label": "过江",
+          "text": "两条船同时候客，一条船大，一条船快。船夫各自报出价钱。",
+          "options": [
+            {
+              "id": "jl_dukou_boat_big",
+              "label": "搭大船",
+              "text": "你上了大船，船舷高过水面一截。船夫说风浪大时，大船稳当。",
+              "cost": 12,
+              "effects": {
+                "network": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "jl_dukou_boat_fast",
+              "label": "搭快船",
+              "text": "你上了快船，船身轻，离岸时晃了一下。船夫把帆拉满，往对岸斜过去。",
+              "cost": 18,
+              "effects": {
+                "sea_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jl_longshan",
+      "port": "jiangling",
+      "pending_port": true,
+      "name": "龙山落帽台",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_jl_longshan.jpg",
+      "description": "龙山在江陵府城西北，落帽台在山上。相传晋孟嘉九日登高，风落其帽，后人便把这处山台叫落帽台。",
+      "interactions": [
+        {
+          "id": "jl_longshan_climb",
+          "type": "favour",
+          "label": "登台",
+          "text": "你沿山径上到落帽台，江汉平原在脚下铺开。风从北面来，吹得衣角直响。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "jl_longshan_wind",
+          "type": "choice",
+          "label": "临风",
+          "text": "台上风大，同行的人按住头巾，笑说今日也会落帽。他问你敢不敢松开手。",
+          "options": [
+            {
+              "id": "jl_longshan_wind_loose",
+              "label": "松开手",
+              "text": "风把你的头巾掀起来，又落回肩上。同行的人拍手，说这才像孟嘉。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "fame": 1
+              }
+            },
+            {
+              "id": "jl_longshan_wind_hold",
+              "label": "按住帽",
+              "text": "你按住头巾，退到台后。风从耳边过去，山下的田埂看得清清楚楚。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jl_jinti",
+      "port": "jiangling",
+      "pending_port": true,
+      "name": "金堤",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_jl_jinti.jpg",
+      "description": "金堤沿江陵城外的江岸伸展。东晋桓温令陈遵筑堤，南宋又接连增修，堤内是田，堤外是江。",
+      "interactions": [
+        {
+          "id": "jl_jinti_walk",
+          "type": "favour",
+          "label": "巡堤",
+          "text": "你沿堤走了一段，堤身的土被江水泡得发黑。堤内有人在插秧，堤外一条渔船正收网。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "hometown_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "jl_jinti_repair",
+          "type": "choice",
+          "label": "补堤",
+          "text": "堤脚被水冲出一个小口，里正招呼人搬土。他问你是出钱，还是搭手。",
+          "options": [
+            {
+              "id": "jl_jinti_repair_money",
+              "label": "出钱",
+              "text": "你数了二十文给里正。他叫人挑来两担新土，倒进缺口里。",
+              "cost": 20,
+              "effects": {
+                "fame": 1,
+                "hometown_tendency": 1
+              }
+            },
+            {
+              "id": "jl_jinti_repair_work",
+              "label": "搭手",
+              "text": "你接过铁锹，把土一锹锹拍实。堤脚的水慢慢浑了，缺口也合上。",
+              "cost": 0,
+              "effects": {
+                "martial": 1,
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jl_xiang",
+      "port": "jiangling",
+      "pending_port": true,
+      "name": "江陵降元",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_jl_xiang.jpg",
+      "unlock": {
+        "year_min": 1275,
+        "year_max": 1275,
+        "months": [
+          3,
+          4
+        ]
+      },
+      "description": "至元十二年三月，元军下岳州；四月，沙市破，进至江陵城下。制置高达以城降。",
+      "interactions": [
+        {
+          "id": "jl_xiang_watch",
+          "type": "favour",
+          "label": "望沙市",
+          "text": "你登上城头，沙市方向的火光还没熄。江上尽是北来的船，城下有人往城门送降表。",
+          "cost": 0,
+          "once": true,
+          "unlock": {
+            "year_min": 1275,
+            "year_max": 1275,
+            "months": [
+              4
+            ]
+          },
+          "effects": {
+            "martial": 1,
+            "note": "沙市破后，在江陵城头望过江面。"
+          }
+        },
+        {
+          "id": "jl_xiang_choice",
+          "type": "choice",
+          "label": "开城",
+          "text": "四月，制置高达开城。军吏在街口招呼百姓各安生业，城门外的元军列队而入。",
+          "once": true,
+          "unlock": {
+            "year_min": 1275,
+            "year_max": 1275,
+            "months": [
+              4
+            ]
+          },
+          "options": [
+            {
+              "id": "jl_xiang_choice_out",
+              "label": "出城看",
+              "text": "你随人群走到城门边。元军的旗从街口过，靴底踩得石板发响。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "jl_xiang_choice_stay",
+              "label": "留在巷内",
+              "text": "你退回巷里，把门掩上。街上的脚步声一直响到午后。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1,
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "jl_xiang_notice",
+          "type": "favour",
+          "label": "看安民榜",
+          "text": "府前贴出安民榜，书吏念给围看的人听。你站在人群后面，把榜上的字看了一遍。",
+          "cost": 0,
+          "once": true,
+          "unlock": {
+            "year_min": 1275,
+            "year_max": 1275,
+            "months": [
+              4
+            ]
+          },
+          "effects": {
+            "network": 1,
+            "scholar_tendency": 1,
+            "note": "江陵降后，在府前看过安民榜。"
+          }
+        }
+      ]
+    }
+  ]
+}
