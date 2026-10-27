@@ -29,12 +29,12 @@
 
 ### 2. 事件（news）× 有无断言
 
-news.json 现 26 条。三类覆盖：
-- **全量断言**（`_run_case`）：按月到期投放、1277-01 前应投数 = 实投数、不重复——覆盖全部 26 条。
+news.json 现 47 条。三类覆盖：
+- **全量断言**（`_run_case`）：按月到期投放、1277-01 前应投数 = 实投数、不重复——覆盖全部 47 条。
 - **点名断言**：11 条被 `_check` 明确点到（n_1256_03_taixue / n_1256_05_wentianxiang / n_1273_03_fanfang_panic /
   n_1276_12_quanzhou_falls / n_1272_03_no_draft / n_1273_02_dismissed / n_1273_02_xiangyang_falls /
   n_1276_10_xinghua_muster / n_1277_01_chenzan_raises / n_1277_07_xinghua_again / n_1278_12_yashan）。
-- **字段枚举断言（c6 新）**：`_c6_news_only_enum_check` 26 条逐条断 `only ∈ {scholar, merchant, hometown, ""}`，
+- **字段枚举断言（c6 新）**：`_c6_news_only_enum_check` 47 条逐条断 `only ∈ {scholar, merchant, hometown, ""}`，
   补「公共 / 专线条数」底线（scholar+merchant 至少各一条、公共条数 > 0）。
 
 ### 3. 事件（过场 cutscenes）× 有无断言
@@ -76,7 +76,7 @@ c6 新断言补上此前缺的六项：met_ids / era_routes / era_trips / mercha
    `try_resolve_ending` 落定后 `ended` 仍空，须 `finish` 才翻 `is_ended`（两条路径分走）。
 4. **`_c6_investigation_result_enum_check`**（main-hook，子断言 ~105，随幕数走）——调查幕 4 座逐座断考题五键齐；
    结算幕逐座断 result 形状；discoveries 14 座逐座断 name 非空（调查幕线以 id == 发现名为底）。
-5. **`_c6_news_only_enum_check`**（init-hook，30 条）——news 26 条 only 枚举 + 公共 / 专线条数底线。
+5. **`_c6_news_only_enum_check`**（init-hook，30 条）——news 47 条 only 枚举 + 公共 / 专线条数底线。
 
 SUMMARY 行上一行新增断言计数：`STORY_CHECK TOTAL asserts run=673；lane w20-c6 补白新增 c6_asserts=148`（在 `fails=` 之前）。
 

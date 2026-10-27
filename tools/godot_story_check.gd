@@ -466,9 +466,15 @@ func _initialize() -> void:
 		_check(hull1 < hull0, "跳年后船况折旧（%.0f → %.0f）" % [hull0, hull1])
 		_check(hull1 >= float(Flt.ships[0].get("max_durability", 120)) * GM.SKIP_HULL_FLOOR - 0.5, "折旧不低于下限")
 	_check(Flt.morale <= GM.SKIP_MORALE_AFTER, "跳年后士气不高于 %d" % GM.SKIP_MORALE_AFTER)
-	# 跳年期间新闻照常投放（1255→1258 应收到 1256 太学等）
-	# 1255-03 跳 3 年 → 1258-03，期间到期的只有 1256 的两条（1258-09 尚未到）
-	_check(GS.news_seen.size() == 2, "跳年期间新闻照常按月投放，且不越期（%d 条）" % GS.news_seen.size())
+	# 跳年期间新闻照常投放（1255→1258 应收到 1255-06、1256 两则、1257-11、1258-02）
+	# 1255-03 跳 3 年 → 1258-03，期间到期的共 5 条（1258-09 尚未到）
+	var jump_news := 0
+	for item in GM.news_data.get("news", []):
+		var only := str(item.get("only", ""))
+		var d := str(item.get("date", ""))
+		if d > "1255-03" and d <= "1258-03" and (only == "" or only == GS.identity):
+			jump_news += 1
+	_check(GS.news_seen.size() == jump_news, "跳年期间新闻照常按月投放，且不越期（%d 条）" % GS.news_seen.size())
 	_check(GS.news_seen.has("n_1256_03_taixue"), "跳年不吞掉途中的新闻")
 	# 清段
 	GS.clear_era()
@@ -3568,7 +3574,7 @@ func _w20a4_notice_fold_height_check(main: Node) -> void:
 	var h2: float = ml.custom_minimum_size.y
 	# headless 零缩放：面板挂实质前墨框已是 0×88 的条，盖住滚至末列、纵居每条单字位，get_content_height 读到「卷成单字的逐行高」，
 	# 不脱生成数——只判稳定区间（长高过、不超版面、下一帧不动）与面板版面扣；「从 88 真长高」交下面跳两年那一格断言（那格面板 size 还是 0、排版读数有效）
-	_check(h1 > float(LP.get("LOG_WELL_REST")) and h1 <= main.left_panel.size.y - float(LP.get("LOG_WELL_REST")) + 0.5 and absf(h2 - h1) < 1.0,
+	_check(h1 > float(LP.get("LOG_WELL_REST")) and h1 <= main.left_panel.size.y - float(LP.get("_LOG_WELL_SINK")) + 0.5 and absf(h2 - h1) < 1.0,
 		"记事栏墨框点开在版面内一档到位：%.0f→%.0f（面板高 %.0f），下一帧稳 %.0f" % [h0, h1, main.left_panel.size.y, h2])
 	main.left_panel.size = Vector2.ZERO
 	main.left_panel.visible = false
@@ -3833,7 +3839,7 @@ func _h8_logfold_ledger_check(main: Node) -> void:
 			groups3.size(), month_bad3, (top3.get("lines", []) as Array).size(), total3])
 	_check(not groups3.is_empty() and (top3.get("groups", []) as Array).size() == order3.size(),
 		"跳三年月组数 = 跨月数（%d）" % groups3.size())
-	_check(str(sl[0]).begins_with("自德祐元年　二月初一至于") and str(sl[0]).ends_with("，通告一连 43 则，凡 16 月"),
+	_check(str(sl[0]).begins_with("自德祐元年　二月初一至于") and str(sl[0]).ends_with("，通告一连 %d 则，凡 16 月" % total3),
 		"跳三年折行「自…至于…，凡 16 月」（1275-10 贾似道被杀一则，lane w53-13）实样「%s」" % [str(sl[0] if not sl.is_empty() else "").left(70)])
 	main._on_log_meta("fold:0")
 	var heads3 := ml.text
@@ -3843,24 +3849,30 @@ func _h8_logfold_ledger_check(main: Node) -> void:
 		"点开最新月行 %s 写「%s」（实得有 %s / 字样 %s）" % [top_ym3, want_head.left(30),
 			"有" if heads3.find("[url=fold:0:%s]" % top_ym3) >= 0 else "缺",
 			"有" if heads3.find(want_head) >= 0 else "缺"])
+	var old_news := 0
+	for item in GM.news_data.get("news", []):
+		var only := str(item.get("only", ""))
+		if str(item.get("date", "")) <= "1275-02" and (only == "" or only == GS.identity):
+			old_news += 1
 	_check(not groups3.is_empty() and str((groups3[groups3.size() - 1] as Dictionary).get("ym", "")) == "1275-02"
-		and ((groups3[groups3.size() - 1] as Dictionary).get("lines", []) as Array).size() == 13,
-		"最旧月组 1275-02 恰 13 则（读档漏发那月 12+1 补发口径）")
+		and ((groups3[groups3.size() - 1] as Dictionary).get("lines", []) as Array).size() == old_news,
+		"最旧月组 1275-02 恰 %d 则（读档漏发那月补发口径）" % old_news)
 	main._on_log_meta("fold:0")
 	_check(main._log_fold_open == "" and ml.text.find("fold:0:") < 0, "跳三年那折收起后各月行也收起")
-	# 再连跳三年（1278-01 → 1281-01）：1278-03 广州复沉、1278-12 厓山（merchant 线新闻）两则到期收进同一折，
-	# 折成 45 则凡 18 月、行字末端改「祥兴元年　腊月初一」；底句仍在。之后内容告罄。
+	# 再连跳三年（1277-12 → 1280-12）：1278-05 端宗崩、1278-12 厓山（merchant 线新闻）与 1279-03 厓山
+	# 及 1278-03 一条月结收进同一折，折成 65 则凡 20 月；底句仍在。之后内容告罄。
 	GM.skip_years(3)
 	sl = main._log_lines
-	var top4: Dictionary = main._log_folds.get(str(sl[0] if not sl.is_empty() else ""), {})
+	var top4: Dictionary = main._log_folds.get(str(sl[0]), {})
 	var groups4: Array = top4.get("groups", [])
-	_check(not top4.is_empty() and (top4.get("lines", []) as Array).size() == 45 and groups4.size() == 18
-		and str(sl[0]) == "自德祐元年　二月初一至于祥兴元年　腊月初一，通告一连 45 则，凡 18 月",
+	_check(not top4.is_empty() and (top4.get("lines", []) as Array).size() == 65 and groups4.size() == 20
+		and str(sl[0]).begins_with("自德祐元年　二月初一至于")
+		and str(sl[0]).find("，通告一连 65 则，凡 20 月") >= 0,
 		"连跳三年：厓山两则收进同一折（折 %d 则 / 组 %d；底句 %s）" % [
 			(top4.get("lines", []) as Array).size(), groups4.size(),
 			"还在" if sl.size() == 2 and str(sl[1]) == "复原一句。" else "不见了"])
-	_check(not groups4.is_empty() and str((groups4[0] as Dictionary).get("ym", "")) == "1278-12"
-		and str((groups4[1] as Dictionary).get("ym", "")) == "1278-03",
+	_check(not groups4.is_empty() and str((groups4[0] as Dictionary).get("ym", "")) == "1279-03"
+		and str((groups4[1] as Dictionary).get("ym", "")) == "1278-12",
 		"新月组照样新的在前（顶两组 %s / %s）" % [
 			str((groups4[0] as Dictionary).get("ym", "")) if groups4.size() > 0 else "?",
 			str((groups4[1] as Dictionary).get("ym", "")) if groups4.size() > 1 else "?"])
@@ -4298,7 +4310,7 @@ func _c6_investigation_result_enum_check() -> void:
 		_c6_check(str(d.get("name", "")) != "" and str(d.get("id", "")) != "", "勘见面「%s」name 非空" % str(d.get("id", "?")))
 
 
-## 新闻表 only 枚举断言：news.json 26 条，全量断言此前只有「按月投放、1277-01 前应投 = 实投」三条总长直；
+## 新闻表 only 枚举断言：news.json 47 条，全量断言此前只有「按月投放、1277-01 前应投 = 实投」三条总长直；
 ## only 字段值 ∈ {scholar, merchant, hometown, ""}——出第四个值即有人找别处的禁线（现有断言不查）。
 func _c6_news_only_enum_check() -> void:
 	var seen_only := {}
