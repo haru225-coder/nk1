@@ -7,58 +7,55 @@
       "kind": "gate",
       "bg": "bg_dist_zd_lize.jpg",
       "pending_art": true,
-      "description": "丽泽门在城西，门洞深，石板磨得发亮。蒙古兵与汉人百姓从一个门里过，谁也不看谁。",
+      "description": "丽泽门在城西，门洞深，石板上两道车辙。蒙古兵与汉人百姓同走一个门，守门的只认手里的牌。",
       "interactions": [
         {
-          "id": "zd_lize_toll",
-          "type": "favour",
-          "label": "收过桥税",
-          "text": "你站在门洞边收税。钱不多，门子认得你的脸。",
-          "cost": 0,
-          "once_per": "month",
-          "effects": {
-            "money": 6,
-            "pu_attention": 1
-          }
-        },
-        {
-          "id": "zd_lize_repair",
-          "type": "invest",
-          "label": "修门楼",
-          "text": "门楼漏雨，你出资修缮。",
-          "shop": "门税",
-          "costs": [
-            300
-          ],
-          "monthly": [
-            15
-          ]
+          "id": "zd_lize_fur",
+          "type": "buy",
+          "label": "收貂皮",
+          "text": "西来的驮队在门洞外卸皮货，毛上还沾着雪。按张点过，钱货两清。",
+          "good": "sable_fur",
+          "qty": 2,
+          "price_mul": 0.96,
+          "impact": false
         },
         {
           "id": "zd_lize_watch",
           "type": "choice",
           "label": "盘查",
-          "text": "门洞里人多，查谁不查谁，得拿个主意。",
+          "text": "门洞里挤着一队驮子。查哪一队，放哪一队，守门军吏看着你。",
+          "once_per": "month",
           "options": [
             {
-              "id": "zd_lize_watch_pass",
-              "label": "放行",
-              "text": "你摆摆手，商队过去了。",
+              "id": "zd_lize_watch_wave",
+              "label": "摆手放行",
+              "text": "你让驮队先过，军吏记下你的名字，说下回仍走这道门。",
               "effects": {
-                "money": 4,
-                "pu_attention": 1
+                "money": 5,
+                "network": 1
               }
             },
             {
-              "id": "zd_lize_watch_check",
-              "label": "严查",
-              "text": "你翻了他们的驮袋，少收了几样东西。",
+              "id": "zd_lize_watch_search",
+              "label": "开袋验货",
+              "text": "你翻出两包私盐，军吏没收了，分你一串钱。",
               "effects": {
-                "money": 2,
-                "pu_attention": 1
+                "money": 9,
+                "pu_attention": 1,
+                "network": -1
               }
             }
           ]
+        },
+        {
+          "id": "zd_lize_gatekeeper",
+          "type": "hire",
+          "label": "雇门子",
+          "text": "门子姓赵，识得军中换班的鼓点。雇他，西门的驮队先得一句准信。",
+          "who": "门子",
+          "cost": 70,
+          "wage": 11,
+          "attention_ease": 1
         }
       ],
       "pending_port": true
@@ -70,54 +67,54 @@
       "kind": "gate",
       "bg": "bg_dist_zd_zhangyi.jpg",
       "pending_art": true,
-      "description": "彰义门通南道，门楼上还留着金代的旧砖。今夜风里，只有挑夫与军吏。",
+      "description": "彰义门在城西，门楼还压着金代的旧砖。往西南的土路通卢沟桥，夜里只有挑夫与军吏。",
       "interactions": [
         {
-          "id": "zd_zhangyi_toll",
-          "type": "favour",
-          "label": "收过桥税",
-          "text": "夜深了还有人出城，你收了税，放他们走。",
-          "cost": 0,
-          "once_per": "month",
-          "effects": {
-            "money": 5,
-            "pu_attention": 1
-          }
+          "id": "zd_zhangyi_tea",
+          "type": "sell",
+          "label": "卖茶包",
+          "text": "南来的茶包在门洞外拆开，往西南的脚店按包收，价压得低。",
+          "good": "tea",
+          "qty": 2,
+          "price_mul": 1.02,
+          "impact": false
         },
         {
-          "id": "zd_zhangyi_repair",
-          "type": "invest",
-          "label": "修门楼",
-          "text": "门楼旧砖剥落，你入一股修补。",
-          "shop": "门税",
-          "costs": [
-            260
-          ],
-          "monthly": [
-            13
-          ]
+          "id": "zd_zhangyi_lantern",
+          "type": "favour",
+          "label": "递灯油",
+          "text": "你给夜班的门吏添了一盏灯油。他记住你的驮队，戌后许你出城。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "network": 1
+          }
         },
         {
           "id": "zd_zhangyi_night",
           "type": "choice",
           "label": "夜门",
-          "text": "晚了还有人要出城，开不开门。",
+          "text": "三更有人叫门，说是送药的。开不开，门吏等你一句话。",
+          "once_per": "month",
           "options": [
             {
               "id": "zd_zhangyi_night_open",
               "label": "开门",
-              "text": "你让人过了。",
+              "text": "门轴响了一声，药担子过去了。门吏收下你递的十钱。",
+              "cost": 10,
               "effects": {
-                "money": 3,
+                "money": 5,
+                "network": 1,
                 "pu_attention": 1
               }
             },
             {
-              "id": "zd_zhangyi_night_close",
+              "id": "zd_zhangyi_night_shut",
               "label": "闭门",
-              "text": "你闭了门，夜里清静些。",
+              "text": "你让门吏上了闩。城外的人骂了一句，走了。",
               "effects": {
-                "hometown_tendency": 1
+                "hometown_tendency": 1,
+                "martial": 1
               }
             }
           ]
@@ -132,39 +129,53 @@
       "kind": "gate",
       "bg": "bg_dist_zd_jingfeng.jpg",
       "pending_art": true,
-      "description": "景风门在南面，门洞宽。金时的石狮只剩一个，另一半埋在土里。",
+      "description": "景风门在南面，门洞宽。金时的石狮只剩一个，另一半埋在土里，门额上的字被凿去了。",
       "interactions": [
         {
-          "id": "zd_jingfeng_rite",
-          "type": "favour",
-          "label": "祭门",
-          "text": "你随门子祭了一回门神。风还是原来的风，人记你来过。",
-          "cost": 20,
-          "once_per": "year",
-          "effects": {
-            "martial": 1,
-            "fame": 1
-          }
+          "id": "zd_jingfeng_porcelain",
+          "type": "buy",
+          "label": "收南瓷",
+          "text": "南边来的瓷箱在门洞边开箱，碗沿有磕碰，牙人按残器折价。",
+          "good": "fujian_porcelain",
+          "qty": 2,
+          "price_mul": 0.94,
+          "impact": false
         },
         {
-          "id": "zd_jingfeng_shop",
-          "type": "invest",
-          "label": "门市",
-          "text": "景风门洞残屋招租，你投一股做门市。",
-          "shop": "门市",
-          "costs": [
-            280
-          ],
-          "monthly": [
-            14
+          "id": "zd_jingfeng_rent",
+          "type": "choice",
+          "label": "门洞招租",
+          "text": "门洞旁两间残屋要租，一间临街，一间靠军仓。租哪一间，得看你要做什么。",
+          "once": true,
+          "options": [
+            {
+              "id": "zd_jingfeng_rent_street",
+              "label": "租临街",
+              "text": "你定下临街那间，门板新换过，过路的人先看见你的货。",
+              "cost": 25,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "zd_jingfeng_rent_store",
+              "label": "租靠仓",
+              "text": "你定下靠军仓那间，墙厚，夜里能听见仓门响。",
+              "cost": 15,
+              "effects": {
+                "money": 3,
+                "pu_attention": 1
+              }
+            }
           ]
         },
         {
-          "id": "zd_jingfeng_guard",
+          "id": "zd_jingfeng_gateguard",
           "type": "hire",
-          "label": "雇门子",
-          "text": "门子肯跟你守门。他在时，门洞少些喧嚷。",
-          "who": "门子",
+          "label": "雇门军",
+          "text": "门军老韩认得南来北往的车把式。雇他，景风门前的队先挪出一条道。",
+          "who": "门军",
           "cost": 80,
           "wage": 12,
           "attention_ease": 1
@@ -179,54 +190,53 @@
       "kind": "gate",
       "bg": "bg_dist_zd_huicheng.jpg",
       "pending_art": true,
-      "description": "会城门在北面，四座北门之一。蒙古哨兵换班时，门洞里站满人。",
+      "description": "会城门在北面，四座北门之一。蒙古哨兵换班时，门洞里站满人，马粪冻在石缝里。",
       "interactions": [
         {
-          "id": "zd_huicheng_pass",
+          "id": "zd_huicheng_ginseng",
+          "type": "buy",
+          "label": "收北参",
+          "text": "辽东来的参包从北门进城，纸包上还带着霜。牙人验过须子，按包给价。",
+          "good": "korean_ginseng",
+          "qty": 1,
+          "price_mul": 0.98,
+          "impact": false
+        },
+        {
+          "id": "zd_huicheng_note",
           "type": "favour",
           "label": "递帖子",
-          "text": "你给哨兵递了帖子，少问了几句。",
+          "text": "你把名帖递给换班的哨兵，他翻了一眼，把你的驮队写在放行簿上。",
           "cost": 30,
+          "once_per": "month",
           "effects": {
             "network": 2,
             "merchant_credit": 1
           }
         },
         {
-          "id": "zd_huicheng_check",
+          "id": "zd_huicheng_stranger",
           "type": "choice",
-          "label": "门洞里",
-          "text": "门洞里有个汉人客商没带过所，被哨兵拦着，回头看你。",
+          "label": "无过所",
+          "text": "一个汉人客商被哨兵拦住，怀里没有过所，回头看你。",
+          "once": true,
           "options": [
             {
-              "id": "zd_huicheng_check_let",
+              "id": "zd_huicheng_stranger_bail",
               "label": "替他作保",
-              "text": "你替他作了保，哨兵放他过去。他记下你的船号。",
+              "text": "你在保状上画了押。哨兵放人，客商把你的船号记在袖里。",
+              "cost": 20,
               "effects": {
                 "network": 1,
                 "pu_attention": 1
-              },
-              "cost": 20
+              }
             },
             {
-              "id": "zd_huicheng_check_hold",
-              "label": "不管",
-              "text": "你没出声，自己先过了门。",
+              "id": "zd_huicheng_stranger_pass",
+              "label": "低头过去",
+              "text": "你随哨兵摆手，自己先过了门。身后那人还在翻包袱。",
               "effects": {}
             }
-          ]
-        },
-        {
-          "id": "zd_huicheng_post",
-          "type": "invest",
-          "label": "驿铺",
-          "text": "会城门洞残屋招租，你投一股做驿铺。",
-          "shop": "驿铺",
-          "costs": [
-            320
-          ],
-          "monthly": [
-            16
           ]
         }
       ],
@@ -245,7 +255,7 @@
           "id": "zd_palace_pick",
           "type": "favour",
           "label": "拾残瓦",
-          "text": "你从土里拾起一片琉璃瓦，卖给了古董商。",
+          "text": "你从草里拾起一片琉璃瓦，断口还亮。城里的古董铺按片收。",
           "cost": 0,
           "once_per": "month",
           "effects": {
@@ -257,39 +267,40 @@
           "id": "zd_palace_timber",
           "type": "choice",
           "label": "残料",
-          "text": "宫基下的旧木有人出价，卖不卖。",
+          "text": "宫基下起出一根旧梁，燕京的营造铺和城里的柴户都来问价。",
+          "once": true,
           "options": [
             {
               "id": "zd_palace_timber_sell",
-              "label": "卖",
-              "text": "你卖了旧木。",
+              "label": "卖给营造铺",
+              "text": "你让营造铺抬走旧梁，换回一叠钞。军吏在簿上记了一笔。",
               "effects": {
-                "money": 12,
-                "merchant_credit": 1
+                "money": 18,
+                "merchant_credit": 1,
+                "pu_attention": 1
               }
             },
             {
               "id": "zd_palace_timber_keep",
-              "label": "留",
-              "text": "你留着，等更好的价。",
+              "label": "留作柴薪",
+              "text": "你把旧梁劈了分给营边的汉户，自己没落钱。",
               "effects": {
-                "hometown_tendency": 1
+                "hometown_tendency": 2,
+                "fame": 1
               }
             }
           ]
         },
         {
-          "id": "zd_palace_yard",
-          "type": "invest",
-          "label": "残料场",
-          "text": "宫基残料堆成场，你入股做买卖。",
-          "shop": "残料",
-          "costs": [
-            400
-          ],
-          "monthly": [
-            20
-          ]
+          "id": "zd_palace_rumor",
+          "type": "rumor",
+          "label": "听拆料车",
+          "text": "拆料车从旧宫往城外去，回程捎带的青白瓷被军吏先挑，庆元府的瓷价要抬。",
+          "port": "mingzhou",
+          "good": "qingbai_porcelain",
+          "mul": 1.18,
+          "cost": 0,
+          "once_per": "month"
         }
       ],
       "pending_port": true
@@ -301,53 +312,53 @@
       "kind": "street",
       "bg": "bg_dist_zd_qianbu.jpg",
       "pending_art": true,
-      "description": "千步廊的廊屋还在，只是断了半边。雨天里，商贩和兵丁共用一截屋檐。",
+      "description": "千步廊的廊屋还在，只是断了半边。雨天里，商贩和兵丁共用一截屋檐，廊柱上留着火烧的墨痕。",
       "interactions": [
         {
-          "id": "zd_qianbu_shelter",
-          "type": "favour",
-          "label": "避雨",
-          "text": "你和商贩挤在廊下避雨，聊了几句行情。",
-          "cost": 0,
-          "effects": {
-            "network": 1,
-            "sea_tendency": 1
-          }
+          "id": "zd_qianbu_tea",
+          "type": "buy",
+          "label": "收廊茶",
+          "text": "廊下有人拆茶包，茶末落在青砖上。按包过秤，价比城里行铺松。",
+          "good": "tea",
+          "qty": 2,
+          "price_mul": 0.95,
+          "impact": false
         },
         {
-          "id": "zd_qianbu_trade",
+          "id": "zd_qianbu_silk",
+          "type": "sell",
+          "label": "出绢帛",
+          "text": "你把绢帛摊在廊柱边，北来的军吏摸了摸经纬，按匹给了钱。",
+          "good": "silk_fabric",
+          "qty": 2,
+          "price_mul": 1.03,
+          "impact": false
+        },
+        {
+          "id": "zd_qianbu_rain",
           "type": "choice",
-          "label": "廊下交易",
-          "text": "廊下有人压价卖皮毛，你买不买。",
+          "label": "雨檐",
+          "text": "雨大了，廊下挤满人。一个卖炭的老人要挪你的货箱，好让出灶位。",
+          "once_per": "month",
           "options": [
             {
-              "id": "zd_qianbu_trade_trade",
-              "label": "做",
-              "text": "你做了这桩小买卖。",
+              "id": "zd_qianbu_rain_move",
+              "label": "挪箱让灶",
+              "text": "你把货箱挪开，老人支起小灶。廊下的人分了一碗热汤。",
               "effects": {
-                "money": 5,
-                "merchant_credit": 1
+                "network": 1,
+                "hometown_tendency": 1
               }
             },
             {
-              "id": "zd_qianbu_trade_refuse",
-              "label": "不",
-              "text": "你摇摇头走了。",
+              "id": "zd_qianbu_rain_keep",
+              "label": "守箱不动",
+              "text": "一个皮货商出三文钱买你箱边的干地，你收了钱。",
               "effects": {
-                "hometown_tendency": 1
+                "money": 3
               }
             }
           ]
-        },
-        {
-          "id": "zd_qianbu_porter",
-          "type": "hire",
-          "label": "雇廊役",
-          "text": "廊役肯跟你挑东西。他在时，街面上少些喧嚷。",
-          "who": "廊役",
-          "cost": 60,
-          "wage": 10,
-          "attention_ease": 1
         }
       ],
       "pending_port": true
@@ -359,57 +370,55 @@
       "kind": "bridge",
       "bg": "bg_dist_zd_longjin.jpg",
       "pending_art": true,
-      "description": "龙津桥仿汴京州桥，石栏简朴。桥上驼队踏着冰，桥下浑河水慢。",
+      "description": "龙津桥在宫前御道上，石栏简朴，桥下御沟水浅，冬月结一层薄冰。望柱断了两根，车马仍从桥上过。",
       "interactions": [
         {
           "id": "zd_longjin_toll",
           "type": "favour",
-          "label": "收过桥税",
-          "text": "你站在桥头收税，驼队一只只过去。",
+          "label": "收桥税",
+          "text": "你站在桥头替牙行收税，驼队一只只过去，铁掌敲得石面发响。",
           "cost": 0,
           "once_per": "month",
           "effects": {
-            "money": 7,
+            "money": 6,
             "pu_attention": 1
           }
-        },
-        {
-          "id": "zd_longjin_market",
-          "type": "invest",
-          "label": "桥市",
-          "text": "龙津桥头空地招租，你入股做桥市。",
-          "shop": "桥市",
-          "costs": [
-            350
-          ],
-          "monthly": [
-            18
-          ]
         },
         {
           "id": "zd_longjin_ice",
           "type": "choice",
           "label": "冰桥",
-          "text": "河面结冰，要不要从桥下过。",
+          "text": "御沟结冰，桥下能走人。绕桥省几文，踩冰要担风险。",
+          "once_per": "month",
           "options": [
             {
               "id": "zd_longjin_ice_cross",
-              "label": "过冰",
-              "text": "你从冰上过去了，省了桥钱。",
+              "label": "踏冰过河",
+              "text": "你踩冰过去，冰面响了一声，人没事，鞋底湿透。",
               "effects": {
                 "money": 3,
-                "sea_tendency": 1
+                "martial": 1
               }
             },
             {
               "id": "zd_longjin_ice_wait",
-              "label": "等桥",
-              "text": "你等桥上空了再走。",
+              "label": "等桥空",
+              "text": "你等在桥头，看一队粮车过去，桥板空出来才走。",
               "effects": {
                 "network": 1
               }
             }
           ]
+        },
+        {
+          "id": "zd_longjin_bridgeclerk",
+          "type": "hire",
+          "label": "雇桥吏",
+          "text": "桥吏有把旧尺，量驮架从不让军户多占一分。雇他，桥头的争执少一半。",
+          "who": "桥吏",
+          "cost": 90,
+          "wage": 13,
+          "attention_ease": 1
         }
       ],
       "pending_port": true
@@ -421,42 +430,40 @@
       "kind": "bridge",
       "bg": "bg_dist_zd_lugou.jpg",
       "pending_art": true,
-      "description": "卢沟桥十一孔，桥墩分水尖装着铁柱。晓月还没落，驼队已经上桥。",
+      "description": "卢沟桥十一孔，桥墩分水尖装着铁柱。晓月还没落，驼队已经上桥，浑河的沙洲上结着白霜。",
       "interactions": [
         {
           "id": "zd_lugou_moon",
           "type": "favour",
-          "label": "晓月",
-          "text": "你在桥上看了一回晓月，心里静了些。",
-          "cost": 15,
+          "label": "看晓月",
+          "text": "你在桥栏边站到月落，浑河上的雾慢慢散开，赶早的驼队从你身后过。",
+          "cost": 12,
           "once_per": "year",
           "effects": {
-            "sea_tendency": 2,
+            "scholar_tendency": 1,
             "fame": 1
           }
         },
         {
-          "id": "zd_lugou_toll",
-          "type": "invest",
-          "label": "桥头税",
-          "text": "卢沟桥头税契，你投一股。",
-          "shop": "桥税",
-          "costs": [
-            380
-          ],
-          "monthly": [
-            19
-          ]
+          "id": "zd_lugou_tea",
+          "type": "sell",
+          "label": "卖茶砖",
+          "text": "桥头的驼队要茶砖，牙人掰开一角闻了闻，按包收下。",
+          "good": "tea",
+          "qty": 3,
+          "price_mul": 1.04,
+          "impact": false
         },
         {
-          "id": "zd_lugou_guard",
-          "type": "hire",
-          "label": "雇桥吏",
-          "text": "桥吏肯跟你守桥。他在时，过路的人少些吵。",
-          "who": "桥吏",
-          "cost": 90,
-          "wage": 14,
-          "attention_ease": 1
+          "id": "zd_lugou_rumor",
+          "type": "rumor",
+          "label": "听铺马",
+          "text": "驿铺把马都拨去运军械，辽东参客改走南路，庆元府的人参要涨。",
+          "port": "mingzhou",
+          "good": "korean_ginseng",
+          "mul": 1.15,
+          "cost": 0,
+          "once_per": "month"
         }
       ],
       "pending_port": true
@@ -468,14 +475,14 @@
       "kind": "hill",
       "bg": "bg_dist_zd_qionghua.jpg",
       "pending_art": true,
-      "description": "琼华岛上山石嶙峋，广寒殿还在修。湖面芙蓉落了一半，蒙古贵族的毡帐扎在岸边。",
+      "description": "琼华岛上山石层叠，广寒殿只剩台基，近年才有工匠来量屋架。湖面芙蓉落了一半，蒙古贵族的毡帐扎在岸边。",
       "interactions": [
         {
           "id": "zd_qionghua_climb",
           "type": "favour",
           "label": "登岛",
-          "text": "你登岛走了一回，山石与湖水都看了。",
-          "cost": 20,
+          "text": "你沿石径上岛，风从湖面来，旧殿的台基上长满青苔。",
+          "cost": 18,
           "once_per": "year",
           "effects": {
             "scholar_tendency": 1,
@@ -486,22 +493,23 @@
           "id": "zd_qionghua_stone",
           "type": "choice",
           "label": "艮岳石",
-          "text": "岛上有人卖所谓艮岳奇石，信不信。",
+          "text": "岛边有人卖所谓艮岳奇石，石皮是新的，孔洞却像旧物。",
+          "once": true,
           "options": [
             {
               "id": "zd_qionghua_stone_buy",
-              "label": "买",
-              "text": "你买了一块，不算真，也算个念想。",
+              "label": "买一块",
+              "text": "你买下一块，卖石的人说是从汴京运来的，你没追问。",
               "cost": 15,
               "effects": {
-                "note": "得艮岳石一块。",
-                "merchant_credit": 1
+                "note": "得疑似艮岳石一块。",
+                "scholar_tendency": 1
               }
             },
             {
               "id": "zd_qionghua_stone_pass",
               "label": "不买",
-              "text": "你笑了一声，走了。",
+              "text": "你放下石头，和卖石人聊了几句汴京旧事。",
               "effects": {
                 "network": 1
               }
@@ -509,17 +517,14 @@
           ]
         },
         {
-          "id": "zd_qionghua_pavilion",
-          "type": "invest",
-          "label": "岛亭",
-          "text": "琼华岛上空亭，你入股。",
-          "shop": "岛亭",
-          "costs": [
-            420
-          ],
-          "monthly": [
-            21
-          ]
+          "id": "zd_qionghua_silk",
+          "type": "sell",
+          "label": "卖绢帛",
+          "text": "毡帐里的妇人要绢帛做领缘，管事的按匹给钱，不还价。",
+          "good": "silk_fabric",
+          "qty": 2,
+          "price_mul": 1.05,
+          "impact": false
         }
       ],
       "pending_port": true
@@ -531,13 +536,13 @@
       "kind": "dam",
       "bg": "bg_dist_zd_taiye.jpg",
       "pending_art": true,
-      "description": "太液池水面开阔，高梁河水引到这里。岸边柳树下，蒙古军士饮马。",
+      "description": "太液池水面开阔，高梁河水从北边引来。岸边柳树下，蒙古军士饮马，渔户在浅水处下网。",
       "interactions": [
         {
           "id": "zd_taiye_release",
           "type": "favour",
           "label": "放生",
-          "text": "你放了一篓鱼，僧人念了一回经。",
+          "text": "你买下一篓活鱼放回池里，旁边的老僧念了一句佛号。",
           "cost": 12,
           "once_per": "year",
           "effects": {
@@ -549,23 +554,27 @@
           "id": "zd_taiye_fish",
           "type": "choice",
           "label": "渔利",
-          "text": "池边渔户卖鱼，你要不要入一股。",
+          "text": "池边渔户要借网钱，说秋后还鱼。借与不借，都在你。",
+          "once_per": "year",
           "options": [
             {
-              "id": "zd_taiye_fish_join",
-              "label": "入",
-              "text": "你入了一股，按月分鱼钱。",
+              "id": "zd_taiye_fish_lend",
+              "label": "借网钱",
+              "text": "你把钱递给渔户，他把船头刻的记号指给你看。",
+              "cost": 15,
               "effects": {
-                "money": 6,
+                "merchant_credit": 1,
                 "network": 1
               }
             },
             {
-              "id": "zd_taiye_fish_refuse",
-              "label": "不入",
-              "text": "你没入，只买了两条鱼。",
+              "id": "zd_taiye_fish_give",
+              "label": "买鱼送人",
+              "text": "你按市价买了两条鲤鱼，让船夫送去岸边守帐的老妇。",
+              "cost": 6,
               "effects": {
-                "hometown_tendency": 1
+                "hometown_tendency": 1,
+                "fame": 1
               }
             }
           ]
@@ -574,7 +583,7 @@
           "id": "zd_taiye_fisher",
           "type": "hire",
           "label": "雇渔户",
-          "text": "渔户肯跟你下网。他在时，池边少些喧嚷。",
+          "text": "渔户老周识得池底的旧石，也识得军马的饮水时辰。雇他，池边的网先收得回来。",
           "who": "渔户",
           "cost": 70,
           "wage": 11,
@@ -590,43 +599,56 @@
       "kind": "temple",
       "bg": "bg_dist_zd_taining.jpg",
       "pending_art": true,
-      "description": "天宁寺塔是辽代的旧塔，砖身八角，还在寺里。僧人说蒙古人也不拆它。",
+      "description": "天宁寺塔是辽代的旧塔，砖身八角，塔檐下还留着塔铃。僧人说蒙古人也不拆它，塔院却挤进了几户军属。",
       "interactions": [
         {
-          "id": "zd_taining_incense",
-          "type": "favour",
-          "label": "上香",
-          "text": "你上了香，塔影落在身上。",
-          "cost": 15,
-          "once_per": "year",
-          "effects": {
-            "hometown_tendency": 1,
-            "fame": 1
-          }
-        },
-        {
-          "id": "zd_taining_licence",
+          "id": "zd_taining_degree",
           "type": "licence",
-          "label": "领度牒",
-          "text": "天宁寺给了一纸度牒，权作身分。",
+          "label": "请度牒",
+          "text": "知客替你把状子递进燕京行省，隔月领回一纸度牒，纸角盖着朱印。",
           "cost": 200,
-          "licence": "lic_zd_degree",
+          "licence": "lic_zd_taining",
           "effects": {
             "scholar_tendency": 1,
             "merchant_credit": 1
           }
         },
         {
-          "id": "zd_taining_estate",
-          "type": "invest",
-          "label": "寺产",
-          "text": "天宁寺空房作库，你入股。",
-          "shop": "寺产",
-          "costs": [
-            300
-          ],
-          "monthly": [
-            15
+          "id": "zd_taining_sutra",
+          "type": "buy",
+          "label": "收经卷",
+          "text": "塔院偏房堆着新抄的经卷，知客按卷收钱，墨还未干透。",
+          "good": "sutra_scrolls",
+          "qty": 1,
+          "price_mul": 0.96,
+          "impact": false
+        },
+        {
+          "id": "zd_taining_repair",
+          "type": "choice",
+          "label": "修塔缘簿",
+          "text": "塔身裂了一道缝，僧人捧出缘簿。捐多捐少，都写在塔下的碑上。",
+          "once": true,
+          "options": [
+            {
+              "id": "zd_taining_repair_give",
+              "label": "捐三十钱",
+              "text": "你在缘簿上写了名字，僧人把铜钱倒进木柜。",
+              "cost": 30,
+              "effects": {
+                "fame": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "zd_taining_repair_small",
+              "label": "只上五钱香",
+              "text": "你添了五钱香火，没写名字，转身去看塔影。",
+              "cost": 5,
+              "effects": {
+                "hometown_tendency": 1
+              }
+            }
           ]
         }
       ],
@@ -635,18 +657,18 @@
     {
       "id": "zd_baiyun",
       "port": "zhongdu",
-      "name": "白云观",
+      "name": "长春宫",
       "kind": "temple",
       "bg": "bg_dist_zd_baiyun.jpg",
       "pending_art": true,
-      "description": "白云观是长春宫旧址，丘处机住过。道人画符，香火比寺观还盛。",
+      "description": "长春宫在旧城西，丘处机住过。如今全真道人掌着香火，殿前碑石还刻着当年问道的事。",
       "interactions": [
         {
           "id": "zd_baiyun_ask",
           "type": "favour",
           "label": "问道",
-          "text": "你向道人问了一回道，心里静了些。",
-          "cost": 20,
+          "text": "你向知客问了一回清净，他不谈丹诀，只说燕京今年的雪。",
+          "cost": 18,
           "once_per": "year",
           "effects": {
             "scholar_tendency": 2,
@@ -656,32 +678,34 @@
         {
           "id": "zd_baiyun_priest",
           "type": "hire",
-          "label": "雇道人",
-          "text": "道人肯跟你去。他在时，道观里少些盘问。",
-          "who": "道人",
+          "label": "请道人",
+          "text": "知客道人会写蒙古字，也认得行省的吏员。雇他，宫里的门先开半扇。",
+          "who": "知客道人",
           "cost": 100,
           "wage": 16,
           "attention_ease": 1
         },
         {
-          "id": "zd_baiyun_talisman",
+          "id": "zd_baiyun_fu",
           "type": "choice",
           "label": "符纸",
-          "text": "道人卖符，你要不要请一张。",
+          "text": "道童在廊下卖符，黄麻纸新裁，朱砂画得潦草。他说灵，老道不言语。",
+          "once_per": "month",
           "options": [
             {
-              "id": "zd_baiyun_talisman_buy",
-              "label": "请",
-              "text": "你请了一张，权当安心。",
+              "id": "zd_baiyun_fu_take",
+              "label": "请一张",
+              "text": "你请了一张，道童用草绳系好，塞进你的袖袋。",
               "cost": 20,
               "effects": {
+                "note": "得符纸一张。",
                 "sea_tendency": 1
               }
             },
             {
-              "id": "zd_baiyun_talisman_pass",
+              "id": "zd_baiyun_fu_leave",
               "label": "不请",
-              "text": "你谢过，没请。",
+              "text": "你把符纸放回案上，和道童说了几句闲话。",
               "effects": {
                 "network": 1
               }
@@ -698,13 +722,13 @@
       "kind": "temple",
       "bg": "bg_dist_zd_minzhong.jpg",
       "pending_art": true,
-      "description": "悯忠寺在城南，唐时就有的老寺。宋人被掳北上，传说曾拘在这里。",
+      "description": "悯忠寺在城南，唐时就有的老寺。宋人被掳北上，传说曾拘在这里，寺里的老僧不愿多讲。",
       "interactions": [
         {
           "id": "zd_minzhong_rite",
           "type": "favour",
           "label": "超度",
-          "text": "你捐了一笔钱，寺里超度亡魂。",
+          "text": "你捐了一笔钱，寺里为北来的亡魂做了一场水陆。",
           "cost": 25,
           "once_per": "year",
           "effects": {
@@ -716,21 +740,23 @@
           "id": "zd_minzhong_story",
           "type": "choice",
           "label": "旧事",
-          "text": "寺里老僧讲宋钦宗的事，你听不听。",
+          "text": "老僧在廊下讲靖康旧事，说是从北边听来的。听下去，还是走开。",
+          "once": true,
           "options": [
             {
               "id": "zd_minzhong_story_listen",
-              "label": "听",
-              "text": "你听了一回，心里沉重。",
+              "label": "坐下听",
+              "text": "你坐到钟响，老僧讲完，叮嘱你别把话带出寺门。",
               "effects": {
                 "scholar_tendency": 1,
-                "hometown_tendency": 1
+                "hometown_tendency": 1,
+                "pu_attention": 1
               }
             },
             {
               "id": "zd_minzhong_story_leave",
-              "label": "不听",
-              "text": "你没听，怕惹事。",
+              "label": "起身走",
+              "text": "你合了合衣襟，没听完就出了山门。",
               "effects": {
                 "network": 1
               }
@@ -738,17 +764,14 @@
           ]
         },
         {
-          "id": "zd_minzhong_oil",
-          "type": "invest",
-          "label": "香油",
-          "text": "悯忠寺空房作香油库，你入股。",
-          "shop": "香油",
-          "costs": [
-            250
-          ],
-          "monthly": [
-            12
-          ]
+          "id": "zd_minzhong_sutra",
+          "type": "sell",
+          "label": "卖经卷",
+          "text": "寺里缺经卷，知客按卷收下你带来的刻本，纸价另算。",
+          "good": "sutra_scrolls",
+          "qty": 1,
+          "price_mul": 0.95,
+          "impact": false
         }
       ],
       "pending_port": true
@@ -760,14 +783,14 @@
       "kind": "temple",
       "bg": "bg_dist_zd_qingshou.jpg",
       "pending_art": true,
-      "description": "庆寿寺两座塔并立，砖身风化。僧人说塔是金代还是元代建的，谁也说不清。",
+      "description": "庆寿寺在旧城西，两座砖塔并立，塔身风化。僧人各说各的年岁，塔下的碑却没人认得全。",
       "interactions": [
         {
           "id": "zd_qingshou_walk",
           "type": "favour",
           "label": "绕塔",
-          "text": "你绕塔走了一回，塔影在地。",
-          "cost": 10,
+          "text": "你绕塔走了三圈，塔影落在砖地上，塔铃响了一声。",
+          "cost": 8,
           "once_per": "year",
           "effects": {
             "scholar_tendency": 1
@@ -776,13 +799,14 @@
         {
           "id": "zd_qingshou_brick",
           "type": "choice",
-          "label": "塔影",
-          "text": "塔下有人摆摊卖旧砖，你买不买。",
+          "label": "旧砖",
+          "text": "塔下有人摆摊卖旧砖，说是修塔换下来的，砖侧有字。",
+          "once": true,
           "options": [
             {
               "id": "zd_qingshou_brick_buy",
-              "label": "买",
-              "text": "你买了一块旧砖。",
+              "label": "买一块",
+              "text": "你买下一块，砖上的字被磨得只剩半笔。",
               "cost": 8,
               "effects": {
                 "note": "得旧砖一块。",
@@ -792,7 +816,7 @@
             {
               "id": "zd_qingshou_brick_pass",
               "label": "不买",
-              "text": "你没接，转身去了。",
+              "text": "你把砖翻过来看了看，还给摊主，问起修塔的工匠。",
               "effects": {
                 "network": 1
               }
@@ -800,17 +824,15 @@
           ]
         },
         {
-          "id": "zd_qingshou_court",
-          "type": "invest",
-          "label": "塔院",
-          "text": "庆寿寺塔院空房，你投一股。",
-          "shop": "塔院",
-          "costs": [
-            280
-          ],
-          "monthly": [
-            14
-          ]
+          "id": "zd_qingshou_rumor",
+          "type": "rumor",
+          "label": "听香火",
+          "text": "全真道场占了几座旧寺，佛寺香火减半，泉州运来的香药压在仓里，价要落。",
+          "port": "quanzhou",
+          "good": "aromatic_medicine",
+          "mul": 0.9,
+          "cost": 0,
+          "once_per": "month"
         }
       ],
       "pending_port": true
@@ -822,13 +844,13 @@
       "kind": "temple",
       "bg": "bg_dist_zd_quanzhen.jpg",
       "pending_art": true,
-      "description": "全真道人在北方香火盛。道场里挂满度牒，蒙古官员也来求签。",
+      "description": "全真道人在北方香火盛。道场正殿挂满度牒，蒙古官员也来求签，廊下排队的人一直排到山门。",
       "interactions": [
         {
-          "id": "zd_quanzhen_licence",
+          "id": "zd_quanzhen_degree",
           "type": "licence",
-          "label": "领度牒",
-          "text": "全真道场给了一纸度牒，权作身分。",
+          "label": "请度牒",
+          "text": "道场主事与燕京断事官相熟，替你递了状子，领回一纸度牒。",
           "cost": 150,
           "licence": "lic_zd_quanzhen",
           "effects": {
@@ -837,39 +859,42 @@
           }
         },
         {
-          "id": "zd_quanzhen_priest",
+          "id": "zd_quanzhen_fake",
+          "type": "choice",
+          "label": "辨牒",
+          "text": "主事拿出两张度牒，一张纸新墨浮，一张印色发暗。他要你说哪张是真的。",
+          "once": true,
+          "options": [
+            {
+              "id": "zd_quanzhen_fake_point",
+              "label": "指认新纸",
+              "text": "你指出新纸那张。主事笑了，把伪牒收进柜里，答应替你引见一位吏员。",
+              "effects": {
+                "network": 2,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "zd_quanzhen_fake_take",
+              "label": "收下伪牒",
+              "text": "你没点破，把伪牒折进袖里。主事给你一叠钞，没再说话。",
+              "effects": {
+                "money": 15,
+                "pu_attention": 2,
+                "flag": "zd_fake_degree"
+              }
+            }
+          ]
+        },
+        {
+          "id": "zd_quanzhen_guide",
           "type": "hire",
-          "label": "雇道人",
-          "text": "全真道人肯跟你走。他在时，道观里少些盘问。",
+          "label": "请道人",
+          "text": "全真道人识得城中各座道观的田产，也识得谁家粮仓空着。雇他，投宿先有去处。",
           "who": "全真道人",
           "cost": 110,
           "wage": 17,
           "attention_ease": 1
-        },
-        {
-          "id": "zd_quanzhen_degree",
-          "type": "choice",
-          "label": "度牒",
-          "text": "道场卖度牒，买不买。",
-          "options": [
-            {
-              "id": "zd_quanzhen_degree_buy",
-              "label": "买",
-              "text": "你买了度牒，留个身分。",
-              "cost": 150,
-              "effects": {
-                "scholar_tendency": 2
-              }
-            },
-            {
-              "id": "zd_quanzhen_degree_pass",
-              "label": "不买",
-              "text": "你谢过，没买。",
-              "effects": {
-                "hometown_tendency": 1
-              }
-            }
-          ]
         }
       ],
       "pending_port": true
@@ -877,31 +902,33 @@
     {
       "id": "zd_wanli",
       "port": "zhongdu",
-      "name": "色目斡脱巷",
+      "name": "斡脱巷",
       "kind": "market",
       "bg": "bg_dist_zd_wanli.jpg",
       "pending_art": true,
-      "description": "巷子里回回商人做斡脱生意，高利贷与皮毛、宝石混在一起。汉人进去要小心。",
+      "description": "斡脱巷在城北，回回商人在这里做斡脱生意。高利贷与皮毛、宝石混在一处，汉人进去要小心。",
       "interactions": [
         {
           "id": "zd_wanli_borrow",
           "type": "choice",
-          "label": "借钱",
-          "text": "斡脱愿意借你钱，利息不低。",
+          "label": "借斡脱钱",
+          "text": "斡脱愿意借你钱，利钱按月滚，借不借。",
+          "once": true,
           "options": [
             {
-              "id": "zd_wanli_borrow_borrow",
+              "id": "zd_wanli_borrow_take",
               "label": "借",
-              "text": "你借了一笔钱，利息不低。",
+              "text": "你按了手印，斡脱把一叠钞推过来，账房在簿上添了你的名字。",
               "effects": {
-                "money": 20,
-                "pu_attention": 2
+                "money": 24,
+                "pu_attention": 2,
+                "flag": "zd_ortoq_debt"
               }
             },
             {
               "id": "zd_wanli_borrow_refuse",
               "label": "不借",
-              "text": "你没借。",
+              "text": "你把借据推回去，斡脱也不恼，只把茶碗挪开。",
               "effects": {
                 "hometown_tendency": 1
               }
@@ -909,27 +936,25 @@
           ]
         },
         {
-          "id": "zd_wanli_broker",
-          "type": "hire",
-          "label": "雇斡脱",
-          "text": "斡脱商人肯跟你走。他在时，巷子里少些盘问。",
-          "who": "斡脱商人",
-          "cost": 150,
-          "wage": 20,
-          "attention_ease": 1
+          "id": "zd_wanli_porcelain",
+          "type": "sell",
+          "label": "出青白瓷",
+          "text": "巷里的回回商人验过瓷胎，按件收下，说下一程要送去漠北。",
+          "good": "qingbai_porcelain",
+          "qty": 2,
+          "price_mul": 1.04,
+          "impact": false
         },
         {
-          "id": "zd_wanli_stack",
-          "type": "invest",
-          "label": "货栈",
-          "text": "斡脱巷空房作货栈，你入股。",
-          "shop": "货栈",
-          "costs": [
-            450
-          ],
-          "monthly": [
-            23
-          ]
+          "id": "zd_wanli_rumor",
+          "type": "rumor",
+          "label": "听账房",
+          "text": "斡脱的利钱滚到三分，泉州回回商人急着出货还账，绢帛价要松。",
+          "port": "quanzhou",
+          "good": "silk_fabric",
+          "mul": 0.9,
+          "cost": 0,
+          "once_per": "month"
         }
       ],
       "pending_port": true
@@ -941,13 +966,13 @@
       "kind": "workshop",
       "bg": "bg_dist_zd_oldkiln.jpg",
       "pending_art": true,
-      "description": "旧宫拆下的木料、琉璃瓦堆在场院里，石匠按斤卖。",
+      "description": "旧宫拆下的木料、琉璃瓦堆在场院里，料户按堆论价，军吏在旁记数。",
       "interactions": [
         {
           "id": "zd_oldkiln_pick",
           "type": "favour",
           "label": "挑残料",
-          "text": "你挑了几块残料，卖给了石匠。",
+          "text": "你在料堆里挑出几块带字的瓦，料户按旧例给了钱。",
           "cost": 0,
           "once_per": "month",
           "effects": {
@@ -959,7 +984,7 @@
           "id": "zd_oldkiln_yard",
           "type": "invest",
           "label": "料场",
-          "text": "旧宫残料场空地，你入股。",
+          "text": "旧宫残料场要添本钱收料，你入了一份，按月分账。",
           "shop": "料场",
           "costs": [
             320
@@ -972,12 +997,13 @@
           "id": "zd_oldkiln_glass",
           "type": "choice",
           "label": "琉璃",
-          "text": "有人卖所谓金代琉璃，买不买。",
+          "text": "有人拿一片绿琉璃来卖，说是金宫屋顶上的，断口还新。",
+          "once": true,
           "options": [
             {
               "id": "zd_oldkiln_glass_buy",
-              "label": "买",
-              "text": "你买了一片，真假不知。",
+              "label": "买下",
+              "text": "你买下琉璃，对着日头一照，绿色透亮。",
               "cost": 12,
               "effects": {
                 "note": "得琉璃一片。",
@@ -985,9 +1011,9 @@
               }
             },
             {
-              "id": "zd_oldkiln_glass_pass",
-              "label": "不买",
-              "text": "你没要，走了。",
+              "id": "zd_oldkiln_glass_test",
+              "label": "先验",
+              "text": "你把琉璃在石上磨了磨，卖的人脸色变了，收起东西就走。",
               "effects": {
                 "network": 1
               }
@@ -1004,37 +1030,30 @@
       "kind": "office",
       "bg": "bg_dist_zd_mongol.jpg",
       "pending_art": true,
-      "description": "军衙在城北，蒙古百户坐镇。汉人官员进去，得低着头。",
+      "description": "军衙在城北，蒙古百户与断事官同院坐堂。汉人官员进去，得先递状，再低头。",
       "interactions": [
         {
           "id": "zd_mongol_gift",
-          "type": "favour",
-          "label": "递礼",
-          "text": "你送了一分礼，百户收下了。",
-          "cost": 40,
-          "effects": {
-            "network": 1,
-            "pu_attention": 1
-          }
-        },
-        {
-          "id": "zd_mongol_order",
           "type": "choice",
-          "label": "军令",
-          "text": "衙门要你出夫役，你应不应。",
+          "label": "门包",
+          "text": "百户的家人来传话，说军衙有军衙的规矩，进门先递门包。递不递。",
+          "once_per": "month",
           "options": [
             {
-              "id": "zd_mongol_order_obey",
-              "label": "应",
-              "text": "你应了，少惹麻烦。",
+              "id": "zd_mongol_gift_pay",
+              "label": "递门包",
+              "text": "你把一包茶砖和几贯钞放在门房，百户的家人点了头，状子递进去了。",
+              "cost": 30,
               "effects": {
-                "martial": 1
+                "network": 2,
+                "merchant_credit": 1,
+                "pu_attention": 1
               }
             },
             {
-              "id": "zd_mongol_order_refuse",
-              "label": "推",
-              "text": "你推了，怕惹麻烦。",
+              "id": "zd_mongol_gift_refuse",
+              "label": "不递",
+              "text": "你把茶砖收回袖里，门房的脸沉下来，状子压在案角。",
               "effects": {
                 "pu_attention": 2,
                 "network": -1
@@ -1043,17 +1062,43 @@
           ]
         },
         {
-          "id": "zd_mongol_market",
-          "type": "invest",
-          "label": "军市",
-          "text": "军衙边空房作军市，你入股。",
-          "shop": "军市",
-          "costs": [
-            400
-          ],
-          "monthly": [
-            20
+          "id": "zd_mongol_corvee",
+          "type": "choice",
+          "label": "夫役",
+          "text": "衙门要你出十个人修墙，应不应。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "zd_mongol_corvee_obey",
+              "label": "应下",
+              "text": "你从脚行里点了十个人，百户在簿上画了一笔。",
+              "cost": 10,
+              "effects": {
+                "martial": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "zd_mongol_corvee_refuse",
+              "label": "推掉",
+              "text": "你说脚行缺人，断事官把笔搁下，看了你一眼。",
+              "effects": {
+                "pu_attention": 2,
+                "network": -1
+              }
+            }
           ]
+        },
+        {
+          "id": "zd_mongol_rumor",
+          "type": "rumor",
+          "label": "听括户",
+          "text": "括户括到居庸关外，皮货担子不敢南下，庆元府的貂皮要贵。",
+          "port": "mingzhou",
+          "good": "sable_fur",
+          "mul": 1.2,
+          "cost": 0,
+          "once_per": "month"
         }
       ],
       "pending_port": true
@@ -1065,7 +1110,7 @@
       "kind": "gate",
       "bg": "bg_dist_zd_dadu.jpg",
       "pending_art": true,
-      "description": "新城在旧城东北，城墙刚起。夯土墙外裹着苇帘，工地上脚手架林立。",
+      "description": "新城在旧城东北，城墙刚起。夯土墙外裹着苇帘，工地上脚手架林立，民夫从门洞往外运土。",
       "unlock": {
         "year_min": 1267
       },
@@ -1074,8 +1119,9 @@
           "id": "zd_dadu_watch",
           "type": "favour",
           "label": "观工",
-          "text": "你看了工，夯土墙一天天高起来。",
+          "text": "你站在土坡上看了一会儿，夯土墙一层层高起来，号子声从城根传来。",
           "cost": 10,
+          "once_per": "year",
           "unlock": {
             "year_min": 1267
           },
@@ -1085,45 +1131,47 @@
           }
         },
         {
-          "id": "zd_dadu_section",
-          "type": "invest",
-          "label": "工段",
-          "text": "大都工段空地，你入股。",
-          "shop": "工段",
-          "costs": [
-            500
-          ],
-          "monthly": [
-            25
-          ],
-          "unlock": {
-            "year_min": 1267
-          }
-        },
-        {
           "id": "zd_dadu_labour",
           "type": "choice",
           "label": "民夫",
-          "text": "工地上缺民夫，你出不出人。",
+          "text": "工地上缺民夫，监工要你出人，出不出。",
+          "once": true,
+          "unlock": {
+            "year_min": 1267
+          },
           "options": [
             {
               "id": "zd_dadu_labour_send",
-              "label": "出",
-              "text": "你出了十个人。",
+              "label": "出十人",
+              "text": "你从脚行里雇了十个人，监工在木牌上刻了你的商号。",
               "cost": 10,
               "effects": {
-                "pu_attention": 1
+                "pu_attention": 1,
+                "martial": 1
               }
             },
             {
-              "id": "zd_dadu_labour_notsend",
-              "label": "不出",
-              "text": "你没出。",
+              "id": "zd_dadu_labour_keep",
+              "label": "留人",
+              "text": "你没出人，监工骂了两句，工地上照旧缺人。",
               "effects": {
                 "hometown_tendency": 1
               }
             }
           ]
+        },
+        {
+          "id": "zd_dadu_iron",
+          "type": "sell",
+          "label": "卖铁器",
+          "text": "工地缺铁钉、铁箍，你把舱里的铁器搬出来，按斤过了秤。",
+          "good": "ironware",
+          "qty": 2,
+          "price_mul": 1.06,
+          "impact": false,
+          "unlock": {
+            "year_min": 1267
+          }
         }
       ],
       "pending_port": true
@@ -1135,41 +1183,50 @@
       "kind": "gate",
       "bg": "bg_dist_zd_zhonglou.jpg",
       "pending_art": true,
-      "description": "钟鼓楼在大都新城中心，鼓声一响，全城都知道时辰。",
+      "description": "钟鼓楼立在大都新城的中心台上，鼓声传过夯土坊墙。旧城那边听不见，只当是远处的雷。",
+      "unlock": {
+        "year_min": 1267
+      },
       "interactions": [
         {
           "id": "zd_zhonglou_listen",
           "type": "favour",
           "label": "听鼓",
-          "text": "你站了一回，鼓声沉沉的。",
+          "text": "你站在鼓楼下听了一回，鼓声沉，报的是初更。",
           "cost": 0,
           "once_per": "month",
+          "unlock": {
+            "year_min": 1267
+          },
           "effects": {
-            "sea_tendency": 1
+            "scholar_tendency": 1
           }
         },
         {
           "id": "zd_zhonglou_drummer",
           "type": "hire",
           "label": "雇鼓手",
-          "text": "鼓手肯跟你打鼓。他在时，夜里少些喧嚷。",
+          "text": "鼓手姓白，能听风辨时辰。雇他，夜里赶路少走冤枉道。",
           "who": "鼓手",
           "cost": 80,
           "wage": 12,
-          "attention_ease": 1
+          "attention_ease": 1,
+          "unlock": {
+            "year_min": 1267
+          }
         },
         {
-          "id": "zd_zhonglou_tax",
-          "type": "invest",
-          "label": "鼓楼税",
-          "text": "钟鼓楼边空房，你投一股。",
-          "shop": "鼓楼",
-          "costs": [
-            300
-          ],
-          "monthly": [
-            15
-          ]
+          "id": "zd_zhonglou_tea",
+          "type": "buy",
+          "label": "收夜市茶",
+          "text": "鼓楼后的夜市收摊前，茶贩把剩包折价出清，你按包收下。",
+          "good": "tea",
+          "qty": 2,
+          "price_mul": 0.92,
+          "impact": false,
+          "unlock": {
+            "year_min": 1267
+          }
         }
       ],
       "pending_port": true
@@ -1181,14 +1238,15 @@
       "kind": "dam",
       "bg": "bg_dist_zd_haizi.jpg",
       "pending_art": true,
-      "description": "积水潭水阔，是将来漕运的终点，通惠河还没通。水边船多，人也多。",
+      "description": "积水潭水面阔，通惠河未开，漕船还进不来。岸边多是渔户、柴船与拆料堆，水鸟落在浅滩上。",
       "interactions": [
         {
           "id": "zd_haizi_mooring",
           "type": "favour",
           "label": "泊船",
-          "text": "你泊了一夜船，船夫递了消息。",
+          "text": "你把船泊在潭东的浅湾，船夫从柴船那边带回几句南边的口信。",
           "cost": 8,
+          "once_per": "month",
           "effects": {
             "network": 1
           }
@@ -1196,40 +1254,40 @@
         {
           "id": "zd_haizi_berth",
           "type": "choice",
-          "label": "水路",
-          "text": "潭边有人卖船位，你买不买。",
+          "label": "船位",
+          "text": "潭边有人卖船位，靠里避风，靠外好卸货。买哪一处。",
+          "once_per": "month",
           "options": [
             {
-              "id": "zd_haizi_berth_buy",
-              "label": "买",
-              "text": "你买了船位。",
+              "id": "zd_haizi_berth_inner",
+              "label": "买里位",
+              "text": "你要了靠里的船位，风小，水浅，夜里系缆得多打一道结。",
               "cost": 15,
               "effects": {
                 "sea_tendency": 1
               }
             },
             {
-              "id": "zd_haizi_berth_pass",
-              "label": "不买",
-              "text": "你没买船位。",
+              "id": "zd_haizi_berth_outer",
+              "label": "买外位",
+              "text": "你要了靠外的船位，卸货方便，夜里浪拍船舷。",
+              "cost": 8,
               "effects": {
-                "hometown_tendency": 1
+                "network": 1
               }
             }
           ]
         },
         {
-          "id": "zd_haizi_pier",
-          "type": "invest",
-          "label": "船埠",
-          "text": "积水潭边空地作船埠，你入股。",
-          "shop": "船埠",
-          "costs": [
-            420
-          ],
-          "monthly": [
-            21
-          ]
+          "id": "zd_haizi_rumor",
+          "type": "rumor",
+          "label": "听工地",
+          "text": "大都工地要粮，南来的米船先往北岸卸，庆元府的米价要抬。",
+          "port": "mingzhou",
+          "good": "grain",
+          "mul": 1.12,
+          "cost": 0,
+          "once_per": "month"
         }
       ],
       "pending_port": true
@@ -1241,13 +1299,13 @@
       "kind": "street",
       "bg": "bg_dist_zd_hanjiang.jpg",
       "pending_art": true,
-      "description": "汉人工匠聚在旧城南，做木作、砖瓦。蒙古官员要盖房，先来这里。",
+      "description": "汉人工匠聚在旧城南，做木作、砖瓦。蒙古官员要盖房，先来这里找匠头，院子里堆着刨花与旧椽。",
       "interactions": [
         {
           "id": "zd_hanjiang_carpenter",
           "type": "hire",
           "label": "雇木匠",
-          "text": "木匠肯跟你做活。他在时，木作便宜些。",
+          "text": "木匠姓李，做过金宫檐下的斗拱。雇他，起屋先省一道返工。",
           "who": "木匠",
           "cost": 90,
           "wage": 13,
@@ -1257,7 +1315,7 @@
           "id": "zd_hanjiang_workshop",
           "type": "invest",
           "label": "工坊",
-          "text": "汉人匠坊空房，你入股。",
+          "text": "匠头要添一份本钱买木料，你入了股，按月分工钱。",
           "shop": "工坊",
           "costs": [
             350
@@ -1267,15 +1325,31 @@
           ]
         },
         {
-          "id": "zd_hanjiang_learn",
-          "type": "favour",
-          "label": "学艺",
-          "text": "你跟木匠学了一回手艺，手上有茧。",
-          "cost": 15,
-          "effects": {
-            "scholar_tendency": 1,
-            "network": 1
-          }
+          "id": "zd_hanjiang_apprentice",
+          "type": "choice",
+          "label": "收徒",
+          "text": "一个汉人少年想在坊里学手艺，匠头不肯收，说口粮不够。你出不出这份口粮。",
+          "once": true,
+          "options": [
+            {
+              "id": "zd_hanjiang_apprentice_feed",
+              "label": "出口粮",
+              "text": "你给少年付了一月的口粮，匠头让他先扫刨花。",
+              "cost": 12,
+              "effects": {
+                "hometown_tendency": 1,
+                "fame": 1
+              }
+            },
+            {
+              "id": "zd_hanjiang_apprentice_refer",
+              "label": "荐去驿铺",
+              "text": "你把少年荐给驿铺做杂役，匠头没再说话。",
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
         }
       ],
       "pending_port": true
@@ -1287,55 +1361,57 @@
       "kind": "office",
       "bg": "bg_dist_zd_yizhan.jpg",
       "pending_art": true,
-      "description": "官驿里住的是过路的官员与使臣。马匹与草料按日算钱。",
+      "description": "官驿里住的是过路的官员与使臣。马匹与草料按日算钱，院子里一股马汗味，廊下晾着湿透的驿券。",
       "interactions": [
         {
           "id": "zd_yizhan_message",
           "type": "favour",
           "label": "递脚",
-          "text": "你托驿卒递了一封信，少走许多路。",
+          "text": "你托驿卒把一封信夹进公文袋，往南去的脚程省了半个月。",
           "cost": 20,
+          "once_per": "month",
           "effects": {
             "network": 2
           }
         },
         {
-          "id": "zd_yizhan_inn",
-          "type": "invest",
-          "label": "驿栈",
-          "text": "官驿空房作驿栈，你入股。",
-          "shop": "驿栈",
-          "costs": [
-            360
-          ],
-          "monthly": [
-            18
-          ]
-        },
-        {
-          "id": "zd_yizhan_lodge",
+          "id": "zd_yizhan_voucher",
           "type": "choice",
-          "label": "留宿",
-          "text": "驿里没房间了，你怎么办。",
+          "label": "驿券",
+          "text": "驿丞手里有一张多出来的驿券，说是某位官员留下的。用不用。",
+          "once": true,
           "options": [
             {
-              "id": "zd_yizhan_lodge_share",
-              "label": "挤",
-              "text": "你让人挤一挤。",
+              "id": "zd_yizhan_voucher_use",
+              "label": "借券用马",
+              "text": "你借券领了两匹驿马，驿丞把券角剪去一截。",
+              "cost": 10,
               "effects": {
-                "money": 5,
+                "network": 1,
                 "pu_attention": 1
               }
             },
             {
-              "id": "zd_yizhan_lodge_refuse",
-              "label": "拒",
-              "text": "你按规矩拒了。",
+              "id": "zd_yizhan_voucher_hire",
+              "label": "自雇脚力",
+              "text": "你没动那张券，自己雇了脚力，驿丞把你送到门口。",
+              "cost": 18,
               "effects": {
-                "fame": 1
+                "network": 1
               }
             }
           ]
+        },
+        {
+          "id": "zd_yizhan_rumor",
+          "type": "rumor",
+          "label": "听军将",
+          "text": "军将沿驿路索贿，象牙商队绕道，泉州的象牙到得少，价要涨。",
+          "port": "quanzhou",
+          "good": "ivory",
+          "mul": 1.18,
+          "cost": 0,
+          "once_per": "month"
         }
       ],
       "pending_port": true
