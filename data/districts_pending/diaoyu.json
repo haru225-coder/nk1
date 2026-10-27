@@ -1,0 +1,750 @@
+{
+  "districts": [
+    {
+      "id": "dy_chengmen",
+      "port": "diaoyu",
+      "pending_port": true,
+      "name": "钓鱼城城门与城墙",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_dy_chengmen.jpg",
+      "description": "钓鱼城依钓鱼山筑城，城墙随山势起伏，八门开在崖坳里。护国门当南面，门道只容两人并行，石阶从江边一直盘上来。",
+      "interactions": [
+        {
+          "id": "dy_chengmen_gate",
+          "type": "favour",
+          "label": "上护国门",
+          "text": "你随运粮的担子上到护国门。守卒把担子逐件翻看，城头的旗被江风吹得贴住旗杆。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "martial": 1
+          }
+        },
+        {
+          "id": "dy_chengmen_choice",
+          "type": "choice",
+          "label": "门洞让担",
+          "text": "守城的老卒拦住一队盐担，说城门要关半个时辰，让商队先退到崖下。",
+          "options": [
+            {
+              "id": "dy_chengmen_choice_back",
+              "label": "退回崖下",
+              "text": "你把担子挑回崖下，靠在石壁上等。城门合拢时，门缝里透出一线天光。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "dy_chengmen_choice_hold",
+              "label": "留在门洞",
+              "text": "你让伙计把担子往门洞里挪。老卒没再拦，只把关门时辰往后延了半刻。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "dy_chengmen_brick",
+          "type": "favour",
+          "label": "补内墙砖",
+          "text": "雨冲塌了城墙内侧一段，守卒在崖下和泥。你搭手递了几十块砖，掌心磨得发烫。",
+          "cost": 20,
+          "once_per": "year",
+          "effects": {
+            "fame": 1,
+            "martial": 1,
+            "note": "在钓鱼城护国门内补过一段城墙。"
+          }
+        }
+      ]
+    },
+    {
+      "id": "dy_yizicheng",
+      "port": "diaoyu",
+      "pending_port": true,
+      "name": "一字城",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_dy_yizicheng.jpg",
+      "description": "一字城从钓鱼城南壁直下嘉陵江，城墙夹着一条窄路，尽头是南水军码头。江水涨时，墙根没进水里，船可以贴着墙停。",
+      "interactions": [
+        {
+          "id": "dy_yizicheng_patrol",
+          "type": "favour",
+          "label": "走一字城墙根",
+          "text": "你沿一字城内侧的窄路往江边走，墙上每隔几步开一个箭孔。江风从孔里灌进来，带着水腥气。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "martial": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "dy_yizicheng_gate",
+          "type": "choice",
+          "label": "南水门开闭",
+          "text": "南水军码头的闸门半开，守吏来问：船要进墙内避风，还是泊在外江。",
+          "options": [
+            {
+              "id": "dy_yizicheng_gate_in",
+              "label": "进墙内",
+              "text": "你把船摇进水门，墙影立刻罩住船身。闸门在身后落下，水声闷成一片。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "dy_yizicheng_gate_out",
+              "label": "泊外江",
+              "text": "你把船泊在外江，浪从船尾一下一下推。守吏在墙头看了两回，才把灯挂出来。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1,
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dy_sanjiangkou",
+      "port": "diaoyu",
+      "pending_port": true,
+      "name": "三江口水军码头",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_dy_sanjiangkou.jpg",
+      "description": "三江在合州城下会合，钓鱼山三面环水。南水军码头贴着一字城，北码头泊粮船；石阶终年湿滑，纤夫的号子从江面传到城头。",
+      "interactions": [
+        {
+          "id": "dy_sanjiangkou_invest",
+          "type": "invest",
+          "label": "入股江岸堆栈",
+          "text": "码头边原有两间塌房，掌柜要添一层楼板，想邀你合本。粮包在檐下堆到梁上，潮气一上来就得翻堆。",
+          "costs": [
+            120,
+            260
+          ],
+          "monthly": [
+            18,
+            40
+          ],
+          "shop": "三江堆栈"
+        },
+        {
+          "id": "dy_sanjiangkou_unload",
+          "type": "favour",
+          "label": "北码头卸米",
+          "text": "你的船靠上北码头，脚夫踩着跳板往岸上抬米包。守库吏在簿上记下件数，把湿了角的几包单挑出来。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "dy_tianchi",
+      "port": "diaoyu",
+      "pending_port": true,
+      "name": "天池与城中屯田",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_dy_tianchi.jpg",
+      "description": "钓鱼城内有大小天池十余处，井眼散在坡上。城中的田随山势开成梯土，春耕时兵民一同下田，秋收后把粮运进仓。",
+      "interactions": [
+        {
+          "id": "dy_tianchi_pool",
+          "type": "favour",
+          "label": "看大天池",
+          "text": "你绕过大天池的池堤，水面映着城楼。一个老兵蹲在石沿上洗菜，说池底通泉，围城时也未见底。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "dy_tianchi_field",
+          "type": "choice",
+          "label": "借坡地种麦",
+          "text": "屯田官指给你一片坡地，说秋后可借你种一季麦，种子从官仓领，收成对半。",
+          "options": [
+            {
+              "id": "dy_tianchi_field_borrow",
+              "label": "借田",
+              "text": "你领了麦种，把坡角的碎石捡成一条矮埂。屯田官把船号写在木牌上。",
+              "cost": 20,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1,
+                "note": "在钓鱼城天池坡地借种过一季麦。"
+              }
+            },
+            {
+              "id": "dy_tianchi_field_pass",
+              "label": "只记界石",
+              "text": "你谢过屯田官，只记下坡地的界石。山里天黑得早，收工的人从田埂上下来。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "dy_tianchi_rumor",
+          "type": "rumor",
+          "label": "听屯田官说收成",
+          "text": "屯田官说，钓鱼城今秋收的粮够吃到明春，渠江上的籴船少了一半，下游米价要松。",
+          "cost": 12,
+          "cooldown_days": 45,
+          "port": "xinghua",
+          "good": "grain",
+          "mul": 0.9
+        }
+      ]
+    },
+    {
+      "id": "dy_huguosi",
+      "port": "diaoyu",
+      "pending_port": true,
+      "name": "护国寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_dy_huguosi.jpg",
+      "description": "护国寺在钓鱼城西侧的山坳里，旧说是晚唐石头和尚所建。殿宇不大，山门对着江，香客多是守城兵民。",
+      "interactions": [
+        {
+          "id": "dy_huguosi_incense",
+          "type": "favour",
+          "label": "护国寺上香",
+          "text": "你进山门时，殿里正撞晚钟。知客僧递来三炷香，香案上摆着几枚铜钱和一张写歪的祈愿纸。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "dy_huguosi_porridge",
+          "type": "choice",
+          "label": "廊下赊粥",
+          "text": "寺里在廊下支锅施粥，米快见底，知客僧来问能否先赊一斗。",
+          "options": [
+            {
+              "id": "dy_huguosi_porridge_lend",
+              "label": "赊米",
+              "text": "你让伙计送一斗米到廊下。锅边排队的百姓往前挪了一步，僧人把赊账写在黄纸上。",
+              "cost": 20,
+              "effects": {
+                "merchant_credit": 1,
+                "fame": 1
+              }
+            },
+            {
+              "id": "dy_huguosi_porridge_refuse",
+              "label": "不赊",
+              "text": "你说船上的米已订给官仓，僧人合掌谢过，把锅盖压低了些。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dy_diaoyutai",
+      "port": "diaoyu",
+      "pending_port": true,
+      "name": "钓鱼台",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_dy_diaoyutai.jpg",
+      "description": "钓鱼台是山顶一块平展的大石，三面临崖。旧说古时有巨人坐石垂钓，城名由此而来。石面被风雨磨得发亮，边上没有栏杆。",
+      "interactions": [
+        {
+          "id": "dy_diaoyutai_climb",
+          "type": "favour",
+          "label": "登钓鱼台",
+          "text": "你踩着石缝爬上钓鱼台，三江在脚下分开又合。远处合州城的屋脊浮在雾里，江上的船小得像叶子。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "dy_diaoyutai_inscription",
+          "type": "choice",
+          "label": "石面题字",
+          "text": "台边有一块空白石面，守城书吏把笔递来，问是否留一行字。",
+          "options": [
+            {
+              "id": "dy_diaoyutai_inscription_write",
+              "label": "落墨",
+              "text": "你写了「钓鱼」两个字，墨被江风吹得发干。书吏在旁边添了年月。",
+              "cost": 10,
+              "effects": {
+                "fame": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "dy_diaoyutai_inscription_look",
+              "label": "临崖看水",
+              "text": "你把笔还给书吏，坐在石边看江。崖下有人喊号子，回声隔了很久才上来。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dy_hezhou",
+      "port": "diaoyu",
+      "pending_port": true,
+      "name": "合州旧城",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_dy_hezhou.jpg",
+      "description": "合州旧城在钓鱼山西边的平坝上，石照县治原在这里。1243 年州治迁上钓鱼城，旧城的街市没有全废，粮行和渡口还在。",
+      "interactions": [
+        {
+          "id": "dy_hezhou_visit",
+          "type": "favour",
+          "label": "下旧城访粮行",
+          "text": "你从钓鱼城下来，沿江走到旧城。街面的石板被车辙磨出两道浅沟，县衙的旧门已经封了，隔壁粮行还开着。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "dy_hezhou_grain",
+          "type": "choice",
+          "label": "让出官仓米",
+          "text": "粮行掌柜说，官仓要征一批米运上山，想先借你船上的米。",
+          "options": [
+            {
+              "id": "dy_hezhou_grain_give",
+              "label": "让米",
+              "text": "你让伙计量出两石米，倒在官仓的斛里。掌柜记下船号，写在仓簿上，答应下回留一担新米。",
+              "cost": 30,
+              "effects": {
+                "merchant_credit": 1,
+                "fame": 1
+              }
+            },
+            {
+              "id": "dy_hezhou_grain_keep",
+              "label": "不卖",
+              "text": "你说米已答应给码头上的脚夫，掌柜也不强留，只把仓门掩上。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dy_zuofang",
+      "port": "diaoyu",
+      "pending_port": true,
+      "name": "军器作坊",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_dy_zuofang.jpg",
+      "description": "军器作坊在城北岩湾，九口锅是一排凿在石上的圆坑，旧说用来碾硝、硫黄与木炭。棚下堆着石弹，铁匠在炉边修刀枪。",
+      "interactions": [
+        {
+          "id": "dy_zuofang_pits",
+          "type": "favour",
+          "label": "看九口锅",
+          "text": "你蹲在九口锅边，石坑里还留着灰白的粉末。匠人用木铲把粉末扫进竹箩，说这一批要送上城头。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "martial": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "dy_zuofang_rumor",
+          "type": "rumor",
+          "label": "问匠人硫黄",
+          "text": "匠人说，城里赶造火器，军前把泉州的硫黄截买了一半，海船上的硫黄要难寻。",
+          "cost": 12,
+          "cooldown_days": 45,
+          "port": "quanzhou",
+          "good": "sulfur",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "dy_weicheng",
+      "port": "diaoyu",
+      "pending_port": true,
+      "name": "城下敌营",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_dy_weicheng.jpg",
+      "description": "开庆元年春，你从钓鱼城头望下去，蒙哥亲率主力到了山下，营帐从嘉陵江边一直排到山脚。城上昼夜擂鼓，城下架炮填壕，两军隔着一道墙相持。",
+      "unlock": {
+        "year_min": 1259,
+        "year_max": 1259
+      },
+      "interactions": [
+        {
+          "id": "dy_weicheng_night",
+          "type": "favour",
+          "label": "城头守夜",
+          "text": "你留在城头守夜。城下敌营的火一堆连一堆，鼓声从二更响到五更，墙垛上的霜把袖口冻硬了。",
+          "cost": 0,
+          "once": true,
+          "unlock": {
+            "months": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ]
+          },
+          "effects": {
+            "martial": 2,
+            "fame": 1,
+            "note": "开庆元年，在钓鱼城头守过一夜。"
+          }
+        },
+        {
+          "id": "dy_weicheng_water",
+          "type": "choice",
+          "label": "雾中取水",
+          "text": "天池的水够用，城外的水门却被敌营压住。守将问谁肯带两条船去江边取水。",
+          "once": true,
+          "unlock": {
+            "months": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ]
+          },
+          "options": [
+            {
+              "id": "dy_weicheng_water_go",
+              "label": "去",
+              "text": "你带船贴着一字城的水门出去，江面有雾，回来时船底蹭过浅滩。水门在身后合上。",
+              "cost": 20,
+              "effects": {
+                "martial": 2,
+                "network": 1
+              }
+            },
+            {
+              "id": "dy_weicheng_water_stay",
+              "label": "不去",
+              "text": "你留在城头，看那两条船消失在雾里。鼓声一直没停。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "dy_weicheng_news",
+          "type": "favour",
+          "label": "听城下收营",
+          "text": "七月末，城下的敌营忽然收起旗帜。守卒从城头下来，说军中传闻蒙哥汗已死，死因谁也说不清。",
+          "cost": 0,
+          "once": true,
+          "unlock": {
+            "months": [
+              8,
+              9,
+              10,
+              11,
+              12
+            ]
+          },
+          "effects": {
+            "network": 1,
+            "scholar_tendency": 1,
+            "note": "开庆元年秋，在钓鱼城听到蒙哥汗的死讯。"
+          }
+        }
+      ]
+    },
+    {
+      "id": "dy_wangjian",
+      "port": "diaoyu",
+      "pending_port": true,
+      "name": "守城衙",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_dy_wangjian.jpg",
+      "description": "守城衙在钓鱼城内，王坚在这里点兵，张珏也曾守此城。衙前没有石阶，只有一块被踩平的土坪，军吏抱着簿册从早站到晚。",
+      "interactions": [
+        {
+          "id": "dy_wangjian_roll",
+          "type": "favour",
+          "label": "递船队名册",
+          "text": "你把船队的名册递进守衙。军吏翻到最后一页，问你可愿在围城时听调。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "network": 1,
+            "martial": 1
+          }
+        },
+        {
+          "id": "dy_wangjian_zhang",
+          "type": "choice",
+          "label": "张珏征船",
+          "text": "张珏要下重庆救援，行前在衙前召集船户。他说重庆被围，要征船运粮，船户得有个回话。",
+          "unlock": {
+            "year_min": 1275,
+            "year_max": 1279
+          },
+          "options": [
+            {
+              "id": "dy_wangjian_zhang_go",
+              "label": "应征",
+              "text": "你把船缆解开，让伙计把粮包重新码紧。张珏点了一下头，把你的船号添在名册末尾。",
+              "cost": 30,
+              "effects": {
+                "fame": 2,
+                "martial": 1
+              }
+            },
+            {
+              "id": "dy_wangjian_zhang_decline",
+              "label": "推脱",
+              "text": "你说船底漏水，要走一趟才能修。张珏没有多问，转身去问下一家。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dy_wangli",
+      "port": "diaoyu",
+      "pending_port": true,
+      "name": "开城",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_dy_wangli.jpg",
+      "description": "祥兴二年正月，钓鱼城中的粮尽，王立召集守将，议定以城降元，约不杀城中之人。城门开时，江上的北兵船已经等了很久。",
+      "unlock": {
+        "year_min": 1279,
+        "year_max": 1279,
+        "months": [
+          1
+        ]
+      },
+      "interactions": [
+        {
+          "id": "dy_wangli_seal",
+          "type": "favour",
+          "label": "看王立交印",
+          "text": "你站在城门内侧，看王立把印信交给北兵。守卒把刀枪堆在门洞里，堆得很慢，四周没有人开口。",
+          "cost": 0,
+          "once": true,
+          "unlock": {
+            "year_min": 1279,
+            "year_max": 1279,
+            "months": [
+              1
+            ]
+          },
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "祥兴二年正月，看钓鱼城开门。"
+          }
+        },
+        {
+          "id": "dy_wangli_choice",
+          "type": "choice",
+          "label": "开城后去留",
+          "text": "城门开后，北兵在江岸列队。守将传话，城中百姓要出城的走，要留下的留。",
+          "once": true,
+          "unlock": {
+            "year_min": 1279,
+            "year_max": 1279,
+            "months": [
+              1
+            ]
+          },
+          "options": [
+            {
+              "id": "dy_wangli_choice_leave",
+              "label": "出城",
+              "text": "你随人流走出城门，江风从门洞里直往里钻，吹得后颈发凉。城门在背后敞着。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "dy_wangli_choice_stay",
+              "label": "留下",
+              "text": "你退回街巷，帮一户人家把门板重新安上。城里静得能听见江水。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "fame": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dy_salt",
+      "port": "diaoyu",
+      "pending_port": true,
+      "name": "嘉陵江盐井",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_dy_salt.jpg",
+      "description": "合州当嘉陵江盐运之冲，上游井灶的盐包在此验引、换纤。江边仓房的门槛被盐汁浸得发白，盐船一条挨着一条。",
+      "interactions": [
+        {
+          "id": "dy_salt_warehouse",
+          "type": "favour",
+          "label": "看江边盐仓",
+          "text": "你走进江边盐仓，盐包码到梁下，地面结着一层白霜。仓吏用木扦在包上戳了个洞，拈出一点盐粒放在舌尖。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "dy_salt_tow",
+          "type": "choice",
+          "label": "帮盐船换纤",
+          "text": "盐船的纤夫不够，船主问你的伙计能不能帮一程，工钱按日算。",
+          "options": [
+            {
+              "id": "dy_salt_tow_help",
+              "label": "帮",
+              "text": "你让两个伙计去背纤，自己留在船尾掌舵。盐船逆水走了一里，纤绳在崖石上磨出白痕。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "martial": 1
+              }
+            },
+            {
+              "id": "dy_salt_tow_refuse",
+              "label": "不帮",
+              "text": "你说伙计要卸货，船主点点头，去问下一艘船。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "dy_salt_rumor",
+          "type": "rumor",
+          "label": "听仓吏说盐包",
+          "text": "仓吏说，上游井灶被军前征了夫，盐包到合州迟了半个月，兴化的海盐船怕要补这个缺口。",
+          "cost": 12,
+          "cooldown_days": 45,
+          "port": "xinghua",
+          "good": "sea_salt",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "dy_zhizhi",
+      "port": "diaoyu",
+      "pending_port": true,
+      "name": "制置司行文",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_dy_zhizhi.jpg",
+      "description": "四川制置司的札子从重庆递到钓鱼城，驿卒把封角交进守衙。川引的折纳写在公文末尾，军吏按日子归档。",
+      "interactions": [
+        {
+          "id": "dy_zhizhi_petition",
+          "type": "favour",
+          "label": "替米行递状",
+          "text": "你替合州米行递一张状子，守衙的书吏把状纸展平，先看川引折纳那一栏。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "dy_zhizhi_licence",
+          "type": "licence",
+          "label": "领运粮公据",
+          "text": "书吏说，运军粮的船可以领一张公据，过关卡时少验一道。他把船号录进公据，押了朱印。",
+          "cost": 200,
+          "licence": "lic_dy_grain_pass",
+          "effects": {
+            "merchant_credit": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "dy_zhizhi_rumor",
+          "type": "rumor",
+          "label": "听书吏说川引",
+          "text": "书吏说，川引废了，改行四川会子，蜀商手里的旧引折不出原数，急着把蜀锦出手，泉州的绢价怕要落。",
+          "cost": 12,
+          "cooldown_days": 60,
+          "unlock": {
+            "year_min": 1256
+          },
+          "port": "quanzhou",
+          "good": "silk_fabric",
+          "mul": 0.92
+        }
+      ]
+    }
+  ]
+}
