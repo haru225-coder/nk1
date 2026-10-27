@@ -193,6 +193,19 @@
           },
           "hire_bonus": "qz_fanfang_interpreter",
           "hire_mul": 0.9
+        },
+        {
+          "id": "npc_maruding_ledger",
+          "type": "favour",
+          "label": "对账",
+          "text": "蕃坊石巷里，马鲁丁把铜牌和账页并排放好。他说父亲那趟货在占城外海沉了，脚钱一直挂在账上。",
+          "once": true,
+          "unlock": {
+            "require_flag": "npc_maruding_met"
+          },
+          "effects": {
+            "flag": "npc_maruding_ledger"
+          }
         }
       ]
     },
@@ -347,6 +360,42 @@
           ],
           "monthly": [
             13
+          ]
+        },
+        {
+          "id": "npc_zhubo_deliver",
+          "type": "choice",
+          "label": "送香火札",
+          "text": "顺济宫的香案空着一角。札在你怀里，封口的红绳还没断。",
+          "once": true,
+          "unlock": {
+            "require_flag": "npc_zhubo_carry"
+          },
+          "options": [
+            {
+              "id": "temple",
+              "label": "交顺济宫",
+              "text": "你把札放在香案上。庙里的人展开看了，朝海上拜了一拜。",
+              "cost": 0,
+              "effects": {
+                "favour": 2,
+                "fame": 1,
+                "flag": "npc_zhubo_temple",
+                "note": "香火札交到顺济宫。"
+              }
+            },
+            {
+              "id": "broker",
+              "label": "转给蕃坊",
+              "text": "你把札带到蕃坊。牙人拆开红绳，先看落款，再看货单。",
+              "cost": 0,
+              "effects": {
+                "network": 2,
+                "money": 60,
+                "flag": "npc_zhubo_broker",
+                "note": "香火札落在蕃坊。"
+              }
+            }
           ]
         }
       ]
@@ -620,6 +669,41 @@
               "cost": 0,
               "effects": {
                 "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "npc_maruding_settle",
+          "type": "choice",
+          "label": "结旧账",
+          "text": "旧纸摊在柜上。马鲁丁把铜牌推过来，等你开口。",
+          "once": true,
+          "unlock": {
+            "require_flag": "npc_maruding_ledger"
+          },
+          "options": [
+            {
+              "id": "forgive",
+              "label": "销了这笔",
+              "text": "你把旧纸折起，铜牌推回去。马鲁丁没有再推辞。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 2,
+                "network": 1,
+                "flag": "npc_maruding_forgiven",
+                "note": "清净寺的旧账销了。"
+              }
+            },
+            {
+              "id": "call",
+              "label": "收九十钱",
+              "text": "马鲁丁数出钱，铜牌留在你手里。",
+              "cost": 0,
+              "effects": {
+                "money": 90,
+                "flag": "npc_maruding_paid",
+                "note": "清净寺的旧账收清了。"
               }
             }
           ]
@@ -948,6 +1032,16 @@
           "effects": {
             "favour": 1,
             "network": 1
+          }
+        },
+        {
+          "id": "npc_maruding_meet",
+          "type": "favour",
+          "label": "旧纸",
+          "text": "清净寺门楼里，马鲁丁摊开一页旧纸。他父亲搭你叔父的船，欠下九十钱脚钱，押了一枚铜牌。",
+          "once": true,
+          "effects": {
+            "flag": "npc_maruding_met"
           }
         }
       ]
@@ -2259,6 +2353,29 @@
           "unlock": {
             "require_flag": "gz_fuxu_pilot"
           }
+        },
+        {
+          "id": "npc_zhubo_letter",
+          "type": "favour",
+          "label": "托札",
+          "text": "扶胥码头起风。祝伯把札用油纸裹好，又系上一截红绳，说到了顺济宫再拆。",
+          "once": true,
+          "unlock": {
+            "require_flag": "npc_zhubo_asked"
+          },
+          "effects": {
+            "flag": "npc_zhubo_letter"
+          }
+        },
+        {
+          "id": "npc_liang_wreck",
+          "type": "favour",
+          "label": "沉船",
+          "text": "扶胥码头的老舵工梁阿水说，前日有一艘船在口外翻了，舱里还有几箱瓷。潮退时看得见桅尖。",
+          "once": true,
+          "effects": {
+            "flag": "npc_liang_met"
+          }
         }
       ]
     },
@@ -2321,6 +2438,29 @@
           "port": "quanzhou",
           "good": "aromatic_medicine",
           "mul": 1.18
+        },
+        {
+          "id": "npc_zhubo_ask",
+          "type": "favour",
+          "label": "香火札",
+          "text": "南海神庙的香案上压着一封未封口的札。祝伯说要送去泉州顺济宫，问你的船几时南回。",
+          "once": true,
+          "effects": {
+            "flag": "npc_zhubo_asked"
+          }
+        },
+        {
+          "id": "npc_liang_tide",
+          "type": "favour",
+          "label": "等潮",
+          "text": "南海神庙前，梁阿水把一截断缆压在香案下。他要等一个退潮的时辰，才肯说沉船的位置。",
+          "once": true,
+          "unlock": {
+            "require_flag": "npc_liang_met"
+          },
+          "effects": {
+            "flag": "npc_liang_tide"
+          }
         }
       ]
     },
@@ -2566,6 +2706,19 @@
           "effects": {
             "favour": 1,
             "network": 1
+          }
+        },
+        {
+          "id": "npc_zhubo_wind",
+          "type": "favour",
+          "label": "看潮信",
+          "text": "海山楼上，祝伯看了一会儿江帆，把札交到你手里，说潮信一到就开船。",
+          "once": true,
+          "unlock": {
+            "require_flag": "npc_zhubo_letter"
+          },
+          "effects": {
+            "flag": "npc_zhubo_carry"
           }
         }
       ]
@@ -2969,6 +3122,42 @@
           "effects": {
             "network": 1
           }
+        },
+        {
+          "id": "npc_liang_dive",
+          "type": "choice",
+          "label": "去不去",
+          "text": "珠江的蛋排上，梁阿水解开缆绳，又停住。夜里的潮比白日急。",
+          "once": true,
+          "unlock": {
+            "require_flag": "npc_liang_tide"
+          },
+          "options": [
+            {
+              "id": "push",
+              "label": "今夜就去",
+              "text": "你把灯点上，催他趁潮去。梁阿水看了你一眼，解开缆绳。",
+              "cost": 0,
+              "effects": {
+                "money": 90,
+                "merchant_credit": -1,
+                "flag": "npc_liang_lost",
+                "note": "梁阿水夜里出江，没有再回来。"
+              }
+            },
+            {
+              "id": "wait",
+              "label": "等风平了",
+              "text": "你把灯挪开，说等风平。梁阿水把断缆收进舱里，坐回船头。",
+              "cost": 0,
+              "effects": {
+                "network": 2,
+                "sea_tendency": 1,
+                "flag": "npc_liang_saved",
+                "note": "梁阿水等到风平，沉船的瓷少了一半，人还在。"
+              }
+            }
+          ]
         }
       ]
     },
@@ -3261,6 +3450,16 @@
           "unlock": {
             "require_flag": "hk_tobo_intro"
           }
+        },
+        {
+          "id": "npc_cairong_meet",
+          "type": "favour",
+          "label": "两本货簿",
+          "text": "唐房街的柜上摆着两本货簿。蔡荣说，同街沈二郎的船本月报的瓷比舱里少。",
+          "once": true,
+          "effects": {
+            "flag": "npc_cairong_met"
+          }
         }
       ]
     },
@@ -3510,6 +3709,42 @@
             "network": 1,
             "note": "大宰府门下记过船期。"
           }
+        },
+        {
+          "id": "npc_cairong_settle",
+          "type": "choice",
+          "label": "报与不报",
+          "text": "大宰府门前的碑下，蔡荣等你一句话。沈二郎的船还在冲滨。",
+          "once": true,
+          "unlock": {
+            "require_flag": "npc_cairong_evidence"
+          },
+          "options": [
+            {
+              "id": "expose",
+              "label": "报大宰府",
+              "text": "你把箱底的押记报给门下的书役。武士往冲滨去了。",
+              "cost": 0,
+              "effects": {
+                "fame": 2,
+                "favour": 1,
+                "flag": "npc_cairong_exposed",
+                "note": "沈家的私瓷报了大宰府。"
+              }
+            },
+            {
+              "id": "cover",
+              "label": "替他遮下",
+              "text": "你只说纳屋的瓷是唐房共货。蔡荣看了你一眼，没有再问。",
+              "cost": 0,
+              "effects": {
+                "network": 2,
+                "merchant_credit": 1,
+                "flag": "npc_cairong_covered",
+                "note": "沈家的私瓷被遮下了。"
+              }
+            }
+          ]
         }
       ]
     },
@@ -3724,6 +3959,19 @@
               }
             }
           ]
+        },
+        {
+          "id": "npc_cairong_evidence",
+          "type": "favour",
+          "label": "查纳屋",
+          "text": "纳屋的米包后压着一摞没上簿的瓷箱。箱底的押记是沈家的。",
+          "once": true,
+          "unlock": {
+            "require_flag": "npc_cairong_met"
+          },
+          "effects": {
+            "flag": "npc_cairong_evidence"
+          }
         }
       ]
     },
@@ -4021,6 +4269,49 @@
           "port": "hakata",
           "good": "silk_fabric",
           "mul": 1.2
+        },
+        {
+          "id": "npc_zhouxing_bet",
+          "type": "choice",
+          "label": "押一句",
+          "text": "朔门码头风紧。周行把抄好的军报摊在米包上，问你押和议，还是押兵事未了。",
+          "once": true,
+          "unlock": {
+            "require_flag": "npc_zhouxing_heard",
+            "year_min": 1259,
+            "year_max": 1259,
+            "months": [
+              10,
+              11,
+              12
+            ]
+          },
+          "options": [
+            {
+              "id": "peace",
+              "label": "押和议成",
+              "text": "你把三十钱压在「和议」两字上。周行把纸折好，收进袖里。",
+              "cost": 30,
+              "effects": {
+                "money": 90,
+                "merchant_credit": 1,
+                "flag": "npc_zhouxing_peace",
+                "note": "鄂州和议押中了。"
+              }
+            },
+            {
+              "id": "war",
+              "label": "押兵事未了",
+              "text": "三十钱搁在「兵事」两字上。周行没有笑，只把军报又看了一遍。",
+              "cost": 30,
+              "effects": {
+                "scholar_tendency": 2,
+                "fame": 1,
+                "flag": "npc_zhouxing_war",
+                "note": "鄂州兵事押错了。"
+              }
+            }
+          ]
         }
       ]
     },
@@ -4374,6 +4665,16 @@
               }
             }
           ]
+        },
+        {
+          "id": "npc_zhouxing_meet",
+          "type": "favour",
+          "label": "抄军报",
+          "text": "永嘉书院的廊下，周行把一页抄坏的军报折起来。他说鄂州那边的消息，比米价还难抄准。",
+          "once": true,
+          "effects": {
+            "flag": "npc_zhouxing_met"
+          }
         }
       ]
     },
@@ -4559,6 +4860,19 @@
               }
             }
           ]
+        },
+        {
+          "id": "npc_zhouxing_rumor",
+          "type": "favour",
+          "label": "两种说法",
+          "text": "茶坊里有人说鄂州围解了，也有人说只是换了一面旗。周行把两种说法都记在纸上。",
+          "once": true,
+          "unlock": {
+            "require_flag": "npc_zhouxing_met"
+          },
+          "effects": {
+            "flag": "npc_zhouxing_heard"
+          }
         }
       ]
     },

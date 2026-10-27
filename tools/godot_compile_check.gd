@@ -315,6 +315,7 @@ const SCRIPTS := [
 	"res://tools/qa_w56_pending_districts_probe.gd",  # lane d1 待画城区探针
 	"res://tools/qa_w57_seasonal_probe.gd",  # lane sim3 季节需求（节令）探针
 	"res://tools/qa_w57_tut_probe.gd",  # lane tut2 玩家引导札记探针
+	"res://tools/qa_w57_npc_probe.gd",  # lane npc2 城中 NPC 链探针
 	"res://tools/qa_w57_credit_probe.gd",  # lane sim4 牙人赊销探针
 	"res://tools/qa_w57_ship_probe.gd",  # lane ship2 捻缝改装探针
 ]

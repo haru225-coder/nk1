@@ -221,6 +221,8 @@ EXEMPT = [
     ("qa_w56_pending_districts_probe.gd", "lane-d1-pending", "待画城区探针（pending/*.json 全扫、底图尚不存在、pending_art=true、账本不暴露），回退即红，headless 秒级"),
     ("qa_w57_credit_probe.gd", "lane-sim4", "牙人赊销探针（锁价贴水、舱货移除、赊销簿、到期结清、读档往返），回退即红，headless 秒级"),
     ("qa_w57_districtui_probe.gd", "lane-ui2-districtui", "城中各处 UI 可用性探针（名单与事页按类分组、钮带花费/冷却/条件悬停提示），回退即红，headless 秒级"),
+    ("qa_w57_quest_probe.gd", "lane-quest1", "章二三条港岸委托线探针（拍账三链条件与次序、十二幕选项账目、真起 Main 逐港自动接演、终局与非委托港不演），回退即红，headless 秒级"),
+    ("qa_w57_npc_probe.gd", "lane-npc2", "城中 NPC 链探针（五条线 flag 顺序、各段可达、两条分支收益不同、存档来回），回退即红，headless 秒级"),
     ("qa_w57_seasonal_probe.gd", "lane-sim3", "季节需求（节令）探针（月推移价格排序、存档结构不变），回退即红，headless 秒级"),
     ("qa_w57_tut_probe.gd", "lane-tut2", "玩家引导札记探针（城区、入股、旗链、节令四条 id/文案/触发/读旗），回退即红，headless 秒级"),
     ("qa_w57_ship_probe.gd", "lane-ship2", "捻缝改装探针（三等、花费、系数、存档兜底），回退即红，headless 秒级"),
