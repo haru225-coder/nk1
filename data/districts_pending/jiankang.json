@@ -77,7 +77,7 @@
           "id": "jk_zhisi_rumor",
           "type": "rumor",
           "label": "听签厅",
-          "text": "签厅里有人说，淮西和籴又加了额，明州港上的米船先被订走。",
+          "text": "签厅里有人说，淮西和籴又加了额，庆元府港上的米船先被订走。",
           "cost": 16,
           "cooldown_days": 35,
           "port": "mingzhou",
@@ -378,7 +378,7 @@
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_jk_zhongshan.jpg",
-      "description": "钟山旧名蒋山，太平兴国寺在圜悟关，寺中有宝公塔；相传梁时山中佛庐七十余处，到如今只这一寺香火最盛。",
+      "description": "钟山旧名蒋山，太平兴国寺在山南，寺中有宝公塔；相传梁时山中佛庐七十余处，到如今只这一寺香火最盛。",
       "interactions": [
         {
           "id": "jk_zhongshan_firewood",
@@ -447,7 +447,7 @@
           "id": "jk_wuyi_rumor",
           "type": "rumor",
           "label": "听茶客",
-          "text": "茶客说明州今春生丝收得少，临安的机户在等料。",
+          "text": "茶客说庆元府今春生丝收得少，临安的机户在等料。",
           "cost": 10,
           "cooldown_days": 30,
           "port": "mingzhou",

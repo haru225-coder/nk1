@@ -516,7 +516,7 @@
           "id": "pj_changmen_rumor",
           "type": "rumor",
           "label": "听纲梢",
-          "text": "纲梢说，太湖涨水，低田漫了，往明州的米船这几日要少。",
+          "text": "纲梢说，太湖涨水，低田漫了，往庆元府的米船这几日要少。",
           "cost": 10,
           "cooldown_days": 35,
           "port": "mingzhou",
