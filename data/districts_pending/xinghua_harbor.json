@@ -1,0 +1,679 @@
+{
+  "districts": [
+    {
+      "id": "xhh_wine_shed",
+      "port": "xinghua_harbor",
+      "name": "海口酒棚",
+      "kind": "teahouse",
+      "pending_art": true,
+      "bg": "bg_dist_xhh_wine_shed.jpg",
+      "description": "海口酒棚搭在礁石边，草帘挡不住风。柜上温着薄酒，南来北往的船户都在这里坐一坐。",
+      "interactions": [
+        {
+          "id": "xhh_wine_shed_warm",
+          "type": "favour",
+          "label": "温一壶酒",
+          "text": "你要了一壶薄酒，陪掌柜坐了一阵。他把今年海上的路数说给你听。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "sea_tendency": 1
+          }
+        },
+        {
+          "id": "xhh_wine_shed_talk",
+          "type": "choice",
+          "label": "酒棚里的话",
+          "text": "棚里两桌人，一桌从南边来，一桌从北边来。你想听哪一边。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "south",
+              "label": "听南边",
+              "text": "南边来的人说泉州蕃坊的香药还未开秤。你把话记在心里。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "sea_tendency": 1
+              }
+            },
+            {
+              "id": "north",
+              "label": "听北边",
+              "text": "北边来的人说淮上的兵又动了。酒棚里静了一瞬。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "note": "海口酒棚听过北边的兵事。"
+              }
+            }
+          ]
+        },
+        {
+          "id": "xhh_wine_shed_rumor",
+          "type": "rumor",
+          "label": "问米价",
+          "text": "掌柜拨着酒碗说，连雨三日，溪船在涵头搁了浅，海口的米到得迟。",
+          "cost": 10,
+          "cooldown_days": 35,
+          "port": "xinghua_harbor",
+          "good": "grain",
+          "mul": 1.08
+        }
+      ]
+    },
+    {
+      "id": "xhh_ninghai_ferry",
+      "port": "xinghua_harbor",
+      "name": "宁海渡头",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_xhh_ninghai_ferry.jpg",
+      "description": "宁海镇的渡头，木兰溪在此入海。潮涨时水面宽，潮落露出一线泥滩，渡船短，盐包与菜担都从这里过。",
+      "interactions": [
+        {
+          "id": "xhh_ninghai_cross",
+          "type": "choice",
+          "label": "过渡",
+          "text": "渡船挤满了人。等潮，还是加钱先过，由你定。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "wait_tide",
+              "label": "等潮",
+              "text": "你同乡里人一起等潮。船开时，大家还说笑。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "hire_boat",
+              "label": "加钱先过",
+              "text": "你多给了几文，渡船先载你。后头的人看着。",
+              "cost": 12,
+              "effects": {
+                "sea_tendency": 1,
+                "merchant_credit": -1
+              }
+            }
+          ]
+        },
+        {
+          "id": "xhh_ninghai_plank",
+          "type": "favour",
+          "label": "补跳板",
+          "text": "你出钱换了两块跳板，渡户把新板踩实。",
+          "cost": 20,
+          "once": true,
+          "effects": {
+            "hometown_tendency": 2,
+            "network": 1,
+            "note": "宁海渡头换过跳板。"
+          }
+        },
+        {
+          "id": "xhh_ninghai_rumor",
+          "type": "rumor",
+          "label": "听灶户",
+          "text": "过渡的灶户说，入夏阴雨多，盐池晒不成，海口的盐要短。",
+          "cost": 9,
+          "cooldown_days": 40,
+          "port": "xinghua_harbor",
+          "good": "sea_salt",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "xhh_shunji_temple",
+      "port": "xinghua_harbor",
+      "name": "白湖顺济庙",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_xhh_shunji_temple.jpg",
+      "description": "白湖边的顺济庙。木兰溪与海潮在这里相接，庙额书顺济，海上人唤神女作灵惠妃。庙前便是白湖渡。",
+      "interactions": [
+        {
+          "id": "xhh_shunji_pray",
+          "type": "favour",
+          "label": "祈风",
+          "text": "你在顺济庙香案前祈了一回风。庙祝把船名写在黄纸上，压在香炉下。",
+          "cost": 18,
+          "once_per": "year",
+          "effects": {
+            "sea_tendency": 2,
+            "favour": 1
+          }
+        },
+        {
+          "id": "xhh_shunji_tea",
+          "type": "choice",
+          "label": "庙前施茶",
+          "text": "庙前支着茶桶。施一轮茶，或只添一炷香，都随你。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "tea",
+              "label": "施茶",
+              "text": "你添了茶叶，过路的人各喝一碗。",
+              "cost": 10,
+              "effects": {
+                "fame": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "incense",
+              "label": "添香",
+              "text": "你只添了一炷香。庙祝合十。",
+              "cost": 4,
+              "effects": {
+                "sea_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "xhh_shunji_rumor",
+          "type": "rumor",
+          "label": "听香客",
+          "text": "进香的蕃商说，泉州港的香药先尽市舶抽解，轮到牙行时只剩小包。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "aromatic_medicine",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "xhh_sanjiang_tide",
+      "port": "xinghua_harbor",
+      "name": "三江口潮埠",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_xhh_sanjiang_tide.jpg",
+      "description": "三江口是三条溪水会海的地方。潮退时滩上能走人，潮涨时小船靠埠，埠上多鱼盐，瓷箱要等大潮才装船。",
+      "interactions": [
+        {
+          "id": "xhh_sanjiang_salt",
+          "type": "buy",
+          "label": "收海盐",
+          "text": "潮埠的盐包刚卸下，还没过牙行的秤。按埠头价收。",
+          "good": "sea_salt",
+          "qty": 8,
+          "price_mul": 0.9,
+          "impact": true
+        },
+        {
+          "id": "xhh_sanjiang_porcelain",
+          "type": "sell",
+          "label": "出手福建瓷",
+          "text": "北来的船要瓷。埠上的瓷箱按潮水涨落装船，给价略高。",
+          "good": "fujian_porcelain",
+          "qty": 4,
+          "price_mul": 1.05,
+          "impact": true
+        },
+        {
+          "id": "xhh_sanjiang_rumor",
+          "type": "rumor",
+          "label": "听埠头",
+          "text": "埠头的人说，北风还未起，泉州的瓷船压在港里，瓷价要落。",
+          "cost": 11,
+          "cooldown_days": 35,
+          "port": "quanzhou",
+          "good": "fujian_porcelain",
+          "mul": 0.9
+        }
+      ]
+    },
+    {
+      "id": "xhh_salt_yard",
+      "port": "xinghua_harbor",
+      "name": "海口盐场",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_xhh_salt_yard.jpg",
+      "description": "盐场在海口内侧。潮水引进卤池，日头晒成白盐，盐仓就在场边，灶户天不亮就下滩。",
+      "interactions": [
+        {
+          "id": "xhh_salt_yard_buy",
+          "type": "buy",
+          "label": "分盐",
+          "text": "灶户刚起盐，盐仓还没记账。按场上的价分。",
+          "good": "sea_salt",
+          "qty": 10,
+          "price_mul": 0.86,
+          "impact": true
+        },
+        {
+          "id": "xhh_salt_yard_pool",
+          "type": "favour",
+          "label": "修卤池",
+          "text": "你出钱把漏了的卤池补上。灶户说下一潮的盐会白些。",
+          "cost": 90,
+          "once": true,
+          "effects": {
+            "hometown_tendency": 2,
+            "fame": 1,
+            "note": "海口盐场补过卤池。"
+          }
+        },
+        {
+          "id": "xhh_salt_yard_rumor",
+          "type": "rumor",
+          "label": "听盐船",
+          "text": "灶户说，元兵到了兴化城下，海口的盐船不敢出海，泉州的盐价要起。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "unlock": {
+            "year_min": 1276,
+            "war_in": [
+              "besieged",
+              "fallen"
+            ]
+          },
+          "port": "quanzhou",
+          "good": "sea_salt",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "xhh_boat_beach",
+      "port": "xinghua_harbor",
+      "name": "船户埠与修船滩",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_xhh_boat_beach.jpg",
+      "description": "船户埠在修船滩外。滩上摊着旧船板，匠人把麻筋塞进船缝，桐油味顺着潮沟散开。",
+      "interactions": [
+        {
+          "id": "xhh_boat_beach_hire",
+          "type": "hire",
+          "label": "雇修船匠",
+          "text": "修船匠肯随船走一程。船底的缝他一看便知。",
+          "who": "修船匠",
+          "cost": 70,
+          "wage": 15,
+          "attention_ease": 1
+        },
+        {
+          "id": "xhh_boat_beach_caulk",
+          "type": "favour",
+          "label": "补船缝",
+          "text": "你出一份麻筋与桐油，匠人替你看了船底的缝。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "sea_tendency": 1
+          }
+        },
+        {
+          "id": "xhh_boat_beach_rumor",
+          "type": "rumor",
+          "label": "听船户",
+          "text": "船户说，泉州换了旗，抽解加倍，瓷船都绕外洋走，到博多要晚一季。",
+          "cost": 13,
+          "cooldown_days": 40,
+          "unlock": {
+            "year_min": 1276
+          },
+          "port": "hakata",
+          "good": "fujian_porcelain",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "xhh_patrol_stockade",
+      "port": "xinghua_harbor",
+      "name": "海口巡检寨",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_xhh_patrol_stockade.jpg",
+      "description": "海口巡检寨立在山嘴，寨墙不高，旗下泊着两条哨船。寨兵查私盐，也查夹带的宋钱。",
+      "interactions": [
+        {
+          "id": "xhh_patrol_check",
+          "type": "choice",
+          "label": "过寨",
+          "text": "寨兵问船上有无夹带。递公凭，还是塞钱，你自斟酌。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "paper",
+              "label": "递公凭",
+              "text": "你把公凭摊在案上。寨兵看了印，放船过去。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "bribe",
+              "label": "塞钱",
+              "text": "钱递过去，寨兵移开了拒马。簿子上仍记一笔。",
+              "cost": 25,
+              "effects": {
+                "pu_attention": 1,
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "xhh_patrol_water",
+          "type": "favour",
+          "label": "送淡水",
+          "text": "你给哨船送了一罐淡水。寨兵指给你看港外的暗沙。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "sea_tendency": 1
+          }
+        },
+        {
+          "id": "xhh_patrol_rumor",
+          "type": "rumor",
+          "label": "听寨兵",
+          "text": "寨兵说，哨船扣了两条夹带鹿皮的船，海口的鹿皮要少。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "xinghua_harbor",
+          "good": "deer_hide",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "xhh_oyster_flat",
+      "port": "xinghua_harbor",
+      "name": "蚝田与渔埕",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_xhh_oyster_flat.jpg",
+      "description": "海口滩上插着蚝石，渔埕围着竹篱。退潮时人下滩收蚝，涨潮时小船在埕外下网。",
+      "interactions": [
+        {
+          "id": "xhh_oyster_collect",
+          "type": "favour",
+          "label": "帮收蚝",
+          "text": "你跟着渔户下滩收了一筐蚝。手上腥，人却认你。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "hometown_tendency": 1,
+            "sea_tendency": 1
+          }
+        },
+        {
+          "id": "xhh_oyster_fence",
+          "type": "choice",
+          "label": "修渔埕",
+          "text": "渔埕的竹篱被潮水冲歪了。出竹木修篱，或只借船，看你。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "repair",
+              "label": "出竹木",
+              "text": "你出了竹木，渔户把篱重新插稳。",
+              "cost": 30,
+              "effects": {
+                "hometown_tendency": 2,
+                "fame": 1
+              }
+            },
+            {
+              "id": "boat",
+              "label": "只借船",
+              "text": "你借了一条小船，渔户自己修篱。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "xhh_ya_hang",
+      "port": "xinghua_harbor",
+      "name": "海口牙行",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_xhh_ya_hang.jpg",
+      "description": "海口牙行临着埠头。牙人持牙帖，过秤、写票、抽佣，货主在廊下等行情。",
+      "interactions": [
+        {
+          "id": "xhh_ya_hang_hide",
+          "type": "sell",
+          "label": "卖鹿皮",
+          "text": "北来的皮货船要鹿皮。牙人过秤，按市价收。",
+          "good": "deer_hide",
+          "qty": 4,
+          "price_mul": 1.06,
+          "impact": true
+        },
+        {
+          "id": "xhh_ya_hang_porcelain",
+          "type": "buy",
+          "label": "收福建瓷",
+          "text": "牙行里压着一批瓷箱，主人等钱用，按行价出。",
+          "good": "fujian_porcelain",
+          "qty": 5,
+          "price_mul": 0.92,
+          "impact": true
+        },
+        {
+          "id": "xhh_ya_hang_fee",
+          "type": "choice",
+          "label": "抽佣",
+          "text": "牙人问你走哪一等佣。照行规，还是讲价。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "rule",
+              "label": "照行规",
+              "text": "你照行规付了佣。牙人把你的名字写进熟客簿。",
+              "cost": 20,
+              "effects": {
+                "merchant_credit": 2,
+                "network": 1
+              }
+            },
+            {
+              "id": "bargain",
+              "label": "讲价",
+              "text": "你同牙人讲低了佣。他面上淡淡的。",
+              "cost": 10,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "xhh_ferry_guild",
+      "port": "xinghua_harbor",
+      "name": "渡船会",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_xhh_ferry_guild.jpg",
+      "description": "渡船会是一条巷里的公所。渡户在这里议班次、摊修船钱，墙上挂着写船名的木牌。",
+      "interactions": [
+        {
+          "id": "xhh_ferry_guild_hire",
+          "type": "hire",
+          "label": "雇渡工",
+          "text": "渡工肯随船。他熟海口到涵头的潮沟，风大时也不慌。",
+          "who": "渡工",
+          "cost": 60,
+          "wage": 12
+        },
+        {
+          "id": "xhh_ferry_guild_fare",
+          "type": "favour",
+          "label": "贴渡钱",
+          "text": "你替过不起渡的人贴了几文。渡户把这事写在公所的木牌上。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "hometown_tendency": 2,
+            "network": 1
+          }
+        },
+        {
+          "id": "xhh_ferry_guild_shift",
+          "type": "choice",
+          "label": "议班次",
+          "text": "渡户议早班。添钱加早班，或照旧，都行。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "add",
+              "label": "添早班",
+              "text": "你添了钱，早班船多了一条。",
+              "cost": 20,
+              "effects": {
+                "network": 2,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "keep",
+              "label": "照旧",
+              "text": "班次照旧。渡户说这样也稳。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "xhh_warehouse",
+      "port": "xinghua_harbor",
+      "name": "货栈",
+      "kind": "warehouse",
+      "pending_art": true,
+      "bg": "bg_dist_xhh_warehouse.jpg",
+      "description": "货栈靠海，板墙厚，门内码着米包、瓷箱与盐袋。潮气重，栈主夜里起来看两回。",
+      "interactions": [
+        {
+          "id": "xhh_warehouse_rent",
+          "type": "invest",
+          "label": "包一间",
+          "text": "包下货栈里的一间，按月收栈租。潮气自去。",
+          "costs": [
+            420,
+            920
+          ],
+          "monthly": [
+            20,
+            46
+          ],
+          "shop": "货栈"
+        },
+        {
+          "id": "xhh_warehouse_quiet",
+          "type": "sell",
+          "label": "栈里出货",
+          "text": "栈后小门夜里开。瓷箱不过牙行的秤，行情牌上不落字，价低一成。",
+          "good": "fujian_porcelain",
+          "qty": 6,
+          "price_mul": 0.9,
+          "impact": false
+        },
+        {
+          "id": "xhh_warehouse_grain",
+          "type": "buy",
+          "label": "收仓米",
+          "text": "栈里压着一批米，栈主要腾地方。按仓价收。",
+          "good": "grain",
+          "qty": 6,
+          "price_mul": 0.94,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "xhh_post_station",
+      "port": "xinghua_harbor",
+      "name": "海口驿铺",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_xhh_post_station.jpg",
+      "description": "海口驿铺在官道尽头。驿卒换马、递公文，也把海上来的消息写成短札。",
+      "interactions": [
+        {
+          "id": "xhh_post_dry",
+          "type": "favour",
+          "label": "帮驿卒",
+          "text": "你替驿卒把湿了的公文摊开晾好。他把泉州的短札念给你听。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "xhh_post_letter",
+          "type": "choice",
+          "label": "递书",
+          "text": "有一封家书要往城里去。托驿递，或自己带，随你。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "post",
+              "label": "托驿递",
+              "text": "你把书包好，交给驿卒。他说三日内到。",
+              "cost": 20,
+              "effects": {
+                "network": 2,
+                "note": "海口驿铺托过一封家书。"
+              }
+            },
+            {
+              "id": "carry",
+              "label": "自己带",
+              "text": "你把书揣进怀里。路上自己送。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1,
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "xhh_post_rumor",
+          "type": "rumor",
+          "label": "听驿卒",
+          "text": "驿卒说，临安降了，行朝在福州，闽江的粮船都被征去。",
+          "cost": 14,
+          "cooldown_days": 45,
+          "unlock": {
+            "year_min": 1276,
+            "year_max": 1276
+          },
+          "port": "fuzhou",
+          "good": "grain",
+          "mul": 1.15
+        }
+      ]
+    }
+  ]
+}
