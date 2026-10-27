@@ -318,7 +318,7 @@
           "id": "jj_temple_rumor",
           "type": "rumor",
           "label": "听萨摩",
-          "text": "僧人说萨摩的硫黄窑这月出得少，海船又等季风，浜上的硫黄不够分。",
+          "text": "僧人说硫黄岛那边这月采得少，海船又等季风，浜上的硫黄不够分。",
           "cost": 14,
           "cooldown_days": 40,
           "port": "kagoshima",

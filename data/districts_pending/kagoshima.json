@@ -197,7 +197,7 @@
           "id": "kg_sulfur_rumor",
           "type": "rumor",
           "label": "听浜上",
-          "text": "浜上的人说，博多唐房的火药坊赶工，硫黄要得急，船家坐地起价。",
+          "text": "浜上的人说，宋商在博多唐房收硫黄运回庆元府供军器所，要得急，船家坐地起价。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "hakata",

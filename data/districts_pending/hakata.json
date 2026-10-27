@@ -38,7 +38,7 @@
           "id": "hk_ishigaki_rumor",
           "type": "rumor",
           "label": "问石工",
-          "text": "石工说，萨摩的硫黄窑这月出得少，海船又都去运石料，浜上的硫黄不够分。",
+          "text": "石工说，筑石垒征了沿海的船去运石料，萨摩的硫黄船来得稀，唐房的硫黄不够分。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "kagoshima",
