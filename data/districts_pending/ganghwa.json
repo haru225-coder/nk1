@@ -1,0 +1,721 @@
+{
+  "districts": [
+    {
+      "id": "gh_gongque",
+      "port": "ganghwa",
+      "pending_port": true,
+      "name": "江都宫阙",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_gh_gongque.jpg",
+      "description": "江都宫依松岳山南麓，殿名多照开京旧制。宫城不广，朝会时百官在庭中站满，檐下挂着新制的帘。",
+      "interactions": [
+        {
+          "id": "gh_gongque_charcoal",
+          "type": "favour",
+          "label": "送松炭",
+          "text": "冬至前，你把一车松炭送到宫城外的炭场。内侍点数收下，在簿上记了你的商号。",
+          "cost": 25,
+          "once_per": "year",
+          "unlock": {
+            "months": [10, 11, 12]
+          },
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "gh_gongque_audience",
+          "type": "choice",
+          "label": "贺正",
+          "text": "正月初一，宫门开一条缝，贺正的人依次入庭。门吏问你是随班，还是只递名帖。",
+          "once_per": "year",
+          "unlock": {
+            "months": [1]
+          },
+          "options": [
+            {
+              "id": "gh_gongque_audience_follow",
+              "label": "随班入庭",
+              "text": "你跟着班次入庭，在廊下站了半个时辰。散朝时，前面的官员回头看了你一眼。",
+              "cost": 20,
+              "effects": {
+                "network": 1,
+                "fame": 1
+              }
+            },
+            {
+              "id": "gh_gongque_audience_card",
+              "label": "递名帖",
+              "text": "你把名帖交给门吏，没有入庭。帖子压在案上，门吏说会递进去。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gh_gongque_spring_silk",
+          "type": "rumor",
+          "label": "听朝房",
+          "text": "朝房的人说，江都官库要换春衣的绢，泉州的绢帛先短了一截。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "quanzhou",
+          "good": "silk_fabric",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "gh_jiachuan",
+      "port": "ganghwa",
+      "pending_port": true,
+      "name": "甲串渡",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_gh_jiachuan.jpg",
+      "description": "甲串渡在江华东北，对岸是文殊山。潮沟窄，水势急，渡船要等平潮才敢开。蒙古骑兵到了岸上，望水而止。",
+      "interactions": [
+        {
+          "id": "gh_jiachuan_ferryman",
+          "type": "hire",
+          "label": "雇渡夫",
+          "text": "渡夫姓白，在甲串摇了二十年橹。雇他，潮信与暗沙都先得一句。",
+          "who": "渡夫",
+          "cost": 70,
+          "wage": 10,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "gh_jiachuan_tide",
+          "type": "choice",
+          "label": "候潮",
+          "text": "潮还没平，岸上排着三只渡船。渡夫问你要不要先上船等。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "gh_jiachuan_tide_board",
+              "label": "先上船",
+              "text": "你先上了船，坐在舱口看水。潮头过来时，船身一横，渡夫把橹压住。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "gh_jiachuan_tide_wait",
+              "label": "岸上等",
+              "text": "你在岸上等到潮平，才最后一个上船。渡夫说，今日水还算稳。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gh_jiachuan_plank",
+          "type": "favour",
+          "label": "补跳板",
+          "text": "渡口的跳板朽了两块，你让伙计换上新板。渡夫把缆绳重新系紧，朝你拱了拱手。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "gh_chengqiang",
+      "port": "ganghwa",
+      "pending_port": true,
+      "name": "江都城墙",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_gh_chengqiang.jpg",
+      "description": "江都三城都是夯土：内城围着宫阙，1234 年起筑；中城是崔氏当国时加的，1250 年成；外城顺着海岸，1233 年动工，1237 年合围。1259 年议和，城堞依约撤去，土垄还在。",
+      "interactions": [
+        {
+          "id": "gh_chengqiang_earth",
+          "type": "favour",
+          "label": "担土",
+          "text": "外城的土垄被雨冲开一道口子，役夫挑土补筑。你替他们担了半日土，城吏在册上画了一笔。",
+          "cost": 0,
+          "once_per": "month",
+          "unlock": {
+            "year_max": 1259
+          },
+          "effects": {
+            "favour": 1,
+            "martial": 1
+          }
+        },
+        {
+          "id": "gh_chengqiang_guard",
+          "type": "choice",
+          "label": "守城",
+          "text": "城吏说蒙古游骑到了对岸，问你今夜守哪一段墙。",
+          "once": true,
+          "unlock": {
+            "year_max": 1259
+          },
+          "options": [
+            {
+              "id": "gh_chengqiang_guard_west",
+              "label": "守西门",
+              "text": "你带人守西门，火把插在土墙根下。夜里对岸有马蹄声，到天明也没见船。",
+              "effects": {
+                "martial": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "gh_chengqiang_guard_sea",
+              "label": "守海口",
+              "text": "你守海口，潮水退后露出一片泥滩。三更时有人踩泥过来，被弩手喝住。",
+              "effects": {
+                "sea_tendency": 1,
+                "favour": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gh_dazang",
+      "port": "ganghwa",
+      "pending_port": true,
+      "name": "大藏经板堂",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_gh_dazang.jpg",
+      "description": "大藏都监设在江都，1236 年开雕，1251 年印成全藏。西门外的大藏经板堂里，八万余板按函次上架，松烟与墨香不散。",
+      "interactions": [
+        {
+          "id": "gh_dazang_proof",
+          "type": "favour",
+          "label": "校经",
+          "text": "板堂里缺人校对，你替书手翻了一卷，把误字用朱笔圈出。都监的吏人朝你点了点头。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "gh_dazang_carve",
+          "type": "choice",
+          "label": "助刻",
+          "text": "都监要补刻几块残板，刻工说木料还缺一段。问你出钱，还是出纸。",
+          "once": true,
+          "options": [
+            {
+              "id": "gh_dazang_carve_money",
+              "label": "出钱",
+              "text": "你留下三十钱，刻工去木行挑了一段梨木。新板要晾几日才上刻。",
+              "cost": 30,
+              "effects": {
+                "fame": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "gh_dazang_carve_paper",
+              "label": "出纸",
+              "text": "你把舱里的高丽纸搬出一捆，书手先裁成校样。纸边还带着江上的潮气。",
+              "effects": {
+                "cargo_take": {
+                  "good": "korean_paper",
+                  "qty": 1
+                },
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gh_dazang_print",
+          "type": "rumor",
+          "label": "听印工",
+          "text": "印工说，印经要的高丽纸被官库先截，福州的纸货到得少了。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "fuzhou",
+          "good": "korean_paper",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "gh_chanyuan",
+      "port": "ganghwa",
+      "pending_port": true,
+      "name": "禅源寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_gh_chanyuan.jpg",
+      "description": "禅源寺在江都城中，崔氏的愿刹，1245 年落成。殿廊齐整，经板与经卷常在这里过手，僧徒多从开京来。",
+      "interactions": [
+        {
+          "id": "gh_chanyuan_copy",
+          "type": "favour",
+          "label": "写经",
+          "text": "你在寺里抄了一卷《法华经》，知客僧把纸压平，收进经柜。",
+          "cost": 15,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "gh_chanyuan_donate",
+          "type": "choice",
+          "label": "施经",
+          "text": "寺里要补一部《华严经》，知客问你是舍钱，还是舍纸。",
+          "once": true,
+          "options": [
+            {
+              "id": "gh_chanyuan_donate_money",
+              "label": "舍钱",
+              "text": "你留下二十五钱，知客在缘簿上落了一笔。殿里的钟响了一声。",
+              "cost": 25,
+              "effects": {
+                "fame": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "gh_chanyuan_donate_paper",
+              "label": "舍纸",
+              "text": "你从舱里取出一沓高丽纸，知客摸了摸纸面，说够抄两卷。",
+              "effects": {
+                "cargo_take": {
+                  "good": "korean_paper",
+                  "qty": 1
+                },
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gh_yecheng",
+      "port": "ganghwa",
+      "pending_port": true,
+      "name": "碧澜渡",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_gh_yecheng.jpg",
+      "description": "礼成江口在开京西三十里，碧澜亭临江。宋商船趁潮进来，卸下茶、绢、香药，再换人参、高丽纸与苎布。江都的官库也在这里收货。",
+      "interactions": [
+        {
+          "id": "gh_yecheng_inspect",
+          "type": "favour",
+          "label": "验货",
+          "text": "碧澜亭的吏人忙不过来，你替他把一船香药点了件数。船主递来一包茶，算是谢礼。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "merchant_credit": 1,
+            "cargo_add": {
+              "good": "tea",
+              "qty": 1
+            }
+          }
+        },
+        {
+          "id": "gh_yecheng_interpreter",
+          "type": "hire",
+          "label": "雇通事",
+          "text": "通事姓金，会说宋音与高丽话。雇他，宋商与官库之间的价先谈得拢。",
+          "who": "通事",
+          "cost": 90,
+          "wage": 12,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "gh_yecheng_incense",
+          "type": "rumor",
+          "label": "听船主",
+          "text": "船主说，江都官库收香药供佛事，广州的香药行已有人抬价。",
+          "cost": 18,
+          "cooldown_days": 40,
+          "port": "guangzhou",
+          "good": "aromatic_medicine",
+          "mul": 1.13
+        }
+      ]
+    },
+    {
+      "id": "gh_manyue",
+      "port": "ganghwa",
+      "pending_port": true,
+      "name": "满月台旧宫",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_gh_manyue.jpg",
+      "description": "开京正宫依松岳山南麓，殿台层层。江都的三十九年里宫门常闭；1270 年还都，官匠先修会庆殿，荒草还没除尽。",
+      "interactions": [
+        {
+          "id": "gh_manyue_timber",
+          "type": "choice",
+          "label": "献木",
+          "text": "会庆殿的梁架要换一根，宫监问你能不能从礼成江放一根木下来。",
+          "once": true,
+          "unlock": {
+            "year_min": 1270
+          },
+          "options": [
+            {
+              "id": "gh_manyue_timber_float",
+              "label": "放木",
+              "text": "你从上游放下一根杉木，宫监在木尾烙了记号。木到宫门时，天已经黑了。",
+              "cost": 20,
+              "effects": {
+                "network": 1,
+                "fame": 1
+              }
+            },
+            {
+              "id": "gh_manyue_timber_refuse",
+              "label": "推辞",
+              "text": "你说江上风大，木放不下来。宫监把册子合上，转身去看别家。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gh_manyue_paint",
+          "type": "rumor",
+          "label": "听宫监",
+          "text": "宫监说，修殿要漆，温州的漆器行里先留了一批。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "unlock": {
+            "year_min": 1270
+          },
+          "port": "wenzhou",
+          "good": "lacquerware",
+          "mul": 1.11
+        }
+      ]
+    },
+    {
+      "id": "gh_shichan",
+      "port": "ganghwa",
+      "pending_port": true,
+      "name": "开京市廛",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_gh_shichan.jpg",
+      "description": "开京市廛在旧京街巷里，人参、松子、苎布、高丽纸、狼尾笔摆在一处。宋商验过货，用茶、绢、香药换。",
+      "interactions": [
+        {
+          "id": "gh_shichan_invest",
+          "type": "invest",
+          "label": "入股市廛",
+          "text": "市廛的牙行要添本钱收参，你入了一份，按月分账。",
+          "shop": "市廛",
+          "costs": [380, 900],
+          "monthly": [18, 50]
+        },
+        {
+          "id": "gh_shichan_ginseng",
+          "type": "choice",
+          "label": "验参",
+          "text": "一船人参刚卸下，牙人问你要按支收，还是按斤收。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "gh_shichan_ginseng_stick",
+              "label": "按支",
+              "text": "你按支挑了一包，参须完整，牙人用红绳重新扎好。",
+              "cost": 30,
+              "effects": {
+                "cargo_add": {
+                  "good": "korean_ginseng",
+                  "qty": 1
+                },
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "gh_shichan_ginseng_weight",
+              "label": "按斤",
+              "text": "你按斤收了一包，参条粗细不齐，牙人又添了两根。",
+              "cost": 20,
+              "effects": {
+                "cargo_add": {
+                  "good": "korean_ginseng",
+                  "qty": 1
+                },
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gh_shichan_rumor",
+          "type": "rumor",
+          "label": "听牙人",
+          "text": "牙人说，宋商把开京的人参整船收去，泉州的参市跟着起了。",
+          "cost": 16,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "korean_ginseng",
+          "mul": 1.14
+        }
+      ]
+    },
+    {
+      "id": "gh_sanbie",
+      "port": "ganghwa",
+      "pending_port": true,
+      "name": "三别抄营",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_gh_sanbie.jpg",
+      "description": "三别抄本是江都宿卫，分左、右、神义三军。1270 年朝议还都，三别抄不肯，奉承化侯王温起事，南走珍岛。",
+      "interactions": [
+        {
+          "id": "gh_sanbie_stay",
+          "type": "choice",
+          "label": "去留",
+          "text": "还都的榜文贴在营门，营中的人收拾甲仗。队正问你是随船南下，还是回开京。",
+          "once": true,
+          "unlock": {
+            "year_min": 1270,
+            "year_max": 1270,
+            "months": [5, 6, 7]
+          },
+          "options": [
+            {
+              "id": "gh_sanbie_stay_south",
+              "label": "南下",
+              "text": "你把船让出一舱，载了十几名别抄的家眷。船出甲串时，岸上没有送行的人。",
+              "effects": {
+                "sea_tendency": 1,
+                "network": 1,
+                "flag": "gh_sanbie_south"
+              }
+            },
+            {
+              "id": "gh_sanbie_stay_return",
+              "label": "回开京",
+              "text": "你随还都的官船回了开京。营门在身后关上，旗还挂着。",
+              "effects": {
+                "merchant_credit": 1,
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gh_sanbie_grain",
+          "type": "favour",
+          "label": "送粮",
+          "text": "南下的船在珍岛外泊住，粮快断了。你托渔船带过去两石米，没有留名。",
+          "once": true,
+          "unlock": {
+            "year_min": 1270,
+            "year_max": 1271
+          },
+          "effects": {
+            "cargo_take": {
+              "good": "grain",
+              "qty": 2
+            },
+            "hometown_tendency": 2,
+            "fame": 1
+          }
+        },
+        {
+          "id": "gh_sanbie_soldier",
+          "type": "hire",
+          "label": "雇旧卒",
+          "text": "一个三别抄旧卒从珍岛逃回，识得海路。雇他，夜船不至撞上暗礁。",
+          "who": "旧卒",
+          "cost": 60,
+          "wage": 9,
+          "unlock": {
+            "year_min": 1273,
+            "year_max": 1273
+          },
+          "monthly_effects": {
+            "martial": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "gh_cuishi",
+      "port": "ganghwa",
+      "pending_port": true,
+      "name": "崔氏武臣政权",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_gh_cuishi.jpg",
+      "description": "崔氏四代执国，江都的政令都从崔府出。1258 年崔氏末主被三别抄围在宅中，门客一夜散尽。",
+      "interactions": [
+        {
+          "id": "gh_cuishi_card",
+          "type": "choice",
+          "label": "投刺",
+          "text": "崔府门房收刺，问你递不递。递了，政事堂的吏人先见你。",
+          "once_per": "month",
+          "unlock": {
+            "year_max": 1258
+          },
+          "options": [
+            {
+              "id": "gh_cuishi_card_give",
+              "label": "递刺",
+              "text": "你把名帖递进去，在门廊下等到日偏西。吏人出来问了你一船货的来路。",
+              "cost": 20,
+              "effects": {
+                "network": 2,
+                "fame": 1
+              }
+            },
+            {
+              "id": "gh_cuishi_card_keep",
+              "label": "不递",
+              "text": "你把名帖收回袖里，转身去看街对面的米铺。门房没有留你。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gh_cuishi_tea",
+          "type": "rumor",
+          "label": "听门客",
+          "text": "门客说，崔府要收茶办宴，兴化的茶栈先涨了。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "unlock": {
+            "year_max": 1258
+          },
+          "port": "xinghua",
+          "good": "tea",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "gh_qingci",
+      "port": "ganghwa",
+      "pending_port": true,
+      "name": "青瓷行",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_gh_qingci.jpg",
+      "description": "康津、扶安的窑烧镶嵌青瓷，云鹤与牡丹用白土黑土嵌进胎里。船从全罗道北上，货到江都，先卸在官库外的青瓷行。",
+      "interactions": [
+        {
+          "id": "gh_qingci_glaze",
+          "type": "favour",
+          "label": "看釉色",
+          "text": "青瓷行的牙人把一只梅瓶转过来，让你看釉下的嵌纹。日头照上去，翡色里透出一点灰。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "gh_qingci_rumor",
+          "type": "rumor",
+          "label": "听瓷客",
+          "text": "瓷客说，江都官库收青瓷做膳器，泉州的青白瓷也受了牵动。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "quanzhou",
+          "good": "qingbai_porcelain",
+          "mul": 1.11
+        }
+      ]
+    },
+    {
+      "id": "gh_mengshi",
+      "port": "ganghwa",
+      "pending_port": true,
+      "name": "蒙古使馆",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_gh_mengshi.jpg",
+      "description": "1260 年后，蒙古使与达鲁花赤往来江都，馆舍设在宫城西。门前立着怯薛，宋商经过都要放慢脚步。",
+      "interactions": [
+        {
+          "id": "gh_mengshi_petition",
+          "type": "choice",
+          "label": "递状",
+          "text": "蒙古使的随员在馆前收状，问你有没有要呈的事。",
+          "once_per": "month",
+          "unlock": {
+            "year_min": 1260
+          },
+          "options": [
+            {
+              "id": "gh_mengshi_petition_give",
+              "label": "递状",
+              "text": "你把状纸递上去，随员看了两行，问你货船停在哪一处海口。",
+              "cost": 30,
+              "effects": {
+                "network": 2,
+                "fame": 1
+              }
+            },
+            {
+              "id": "gh_mengshi_petition_keep",
+              "label": "不递",
+              "text": "你把状纸折回怀里，随员没有追问。馆门前的怯薛换了一次班。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gh_mengshi_sable",
+          "type": "rumor",
+          "label": "听随员",
+          "text": "随员说，蒙古使要索貂皮，兴化的貂皮行把价抬了。",
+          "cost": 20,
+          "cooldown_days": 45,
+          "unlock": {
+            "year_min": 1260
+          },
+          "port": "xinghua",
+          "good": "sable_fur",
+          "mul": 1.15
+        }
+      ]
+    }
+  ]
+}
