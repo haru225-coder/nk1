@@ -215,7 +215,7 @@
       "name": "开元寺双塔",
       "kind": "temple",
       "bg": "bg_dist_qz_kaiyuan.jpg",
-      "description": "西塔仁寿、东塔镇国，都是新石砌的八角五层。殿前古樟遮着石阶，塔身石缝里还留着凿痕。",
+      "description": "西塔仁寿、东塔镇国，都是新石砌的八角五层。殿西古桑的枝伸过墙头，塔身石缝里还留着凿痕。",
       "interactions": [
         {
           "id": "qz_kaiyuan_sutra",
@@ -331,7 +331,7 @@
       "name": "顺济宫",
       "kind": "temple",
       "bg": "bg_dist_qz_shunji.jpg",
-      "description": "宫对海。渔户来还愿，帆樯就在墙外。神位是一块素木。",
+      "description": "宫临江。渔户来还愿，帆樯就在墙外。神位是一块素木。",
       "interactions": [
         {
           "id": "qz_shunji_rite",
@@ -424,7 +424,7 @@
       "name": "九日山祈风",
       "kind": "hill",
       "bg": "bg_dist_qz_jiuri.jpg",
-      "description": "九日山在城外。石刻立在松间，面是平的。孟夏祈回舶，孟冬祈遣舶。",
+      "description": "九日山在城外。祈风的题刻凿在崖壁上。孟夏祈回舶，孟冬祈遣舶。",
       "interactions": [
         {
           "id": "qz_jiuri_summer",
@@ -465,7 +465,7 @@
         {
           "id": "qz_jiuri_stele",
           "type": "favour",
-          "label": "摸碑",
+          "label": "摸石刻",
           "text": "你在石刻前站了一会儿，只摸了摸，字没有拓。",
           "cost": 0,
           "once_per": "year",
