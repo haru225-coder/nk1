@@ -100,6 +100,8 @@ func _run() -> void:
 		"identity": "merchant", "player_name": "林往返",
 		"news_seen": ["v1255_04", "v1255_07"],
 		"crew_history": ["lin_hua"], "met_ids": ["lin_hua", "xu_shi"],
+		# 牙人赊销簿（lane sim4）：一笔未到期的赊账，定形六格
+		"broker_credit": [{"id": "bc_91234_4711", "port": "quanzhou", "good": "tea", "qty": 7, "unit_price": 63, "due_ym": 15062}],
 		"visited_ports": ["quanzhou", "hakata", "mingzhou"],
 		"flags": {"exam_sat": true, "exam_sat_ch2": true, "guild_quanzhou": true},
 		"ledger_notes": ["里正的旧账"],
