@@ -1,0 +1,670 @@
+{
+  "districts": [
+    {
+      "id": "sx_fucheng",
+      "port": "shaoxing",
+      "pending_port": true,
+      "name": "府城与卧龙山",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_sx_fucheng.jpg",
+      "description": "绍兴府治倚着卧龙山，山阴、会稽两县同城而治。府门前的石板被车马磨出浅槽，山上的望海亭在树影里露出檐角。",
+      "interactions": [
+        {
+          "id": "sx_fucheng_sell",
+          "type": "sell",
+          "label": "出绢帛",
+          "text": "你把绢帛摊在府门外的廊下，山阴县的吏人验过经纬，按匹折了会子。",
+          "good": "silk_fabric",
+          "qty": 2,
+          "price_mul": 0.98,
+          "impact": false
+        },
+        {
+          "id": "sx_fucheng_climb",
+          "type": "favour",
+          "label": "登望海亭",
+          "text": "你沿石阶上卧龙山，望海亭的檐下能看见府城的瓦脊。守亭的老卒替你指了北面的水道。",
+          "cost": 8,
+          "once_per": "year",
+          "effects": {
+            "fame": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "sx_fucheng_rumor",
+          "type": "rumor",
+          "label": "听府吏",
+          "text": "府吏说，朝廷和买绢帛的数目又摊到两浙，庆元府的绢价先动了。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "mingzhou",
+          "good": "silk_fabric",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "sx_jianhu",
+      "port": "shaoxing",
+      "pending_port": true,
+      "name": "鉴湖",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_sx_jianhu.jpg",
+      "description": "鉴湖在府城南，旧时周回三百余里，宋时多已淤成田。田埂把水面切成窄港，界石半埋在芦根里，偶尔还能看见旧闸的条石。",
+      "interactions": [
+        {
+          "id": "sx_jianhu_measure",
+          "type": "favour",
+          "label": "丈湖田",
+          "text": "你跟着老农沿田埂丈量湖田，界石上刻着占湖为田的人家。老农说，水门一闭，低田就归了私家。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "network": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "sx_jianhu_water",
+          "type": "choice",
+          "label": "争水",
+          "text": "旱月里，上流的田堵了旧闸，下流的农户扛着锄头赶来。你站在界石边，两边都看着你。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "sx_jianhu_water_open",
+              "label": "开闸放水",
+              "text": "你让人抬起闸板，水顺着窄港往下走。上流的人骂了几句，下流的人把锄头放下。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "sx_jianhu_water_shut",
+              "label": "照旧闭闸",
+              "text": "你按住闸板，说等府里的帖子。下流的人看了你一眼，转身走了。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "pu_attention": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "sx_jianhu_rumor",
+          "type": "rumor",
+          "label": "听湖田",
+          "text": "府仓的斗级说，府仓要籴米，福州的米船先被截在城下，米价要抬。",
+          "cost": 10,
+          "cooldown_days": 35,
+          "port": "fuzhou",
+          "good": "grain",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "sx_lanting",
+      "port": "shaoxing",
+      "pending_port": true,
+      "name": "兰亭",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_sx_lanting.jpg",
+      "description": "兰亭在兰渚山下，亭子临着一条曲水。石渠边的羽觞早已不见，只有水声和竹影。王羲之修禊的旧事，被游人一遍遍说给同伴听。",
+      "interactions": [
+        {
+          "id": "sx_lanting_ritual",
+          "type": "favour",
+          "label": "临水修禊",
+          "text": "三月上巳，你在曲水边摆下几只羽觞。水流到谁面前，谁就饮一盏，岸上的人跟着笑。",
+          "cost": 20,
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              3
+            ]
+          },
+          "effects": {
+            "fame": 1,
+            "network": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "sx_lanting_copy",
+          "type": "choice",
+          "label": "临帖",
+          "text": "亭里的石案上摊着一卷《兰亭序》拓本，纸边已经起毛。守亭人问你，要不要临一行。",
+          "options": [
+            {
+              "id": "sx_lanting_copy_write",
+              "label": "临一行",
+              "text": "你提笔临了一行，墨落在纸上，笔画比原帖生硬。守亭人还是替你收了纸。",
+              "cost": 10,
+              "effects": {
+                "scholar_tendency": 1,
+                "fame": 1
+              }
+            },
+            {
+              "id": "sx_lanting_copy_look",
+              "label": "只看",
+              "text": "你把拓本从头看到尾，没有落笔。守亭人把纸卷回去，说下回再来。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sx_yuling",
+      "port": "shaoxing",
+      "pending_port": true,
+      "name": "禹陵与禹庙",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_sx_yuling.jpg",
+      "description": "禹陵在会稽山北麓，禹庙的朱门对着一条石阶。陵前的窆石用亭子罩着，守陵人每天扫一遍落叶。山风从松林里下来，吹得檐铃轻响。",
+      "interactions": [
+        {
+          "id": "sx_yuling_sweep",
+          "type": "favour",
+          "label": "扫陵",
+          "text": "你借了一把竹帚，从禹庙的石阶扫到陵前。守陵人把落叶堆在树根下，说今年雨水多，草长得快。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "sx_yuling_stone",
+          "type": "choice",
+          "label": "看窆石",
+          "text": "守陵人揭开窆石亭的布帘，石上的字被苔痕盖住大半。他问你要不要近前看。",
+          "options": [
+            {
+              "id": "sx_yuling_stone_near",
+              "label": "近前看",
+              "text": "你凑近石面，只认出几个残字。守陵人把布帘重新放下，说石头比人记得久。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "sx_yuling_stone_back",
+              "label": "不打扰",
+              "text": "你退后一步，让守陵人把布帘系好。山风把松针吹到阶上。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sx_songliuling",
+      "port": "shaoxing",
+      "pending_port": true,
+      "name": "宋六陵攒宫",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_sx_songliuling.jpg",
+      "description": "攒宫在会稽上皇村，松柏成行，享殿的瓦色比别处新。诸帝暂殡于此，守陵人按时洒扫，陵前的石阶上很少见到外人。",
+      "interactions": [
+        {
+          "id": "sx_songliuling_keeper",
+          "type": "favour",
+          "label": "问守陵人",
+          "text": "你问守陵人陵前的松树是哪一年栽的。他想了想，说只记得父亲也在这里扫陵，名字在簿上。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "sx_songliuling_repair",
+          "type": "choice",
+          "label": "助修享殿",
+          "text": "享殿的檐角漏雨，守陵人捧出修陵的工料簿。他说工料要等府里拨，等不来就先自己补。",
+          "options": [
+            {
+              "id": "sx_songliuling_repair_pay",
+              "label": "出钱修檐",
+              "text": "你按工料簿上的数出了钱。守陵人把铜钱倒进木柜，说下月请瓦匠来。",
+              "cost": 40,
+              "effects": {
+                "fame": 1,
+                "favour": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "sx_songliuling_repair_mark",
+              "label": "只记一笔",
+              "text": "你没出钱，只把名字写在工料簿末尾。守陵人合上簿子，仍旧去搬梯子。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sx_shenyuan",
+      "port": "shaoxing",
+      "pending_port": true,
+      "name": "沈园",
+      "kind": "grove",
+      "pending_art": true,
+      "bg": "bg_dist_sx_shenyuan.jpg",
+      "description": "沈园在府城城南，粉墙围着一池水，假山后有几株老梅。园主许人游赏，墙上留着前人的题字，墨迹被雨水晕开。",
+      "interactions": [
+        {
+          "id": "sx_shenyuan_wall",
+          "type": "favour",
+          "label": "看题壁",
+          "text": "你在粉墙前站了一会儿，辨认一行被雨冲淡的题字。园丁说，每年都有人来寻旧句。",
+          "cost": 6,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "sx_shenyuan_verse",
+          "type": "choice",
+          "label": "和词",
+          "text": "墙边的小桌上放着笔砚，园丁说游人可题。你看着那行旧句，笔尖悬在纸上。",
+          "options": [
+            {
+              "id": "sx_shenyuan_verse_write",
+              "label": "题一阕",
+              "text": "你题了一阕，墨迹落在旧句旁边。园丁看了一眼，没有说什么，只把砚台挪开。",
+              "cost": 10,
+              "effects": {
+                "fame": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "sx_shenyuan_verse_stop",
+              "label": "不题",
+              "text": "你把笔放回笔架，转身去看池里的倒影。园丁把纸收进抽屉。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sx_dongpu",
+      "port": "shaoxing",
+      "pending_port": true,
+      "name": "东浦与绍兴酒坊",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_sx_dongpu.jpg",
+      "description": "东浦在鉴湖下流，河港绕村，酒坊的墙根堆着空瓮。官酒务按年收酒，坊里只在冬酿时开耙，米的香气顺着水巷飘出去。",
+      "interactions": [
+        {
+          "id": "sx_dongpu_invest",
+          "type": "invest",
+          "label": "入股酒坊",
+          "text": "酒坊的坊主把账簿摊在桌上，说冬酿要添本钱买米。你入了一份，约好按月分账。",
+          "costs": [
+            300,
+            700
+          ],
+          "monthly": [
+            14,
+            36
+          ],
+          "shop": "东浦酒坊"
+        },
+        {
+          "id": "sx_dongpu_sell",
+          "type": "sell",
+          "label": "出米",
+          "text": "你把船上的米卸在酒坊门口，坊主抓起一把看了看成色，按斗给了钱。",
+          "good": "grain",
+          "qty": 2,
+          "price_mul": 1.02,
+          "impact": false
+        },
+        {
+          "id": "sx_dongpu_rumor",
+          "type": "rumor",
+          "label": "听酒务",
+          "text": "酒务的吏人说，今年冬酿要的米多，庆元府的米船先往府城卸，米价要抬。",
+          "cost": 10,
+          "cooldown_days": 35,
+          "port": "mingzhou",
+          "good": "grain",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "sx_yunhe",
+      "port": "shaoxing",
+      "pending_port": true,
+      "name": "浙东运河与西兴渡",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_sx_yunhe.jpg",
+      "description": "浙东运河从府城往西北去，到萧山西兴渡入钱塘江。渡口的闸板常被潮沙淤住，船夫候潮开闸，等潮的人挤在塘上。",
+      "interactions": [
+        {
+          "id": "sx_yunhe_hire",
+          "type": "hire",
+          "label": "雇闸夫",
+          "text": "闸夫老陈识得潮候，也识得闸底的沙。他肯跟你走，往后船到西兴，先有人替你候闸。",
+          "who": "闸夫",
+          "cost": 60,
+          "wage": 8,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "sx_yunhe_tide",
+          "type": "choice",
+          "label": "候潮",
+          "text": "潮水还没到，闸口外排着几条船。闸夫问你是先卸货，还是等潮开闸。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "sx_yunhe_tide_wait",
+              "label": "等潮开闸",
+              "text": "你留在塘上等潮。潮头过来时，闸夫抬起闸板，船一条条挤进内河。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "sx_yunhe_tide_unload",
+              "label": "先卸货",
+              "text": "你让脚夫先把货挑下船。潮到时，舱里已经空了一半，船身轻了。",
+              "cost": 0,
+              "effects": {
+                "money": 6,
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "sx_yunhe_rumor",
+          "type": "rumor",
+          "label": "听渡船",
+          "text": "渡船上的茶商说，西兴闸外沙淤，庆元府的茶船改走海道，茶价要松。",
+          "cost": 8,
+          "cooldown_days": 25,
+          "port": "mingzhou",
+          "good": "tea",
+          "mul": 0.92
+        }
+      ]
+    },
+    {
+      "id": "sx_kuaiji",
+      "port": "shaoxing",
+      "pending_port": true,
+      "name": "会稽山与香炉峰",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_sx_kuaiji.jpg",
+      "description": "会稽山在府城南，香炉峰的石头呈赭色，山腰的茶园一层层往上去。采茶的人天不亮就进山，日铸岭的茶名在州里很响。",
+      "interactions": [
+        {
+          "id": "sx_kuaiji_climb",
+          "type": "favour",
+          "label": "登香炉峰",
+          "text": "你沿石阶上香炉峰，半山有采茶人歇脚。到了峰顶，府城的河港在雾里露出一线。",
+          "cost": 12,
+          "once_per": "year",
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "sx_kuaiji_tea",
+          "type": "buy",
+          "label": "收日铸茶",
+          "text": "茶农把新焙的日铸茶摊在竹席上，你抓了一撮闻过，按斤收了。",
+          "good": "tea",
+          "qty": 1,
+          "price_mul": 0.98,
+          "impact": false
+        }
+      ]
+    },
+    {
+      "id": "sx_kiln",
+      "port": "shaoxing",
+      "pending_port": true,
+      "name": "越州窑旧址",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_sx_kiln.jpg",
+      "description": "越州窑的旧窑场在上虞、余姚一带，宋时窑火已不如唐五代。山坡上留着龙窑的残基，碎瓷片和匣钵堆在草里，偶尔有人来拾。",
+      "interactions": [
+        {
+          "id": "sx_kiln_shard",
+          "type": "favour",
+          "label": "拾瓷片",
+          "text": "你在窑基旁拾了几片青瓷，釉色发灰，断口却还亮。看窑的老人说，这些都是烧坏的旧器。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "money": 4,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "sx_kiln_old",
+          "type": "choice",
+          "label": "旧窑",
+          "text": "老人指着龙窑的残基，说有人想在这里重开窑。他问你，这窑还烧不烧得起来。",
+          "options": [
+            {
+              "id": "sx_kiln_old_yes",
+              "label": "劝他重开",
+              "text": "你说山下的土还在，柴也近。老人摇摇头，说如今的好瓷从别处来，烧出来也卖不动。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "sx_kiln_old_no",
+              "label": "不劝",
+              "text": "你没接话，只把拾来的瓷片收进袖里。老人蹲下去，把匣钵码回原处。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sx_fuxue",
+      "port": "shaoxing",
+      "pending_port": true,
+      "name": "府学与稽山书院",
+      "kind": "academy",
+      "pending_art": true,
+      "bg": "bg_dist_sx_fuxue.jpg",
+      "description": "府学在城中，讲堂前立着几块旧碑。稽山书院在卧龙山西岗，旧时范仲淹所创，朱熹曾来讲学；如今讲堂还在，来听讲的人不多。",
+      "interactions": [
+        {
+          "id": "sx_fuxue_lecture",
+          "type": "favour",
+          "label": "听讲",
+          "text": "你到府学讲堂外听了一回讲，讲的是《春秋》。廊下的学生把纸卷摊在膝上，墨磨得很淡。",
+          "cost": 6,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "sx_fuxue_scribe",
+          "type": "hire",
+          "label": "雇书手",
+          "text": "书院里的书手替人抄书，字迹工整。他肯跟你走，往后船上的文书先有人誊清。",
+          "who": "书手",
+          "cost": 70,
+          "wage": 9,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "sx_fuxue_book",
+          "type": "choice",
+          "label": "借书",
+          "text": "山长从架上取下一部《会稽志》，说只许在廊下看，不许带出书院。",
+          "options": [
+            {
+              "id": "sx_fuxue_book_copy",
+              "label": "抄一页",
+              "text": "你借了纸笔，抄下其中一页。山长站在旁边看了一会儿，没有催你。",
+              "cost": 10,
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "抄得《会稽志》一页。"
+              }
+            },
+            {
+              "id": "sx_fuxue_book_read",
+              "label": "只翻看",
+              "text": "你把书翻到记山川的一卷，看完便合上。山长把书放回架上。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sx_caojiang",
+      "port": "shaoxing",
+      "pending_port": true,
+      "name": "曹娥江与曹娥庙",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_sx_caojiang.jpg",
+      "description": "曹娥江从上虞流过，江口的潮水一日两至。曹娥庙在江边，庙里供着孝女曹娥，廊下的碑石记着寻父的事。船过庙前，有人会泊岸上一炷香。",
+      "interactions": [
+        {
+          "id": "sx_caojiang_incense",
+          "type": "favour",
+          "label": "祭曹娥",
+          "text": "你买了一炷香，在曹娥庙前拜过。庙祝把香插进炉里，说江上的人常来。",
+          "cost": 6,
+          "once_per": "year",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "sx_caojiang_stele",
+          "type": "choice",
+          "label": "读碑",
+          "text": "廊下的碑石字口很深，记着曹娥投江的旧事。庙祝递来一盏灯，问你要不要近前读。",
+          "options": [
+            {
+              "id": "sx_caojiang_stele_read",
+              "label": "读完碑文",
+              "text": "你举灯读到碑尾，潮声从江面传来。庙祝把灯接回去，说碑上还有几字被磨平了。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "sx_caojiang_stele_top",
+              "label": "只看碑额",
+              "text": "你只看了碑额，便把灯还给庙祝。江风从廊下穿过，香灰落了一地。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sx_yeboat",
+      "port": "shaoxing",
+      "pending_port": true,
+      "name": "府城夜航船",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_sx_yeboat.jpg",
+      "description": "夜航船泊在府城东的水门，入夜解缆，沿浙东运河往庆元府去。船舱里点着一盏油灯，客商把行李垫在身下，橹声一直响到天亮。",
+      "interactions": [
+        {
+          "id": "sx_yeboat_board",
+          "type": "favour",
+          "label": "搭夜航船",
+          "text": "你搭上夜航船，把包袱垫在舱角。船过水门时，岸上的灯一盏盏退到后面。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "sx_yeboat_rumor",
+          "type": "rumor",
+          "label": "听同船",
+          "text": "同船的绸商说，博多唐房催要绢帛，唐房的绢价要抬。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "silk_fabric",
+          "mul": 1.14
+        }
+      ]
+    }
+  ]
+}
