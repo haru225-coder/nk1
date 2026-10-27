@@ -70,7 +70,7 @@
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_ez_huanghelou.jpg",
-      "description": "黄鹤楼故址在黄鹄山黄鹤矶头，楼已废，故址难寻，只余李监篆石刻。江边一段窄石阶通向矶头，登临的人仍来这里看江。",
+      "description": "黄鹤楼故址在黄鹄山黄鹤矶头，楼已废，故址难寻，矶头只剩几方旧刻。江边一段窄石阶通向矶头，登临的人仍来这里看江。",
       "interactions": [
         {
           "id": "ez_huanghelou_climb",

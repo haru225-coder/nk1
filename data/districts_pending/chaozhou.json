@@ -447,10 +447,10 @@
       "port": "chaozhou",
       "pending_port": true,
       "pending_art": true,
-      "name": "韩江口商船与番舶",
+      "name": "韩江口商船与南洋来舶",
       "kind": "dock",
       "bg": "bg_dist_cz_hanjiangkou.jpg",
-      "description": "韩江口外泊着南北来的船。本地的盐船、瓷船候潮出海，广州转来的番舶在口外抛锚，小舟把香药与胡椒驳进来，牙人只说货是广州的。",
+      "description": "韩江口外泊着南北来的船。本地的盐船、瓷船候潮出海，南洋来舶在口外抛锚，小舟把香药与胡椒驳进来，牙人只说是广州转来的。",
       "interactions": [
         {
           "id": "cz_hjk_pepper",

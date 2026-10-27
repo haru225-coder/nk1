@@ -441,7 +441,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_sd_sitian.jpg",
-      "description": "回回司天台设在宫城承应阙，官吏在院里支起星盘与晷影，按回回历推节气。",
+      "description": "回回司天台随驾设在上都，官吏在院里支起星盘与晷影，按回回历推节气。",
       "interactions": [
         {
           "id": "sd_sitian_star",
