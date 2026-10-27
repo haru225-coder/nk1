@@ -81,6 +81,16 @@
       "bio": "南岛海道上的舵手，与阿那同出一寨。看水色辨深浅，礁线在他眼里是明的。"
     },
     {
+      "id": "liang_wangdou",
+      "name": "梁望斗",
+      "role": "huozhang",
+      "level": 2,
+      "wage": 120,
+      "port": "guangzhou",
+      "unlock": "ch3",
+      "bio": "广州人，祖上替蕃舶望斗。夜航不看灯，只认斗柄与潮头；一口广府话里夹着几句大食话，是跟蕃客学的。"
+    },
+    {
       "id": "lin_awu",
       "name": "林阿五",
       "role": "duogong",
@@ -111,6 +121,16 @@
       "bio": "温州人，据说曾在逆季风里把一条广船从耽罗带回明州。船主没敢再用他第二次。"
     },
     {
+      "id": "gu_sanjiang",
+      "name": "顾三江",
+      "role": "duogong",
+      "level": 2,
+      "wage": 120,
+      "port": "mingzhou",
+      "unlock": "ch2",
+      "bio": "庆元府三江口人，替官船把过舵，也替渔船抢过风。明州口外暗礁多，他凭水色就能认出礁线。"
+    },
+    {
       "id": "lin_hua",
       "name": "林华",
       "role": "duogong",
@@ -121,6 +141,16 @@
       "leave_from": "1276-10",
       "leave_note": "林华把缆绳盘好，辞了船，说要去兴化投军。",
       "bio": "泉州码头上的水手，在林阿舶的船上系过几年缆。话少，手上活好，缆绳系得从不松。"
+    },
+    {
+      "id": "zhang_tiemao",
+      "name": "张铁猫",
+      "role": "duogong",
+      "level": 1,
+      "wage": 60,
+      "port": "zhangzhou",
+      "unlock": "ch1",
+      "bio": "漳州九龙江口的船户，在船上管碇。铁猫重，收放全凭手劲；下碇前先看水色，说沙底与泥底吃碇不一样。"
     },
     {
       "id": "wang_zhiku",
@@ -151,6 +181,16 @@
       "port": "xinghua",
       "unlock": "ch1",
       "bio": "落第的士人，字写得好，算盘打得更好。不大瞧得起海商，但要吃饭。"
+    },
+    {
+      "id": "chen_dayou",
+      "name": "陈大有",
+      "role": "zashi",
+      "level": 2,
+      "wage": 120,
+      "port": "xinghua_harbor",
+      "unlock": "ch1",
+      "bio": "兴化海口酒棚里替纲首记了几年流水。谁的货上了哪条船，他不用翻簿；算盘珠子旧得发亮。"
     },
     {
       "id": "huang_zhangfang",
@@ -213,6 +253,16 @@
       "port": "jeju",
       "unlock": "ch2",
       "bio": "耽罗牧场上的高丽人，会几句汉话与倭语，够在市上讨价。"
+    },
+    {
+      "id": "wang_xin",
+      "name": "王信",
+      "role": "tongshi",
+      "level": 2,
+      "wage": 120,
+      "port": "wenzhou",
+      "unlock": "ch2",
+      "bio": "温州人。少时随船到明州天童寺，跟日本僧学了倭语；后来跑过耽罗，高丽话也能应付。温州港的日本商船靠岸，牙人多请他。"
     },
     {
       "id": "monk_puji",
