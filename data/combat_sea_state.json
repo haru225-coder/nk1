@@ -29,7 +29,7 @@
     {"id": "yaozhi", "level": 3, "name": "三级・摇枝", "yisi_sign": "摇枝", "sea_sign": "浪头间起白花", "beaufort": [4, 4], "wind_strength": 60, "sea": 1, "sea_name": "微浪", "engine_ok": true, "sail_limit": 2, "combat_ok": true},
     {"id": "duoye", "level": 4, "name": "四级・堕叶", "yisi_sign": "堕叶", "sea_sign": "白浪成片，船身起伏", "beaufort": [5, 5], "wind_strength": 80, "sea": 2, "sea_name": "中浪", "engine_ok": true, "sail_limit": 2, "combat_ok": true},
     {"id": "zhexiaozhi", "level": 5, "name": "五级・折小枝", "yisi_sign": "折小枝", "sea_sign": "浪大，舷边溅水，射手站不稳", "beaufort": [6, 6], "wind_strength": 100, "sea": 3, "sea_name": "大浪", "engine_ok": true, "sail_limit": 2, "combat_ok": true},
-    {"id": "zhedazhi", "level": 6, "name": "六级・折大枝", "yisi_sign": "折大枝", "sea_sign": "巨浪连排，抛石打不准", "beaufort": [7, 7], "wind_strength": 120, "sea": 3, "sea_name": "大浪", "engine_ok": false, "sail_limit": 2, "combat_ok": true},
+    {"id": "zhedazhi", "level": 6, "name": "六级・折大枝", "yisi_sign": "折大枝", "sea_sign": "巨浪连排，抛石放不得", "beaufort": [7, 7], "wind_strength": 120, "sea": 3, "sea_name": "大浪", "engine_ok": false, "sail_limit": 2, "combat_ok": true},
     {"id": "zhemu", "level": 7, "name": "七级・折木飞沙", "yisi_sign": "折木飞砂石", "sea_sign": "浪如山，只顾保船", "beaufort": [8, 9], "wind_strength": 140, "sea": 4, "sea_name": "狂涛", "engine_ok": false, "sail_limit": 2, "combat_ok": false},
     {"id": "bashu", "level": 8, "name": "八级・拔树", "yisi_sign": "拔大树及根", "sea_sign": "飓风，不能交战", "beaufort": [10, 12], "wind_strength": 160, "sea": 4, "sea_name": "狂涛", "engine_ok": false, "sail_limit": 1, "combat_ok": false}
   ],

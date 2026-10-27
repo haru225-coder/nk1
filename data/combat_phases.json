@@ -262,7 +262,7 @@
       "seq": 5,
       "name": "白刃",
       "short": "白刃",
-      "summary": "两船系住，跳帮的人过舷，甲板上一合一合地打；火枪、灰瓶、蒺藜管头几合，一方溃了或降了分胜负，打不下来就退回本船、砍缆分开",
+      "summary": "两船系住，跳帮的人过舷，甲板上一合一合地打；火枪、灰瓶、火球，头几合，一方溃了或降了分胜负，打不下来就退回本船、砍缆分开",
       "enter_copy": "短兵相接",
       "systems": [
         "melee_resolve",
@@ -347,11 +347,11 @@
       "seq": 6,
       "name": "溃逃",
       "short": "溃逃",
-      "summary": "一方士气溃了：溃的一方转舵逃，另一方追或放；追上了可再接舷，溃船多半不打就降；逃出 escape_bu 就散",
-      "enter_copy": "敌船转舵逃走",
+      "summary": "一方士气溃了：溃的一方转舵逃，另一方追或放；追上了可再接舷，溃船多半不打就降；逃出一程便散",
+      "enter_copy": "敌船转篷要走",
       "enter_copy_by_side": {
         "enemy": "敌船转舵逃走",
-        "player": "众人无心再战，转舵脱离"
+        "player": "人心已散，转舵脱离"
       },
       "systems": [
         "maneuver_model",
@@ -1571,7 +1571,7 @@
       "name": "缭帆",
       "song_term": "缭手",
       "does": "升落篷帆、收放缭绳",
-      "shortfall": "升落帆慢，帆势打折"
+      "shortfall": "升落帆慢，吃风不足"
     },
     {
       "id": "helm",
@@ -1592,7 +1592,7 @@
       "name": "弓弩",
       "song_term": "弓弩手",
       "does": "舷墙上放弓弩",
-      "shortfall": "齐射一发的效力按人头折（weapons.json slot_rule.effect_scale）"
+      "shortfall": "人少，齐射的箭就稀"
     },
     {
       "id": "engine",
@@ -1866,7 +1866,7 @@
       "cooldown_s": 2.0,
       "requires": [],
       "ai": true,
-      "copy": "换常箭"
+      "copy": "换回常矢"
     },
     {
       "id": "fight_fire",
@@ -2079,7 +2079,7 @@
         "oars"
       ],
       "ai": true,
-      "copy": "收橹"
+      "copy": "收起橹桨"
     },
     {
       "id": "anchor",
@@ -2098,7 +2098,7 @@
         "waters:coast|harbor"
       ],
       "ai": true,
-      "copy": "下碇"
+      "copy": "碇石落水"
     },
     {
       "id": "weigh",
@@ -2116,7 +2116,7 @@
         "anchored"
       ],
       "ai": true,
-      "copy": "起碇"
+      "copy": "绞起碇石"
     },
     {
       "id": "flee",
@@ -2504,7 +2504,7 @@
     },
     {
       "id": "yuan_shaoguan",
-      "name": "元军哨官",
+      "name": "北军百户",
       "faction": "yuan",
       "range_pref_bu": [
         60,
@@ -2593,7 +2593,7 @@
       },
       "precedence": 2,
       "tally": "tally_struck",
-      "log": "敌船竖了降幡。",
+      "log": "敌船落帆，桅上升起降幡。",
       "cue": "colors_struck",
       "morale_hint": 3,
       "spoil_rule": "legacy",
@@ -2609,7 +2609,7 @@
       "legacy_data": {},
       "precedence": 3,
       "tally": "tally_sunk",
-      "log": "敌船沉了。",
+      "log": "水漫过舷，敌船沉了。",
       "cue": "ship_sinking",
       "morale_hint": 0,
       "spoil_rule": "legacy",
@@ -2625,7 +2625,7 @@
       "legacy_data": {},
       "precedence": 4,
       "tally": "tally_fled",
-      "log": "敌船带伤逃了。",
+      "log": "敌船带伤，转篷遁去。",
       "cue": "rout_begin",
       "morale_hint": 0,
       "spoil_rule": "half",
@@ -2680,7 +2680,7 @@
       },
       "precedence": null,
       "tally": null,
-      "log": "众人无心再战，转舵逃开。",
+      "log": "众人无心再战，船头转向外海。",
       "cue": "rout_begin",
       "morale_hint": -8,
       "spoil_rule": "none",
@@ -2788,7 +2788,7 @@
     {
       "id": "hit_hull",
       "name": "中船体",
-      "copy": "船板中石",
+      "copy": "船板裂了口",
       "morale_tag": "hit_light",
       "fx": "splinter",
       "audio": "combat_hit"
@@ -2836,7 +2836,7 @@
     {
       "id": "fire_spread",
       "name": "火势蔓延",
-      "copy": "火势延开",
+      "copy": "火顺着篷索烧开",
       "morale_tag": "fire",
       "fx": "fire",
       "audio": null
@@ -2844,7 +2844,7 @@
     {
       "id": "fire_out",
       "name": "火灭",
-      "copy": "火扑灭了",
+      "copy": "火头按下去了",
       "morale_tag": "relief",
       "fx": "smoke",
       "audio": null
@@ -2868,7 +2868,7 @@
     {
       "id": "flood_rising",
       "name": "进满一舱",
-      "copy": "又一舱进满了水",
+      "copy": "隔舱也灌满了",
       "morale_tag": "flood",
       "fx": "splash",
       "audio": null
@@ -2876,7 +2876,7 @@
     {
       "id": "flood_held",
       "name": "水止",
-      "copy": "水势止住了",
+      "copy": "漏水堵住了",
       "morale_tag": "relief",
       "fx": "none",
       "audio": null
@@ -2892,7 +2892,7 @@
     {
       "id": "ship_sinking",
       "name": "下沉",
-      "copy": "{ship}在往下沉",
+      "copy": "{ship}船身渐低",
       "morale_tag": "ally_lost",
       "fx": "sink",
       "audio": null
@@ -2900,7 +2900,7 @@
     {
       "id": "rudder_lost",
       "name": "舵毁",
-      "copy": "舵毁了，船不应舵",
+      "copy": "舵叶打坏，船头不听",
       "morale_tag": "hit_heavy",
       "fx": "none",
       "audio": null
@@ -2908,7 +2908,7 @@
     {
       "id": "rudder_spare",
       "name": "换副舵",
-      "copy": "换上副舵",
+      "copy": "副舵已换上",
       "morale_tag": "relief",
       "fx": "none",
       "audio": null
@@ -2916,7 +2916,7 @@
     {
       "id": "ammo_low",
       "name": "矢石将尽",
-      "copy": "{what}将尽",
+      "copy": "{what}快见底",
       "morale_tag": "ammo_low",
       "fx": "none",
       "audio": null
@@ -2924,7 +2924,7 @@
     {
       "id": "ammo_out",
       "name": "矢石尽",
-      "copy": "{what}用完了",
+      "copy": "{what}已用尽",
       "morale_tag": "ammo_out",
       "fx": "none",
       "audio": null
@@ -2940,7 +2940,7 @@
     {
       "id": "hooks_held",
       "name": "钩住",
-      "copy": "钩住了",
+      "copy": "钩索咬住舷墙",
       "morale_tag": "boarded",
       "fx": "rope",
       "audio": null
@@ -2948,7 +2948,7 @@
     {
       "id": "hooks_cut",
       "name": "砍缆",
-      "copy": "钩索砍断，两船分开",
+      "copy": "斧手砍断钩索，两船荡开",
       "morale_tag": "relief",
       "fx": "none",
       "audio": null
@@ -2972,7 +2972,7 @@
     {
       "id": "repelled",
       "name": "打退",
-      "copy": "跳上来的人被打了回去",
+      "copy": "跳帮的人被逼回舷边",
       "morale_tag": "relief",
       "fx": "none",
       "audio": null
@@ -2980,7 +2980,7 @@
     {
       "id": "leader_down",
       "name": "头目倒下",
-      "copy": "敌船头目倒下了",
+      "copy": "敌船头目被打倒",
       "morale_tag": "leader_down",
       "fx": "none",
       "audio": null
@@ -2988,7 +2988,7 @@
     {
       "id": "colors_struck",
       "name": "降幡",
-      "copy": "{ship}竖起降幡",
+      "copy": "{ship}桅上升起降幡",
       "morale_tag": "struck",
       "fx": "flag",
       "audio": null
@@ -2996,7 +2996,7 @@
     {
       "id": "rout_begin",
       "name": "溃走",
-      "copy": "{ship}转舵逃走",
+      "copy": "{ship}掉头遁去",
       "morale_tag": "rout",
       "fx": "none",
       "audio": null
@@ -3004,7 +3004,7 @@
     {
       "id": "ship_captured",
       "name": "夺船",
-      "copy": "敌船「{ship}」并入本队",
+      "copy": "「{ship}」归入本队",
       "morale_tag": "victory",
       "fx": "flag",
       "audio": null
@@ -3012,7 +3012,7 @@
     {
       "id": "prisoners",
       "name": "俘获",
-      "copy": "俘{n}人",
+      "copy": "俘获{n}人",
       "morale_tag": null,
       "fx": "none",
       "audio": null
@@ -3020,7 +3020,7 @@
     {
       "id": "wind_shift",
       "name": "风转",
-      "copy": "风转{dir}",
+      "copy": "风从{dir}来",
       "morale_tag": null,
       "fx": "none",
       "audio": null
@@ -3028,7 +3028,7 @@
     {
       "id": "tide_turn",
       "name": "潮转",
-      "copy": "潮转{flow}",
+      "copy": "潮水转{flow}",
       "morale_tag": null,
       "fx": "none",
       "audio": null
@@ -3036,7 +3036,7 @@
     {
       "id": "calm_falls",
       "name": "风息",
-      "copy": "风息了，帆垂下来",
+      "copy": "风停了，帆软下来",
       "morale_tag": null,
       "fx": "none",
       "audio": null
@@ -3044,7 +3044,7 @@
     {
       "id": "blind_cloud",
       "name": "灰烟",
-      "copy": "灰烟迷目",
+      "copy": "石灰扑面，睁不开眼",
       "morale_tag": "hit_light",
       "fx": "smoke",
       "audio": null
@@ -3052,7 +3052,7 @@
     {
       "id": "divers",
       "name": "凿船",
-      "copy": "有人潜到船底凿孔",
+      "copy": "水里有敌手凿船底",
       "morale_tag": "flood",
       "fx": "splash",
       "audio": null
@@ -3060,7 +3060,7 @@
     {
       "id": "surrender_called",
       "name": "喊话",
-      "copy": "隔船喊话叫降",
+      "copy": "隔水喊话，劝对面降",
       "morale_tag": "surrender_call",
       "fx": "none",
       "audio": null
@@ -3083,16 +3083,16 @@
     },
     {
       "id": "sail_wind",
-      "label": "帆风",
+      "label": "受风",
       "source": "ManeuverModel：本船风舷角",
-      "fmt": "顺风 / 横风 / 抢风 / 顶风",
+      "fmt": "顺风 / 侧风 / 抢风 / 顶风",
       "panel": "top"
     },
     {
       "id": "target_bearing",
       "label": "舷角",
       "source": "ManeuverModel：最近敌船舷角",
-      "fmt": "左舷 60° / 正艏 / 右舷艉",
+      "fmt": "艏 0° / 左舷 60° / 右舷 120° / 艉 180°",
       "panel": "top"
     },
     {
@@ -3155,7 +3155,7 @@
       "id": "morale",
       "label": "士气",
       "source": "CombatMorale：本队状态",
-      "fmt": "稳 / 动摇 / 溃",
+      "fmt": "如常 / 动摇 / 思退 / 溃逃 / 降幡",
       "panel": "status"
     },
     {
