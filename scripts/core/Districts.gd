@@ -286,9 +286,12 @@ static func apply(ix_id: String, opt_id: String = "") -> Dictionary:
 		_refund(money0, taken.get("qty", {}))
 		return _fail("那处牙行不做这门货")
 	_do_impact(port, spec)
+	var first_invest := str(ix.get("type", "")) == "invest" and level_of(str(ix.get("id", ""))) == 0
 	var bits: Array = _apply_effects(_as_dict(spec.get("effects", {})), port)
 	_finish_type(port, ix, spec)
 	_mark(ix_id, ix)
+	if first_invest:
+		_offer_note("invest_shop")
 	if gain > 0:
 		GameState.add_money(gain)
 	var msg := _success_msg(ix, spec, port, bits, need, gain)
@@ -630,6 +633,7 @@ static func _apply_effects(eff: Dictionary, port_id: String) -> Array:
 	var flag := str(eff.get("flag", ""))
 	if flag != "":
 		GameState.set_flag(flag)
+		_offer_note("flag_chain")
 	var note := str(eff.get("note", ""))
 	if note != "":
 		GameState.add_ledger_note(note)
@@ -753,6 +757,25 @@ static func _merge_choice(ix: Dictionary, opt: Dictionary) -> Dictionary:
 	else:
 		spec.erase("rumor")
 	return spec
+
+
+
+static func _host_node() -> Node:
+	var ml := Engine.get_main_loop()
+	if ml is SceneTree:
+		var root := (ml as SceneTree).root
+		return root.get_node_or_null("Main")
+	return null
+
+
+static func _offer_note(id: String) -> bool:
+	var host := _host_node()
+	if host == null:
+		return false
+	var cn := load("res://scripts/ui/CombatNotes.gd")
+	if cn != null and cn.has_method("offer"):
+		return cn.offer(host, id)
+	return false
 
 
 static func _as_dict(v) -> Dictionary:

@@ -4761,6 +4761,8 @@ func _market_kept_note(good_id: String, head: String) -> String:
 ## 短注挤不下截成「…」，不把卡撑宽。放在 Main 末尾：前面多一行，tools/main_splits.txt 记的转发快照行号就对不上。
 func _mount_price_row(info: VBoxContainer, price_lbl: Label, port_id: String, good_id: String) -> void:
 	var war_note := Economy.war_price_note(port_id, good_id)
+	if not is_equal_approx(Economy.seasonal_mul(good_id), 1.0):
+		_COMBAT_NOTES.offer(self, "seasonal_price")
 	if war_note == "":
 		info.add_child(price_lbl)
 		return
@@ -5505,7 +5507,9 @@ func _mount_districts() -> void:
 	if actions == null:
 		return
 	actions.add_child(_shore_action("城中各处", Vector2(160, 42), false, _open_districts))
+	_COMBAT_NOTES.offer(self, "districts")
 
 
 func _open_districts() -> void:
+	_COMBAT_NOTES.offer(self, "districts")
 	_DISTRICT_PAGE.open_index(self, current_scene_id)
