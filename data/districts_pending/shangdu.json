@@ -1,0 +1,665 @@
+{
+  "districts": [
+    {
+      "id": "sd_gongcheng",
+      "port": "shangdu",
+      "pending_port": true,
+      "name": "宫城与大安阁",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_sd_gongcheng.jpg",
+      "description": "宫城在皇城偏北，四面包砖，角楼高过墙头。至元三年，南边拆来一座旧阁，改建成大安阁。",
+      "interactions": [
+        {
+          "id": "sd_gongcheng_view",
+          "type": "favour",
+          "label": "看大安阁",
+          "text": "你托门吏递了名帖，才许在宫墙外站一会儿。大安阁的檐角压着云，斗拱一层叠一层。",
+          "cost": 20,
+          "once": true,
+          "unlock": {
+            "year_min": 1266
+          },
+          "effects": {
+            "network": 1,
+            "fame": 1,
+            "pu_attention": 1
+          }
+        },
+        {
+          "id": "sd_gongcheng_pillar",
+          "type": "favour",
+          "label": "量角柱",
+          "text": "大安阁西南角的汉白玉角柱上，龙身盘着牡丹与荷花。石匠说，这是南边旧阁留下的样。",
+          "cost": 0,
+          "once": true,
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "sd_gongcheng_eave",
+          "type": "favour",
+          "label": "数斗拱",
+          "text": "你仰头数檐下的斗拱，数到第七层便乱了。旁边的小吏笑说，这阁外观四层，里面还藏着三层。",
+          "cost": 0,
+          "once": true,
+          "effects": {
+            "scholar_tendency": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "sd_huangcheng",
+      "port": "shangdu",
+      "pending_port": true,
+      "name": "皇城与外城",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_sd_huangcheng.jpg",
+      "description": "皇城套着宫城，外城又在西、北两面围出一大圈。北半是御苑，西南是市街，城墙外还有一圈关厢。",
+      "interactions": [
+        {
+          "id": "sd_huangcheng_yard",
+          "type": "favour",
+          "label": "问苑户",
+          "text": "御苑的苑户正在给鹿添草。他说北半城空得很，除了禽兽，只有巡卒按时走过。",
+          "cost": 0,
+          "once": true,
+          "effects": {
+            "network": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "sd_huangcheng_hide",
+          "type": "buy",
+          "label": "收鹿皮",
+          "text": "苑户拿几张鹿皮换盐。皮子还带着草屑，你按张数给了钱。",
+          "good": "deer_hide",
+          "qty": 3,
+          "price_mul": 0.96,
+          "impact": false
+        },
+        {
+          "id": "sd_huangcheng_rumor",
+          "type": "rumor",
+          "label": "听巡卒",
+          "text": "巡卒说，北边来的皮货少了，明州貂皮这个月要抬头。",
+          "cost": 8,
+          "cooldown_days": 30,
+          "port": "mingzhou",
+          "good": "sable_fur",
+          "mul": 1.07
+        }
+      ]
+    },
+    {
+      "id": "sd_yutian",
+      "port": "shangdu",
+      "pending_port": true,
+      "name": "御天门",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_sd_yutian.jpg",
+      "description": "御天门是宫城南门。门前的诏书一贴出，驿马就接着往南跑，石阶下总有人等着听消息。",
+      "interactions": [
+        {
+          "id": "sd_yutian_edict",
+          "type": "favour",
+          "label": "读诏",
+          "text": "你挤到门洞前，把诏书上的字看了一遍。守门军士没有赶人，只说看完便走。",
+          "cost": 0,
+          "once": true,
+          "effects": {
+            "fame": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "sd_yutian_wait",
+          "type": "choice",
+          "label": "候门",
+          "text": "石阶下有人替人递状，也有人只等一句话。你手里没有状纸，站了一会儿。",
+          "once": true,
+          "options": [
+            {
+              "id": "sd_yutian_wait_ask",
+              "label": "问门吏",
+              "text": "你问门吏，南边来的文书几时发。门吏只说，驿马到了便发。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            },
+            {
+              "id": "sd_yutian_wait_leave",
+              "label": "转身走",
+              "text": "你把衣襟拢好，转身下了石阶。身后又有一匹驿马进门。",
+              "cost": 0,
+              "effects": {
+                "pu_attention": -1
+              }
+            }
+          ]
+        },
+        {
+          "id": "sd_yutian_rumor",
+          "type": "rumor",
+          "label": "听使臣",
+          "text": "高丽使臣在门下歇脚，随行的人说，人参在开京收得紧，到下月要贵。",
+          "cost": 10,
+          "cooldown_days": 35,
+          "port": "jeju",
+          "good": "korean_ginseng",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "sd_luanhe",
+      "port": "shangdu",
+      "pending_port": true,
+      "name": "滦河与金莲川",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_sd_luanhe.jpg",
+      "description": "滦河从城南绕过，岸上是金莲川。六月金莲花开，牧人把马赶进河湾，水边一片黄。",
+      "interactions": [
+        {
+          "id": "sd_luanhe_cross",
+          "type": "favour",
+          "label": "过滦河",
+          "text": "渡船不大，船户把缆绳系在木桩上。你给过河钱，他让你把货箱搁在船尾。",
+          "cost": 8,
+          "effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "sd_luanhe_flower",
+          "type": "favour",
+          "label": "采金莲",
+          "text": "牧人说，金莲花只看不采，采了明年就不旺。你只拾了一朵落花，夹在账簿里。",
+          "cost": 0,
+          "once": true,
+          "unlock": {
+            "months": [
+              6
+            ]
+          },
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "sd_luanhe_rumor",
+          "type": "rumor",
+          "label": "问牧人",
+          "text": "牧人说，今夏雨水足，草场好，皮子出得多，鹿皮价要往下走。",
+          "cost": 8,
+          "cooldown_days": 40,
+          "port": "xinghua_harbor",
+          "good": "deer_hide",
+          "mul": 0.93
+        }
+      ]
+    },
+    {
+      "id": "sd_ordo",
+      "port": "shangdu",
+      "pending_port": true,
+      "name": "斡耳朵与帐殿",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_sd_ordo.jpg",
+      "description": "西内在宫城以西。每年四月到九月，车驾在这里设帐殿，棕毛殿前摆诈马宴；入冬便只剩空架。",
+      "unlock": {
+        "months": [
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      },
+      "lock_reason": "车驾南去，帐殿只余空架。",
+      "interactions": [
+        {
+          "id": "sd_ordo_feast",
+          "type": "favour",
+          "label": "赴诈马宴",
+          "text": "你随人进了棕毛殿。赴宴的人都穿一色质孙服，马奶酒一轮轮端上来，帐外马嘶不断。",
+          "cost": 30,
+          "once": true,
+          "effects": {
+            "fame": 2,
+            "network": 1,
+            "pu_attention": 1
+          }
+        },
+        {
+          "id": "sd_ordo_kumis",
+          "type": "favour",
+          "label": "献马酒",
+          "text": "你捧一碗马奶酒到帐前。执事接过去，回赠你一条白哈达。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "favour": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "sd_ordo_tent",
+          "type": "choice",
+          "label": "看帐殿",
+          "text": "棕毛殿的柱子缠着金漆，殿顶用彩绳拉紧。执事问你要不要进去看。",
+          "once": true,
+          "options": [
+            {
+              "id": "sd_ordo_tent_enter",
+              "label": "入帐",
+              "text": "你掀帘进去，脚下是厚毡。殿里没有砖墙，只有一圈圈帐幕。",
+              "cost": 0,
+              "effects": {
+                "fame": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "sd_ordo_tent_out",
+              "label": "在外等",
+              "text": "你在帐外站着，听里面的人用蒙古语说笑。风把绳上的彩带吹得直响。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sd_kongmiao",
+      "port": "shangdu",
+      "pending_port": true,
+      "name": "孔子庙",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_sd_kongmiao.jpg",
+      "description": "孔子庙在皇城东南，前殿后殿，外有围墙。西边的房舍住着国子生，至元二年建成。",
+      "unlock": {
+        "year_min": 1265
+      },
+      "lock_reason": "孔子庙还在营造，未开门。",
+      "interactions": [
+        {
+          "id": "sd_kongmiao_incense",
+          "type": "favour",
+          "label": "添香",
+          "text": "殿里只列木主，没有别的陈设。你把几枝香插进炉里，管庙的人替你记了名字。",
+          "cost": 6,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "sd_kongmiao_copy",
+          "type": "favour",
+          "label": "抄碑",
+          "text": "国子生正在抄碑上的字。你借他的纸笔抄了两行，墨还没有干。",
+          "cost": 0,
+          "once": true,
+          "effects": {
+            "scholar_tendency": 2,
+            "fame": 1
+          }
+        },
+        {
+          "id": "sd_kongmiao_student",
+          "type": "choice",
+          "label": "送国子生",
+          "text": "一个国子生说，纸快用完了。他把空书包给你看，问你能否帮一把。",
+          "once": true,
+          "options": [
+            {
+              "id": "sd_kongmiao_student_paper",
+              "label": "赠纸笔",
+              "text": "你从货箱里取出一刀纸、两支笔，放在他的案上。他起身作了一揖。",
+              "cost": 30,
+              "effects": {
+                "fame": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "sd_kongmiao_student_talk",
+              "label": "只问学业",
+              "text": "你问他读到哪一卷。他说到《春秋》，又低头去抄碑。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sd_fosi",
+      "port": "shangdu",
+      "pending_port": true,
+      "name": "乾元寺与大龙光华严寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_sd_fosi.jpg",
+      "description": "皇城东北是大龙光华严寺，西北是乾元寺。两处香火都旺，番僧与汉僧各有院落。",
+      "interactions": [
+        {
+          "id": "sd_fosi_butter",
+          "type": "favour",
+          "label": "添酥油",
+          "text": "乾元寺的灯房里，酥油灯一排排点着。你添了一小罐酥油，番僧合掌念了一句。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "sd_fosi_ask",
+          "type": "choice",
+          "label": "问番僧",
+          "text": "番僧问你从哪里来。你说是南边来的船客，他便指了指墙上的星图。",
+          "once": true,
+          "options": [
+            {
+              "id": "sd_fosi_ask_star",
+              "label": "问星历",
+              "text": "番僧说，星图上的宫分与汉历不同，算出的一年也短些。你记了两句。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "sd_fosi_ask_road",
+              "label": "问商路",
+              "text": "番僧说，往西去的商队今年少，皮货与香药都贵。你把这些记在心上。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "sd_fosi_bell",
+          "type": "favour",
+          "label": "听梵呗",
+          "text": "傍晚，华严寺的钟声响过三下，僧人开始诵经。你在廊下站到声音停下。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "pu_attention": -1
+          }
+        }
+      ]
+    },
+    {
+      "id": "sd_sitian",
+      "port": "shangdu",
+      "pending_port": true,
+      "name": "回回司天台",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_sd_sitian.jpg",
+      "description": "回回司天台的官吏随驾到上都，在皇城边支起星盘与晷影。至元四年，札马鲁丁进《万年历》。",
+      "interactions": [
+        {
+          "id": "sd_sitian_star",
+          "type": "favour",
+          "label": "看星盘",
+          "text": "司天台的院子里摆着一架星盘，铜圈上刻着回回字。官吏转动盘面，让你看北斗的位置。",
+          "cost": 0,
+          "once": true,
+          "effects": {
+            "scholar_tendency": 2,
+            "fame": 1
+          }
+        },
+        {
+          "id": "sd_sitian_calendar",
+          "type": "favour",
+          "label": "问万年历",
+          "text": "你问《万年历》与南边的历书差在哪里。官吏说，节气差不多，算日食的法子不同。",
+          "cost": 0,
+          "once": true,
+          "unlock": {
+            "year_min": 1267
+          },
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "sd_sitian_shadow",
+          "type": "favour",
+          "label": "校晷影",
+          "text": "正午，官吏把一根木表立在石台上，量影子的长短。你替他扶住尺子，记下一个数。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "sd_mashi",
+      "port": "shangdu",
+      "pending_port": true,
+      "name": "马市与羊市",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_sd_mashi.jpg",
+      "description": "马市与羊市在外城西南的市街。牧人牵马赶来，牙人看牙口，茶摊先煮一锅。",
+      "interactions": [
+        {
+          "id": "sd_mashi_horse",
+          "type": "favour",
+          "label": "相马",
+          "text": "牙人掰开马嘴看牙口，又绕马走了一圈。他在袖里捏了捏价，才开口。",
+          "cost": 0,
+          "effects": {
+            "network": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "sd_mashi_buy",
+          "type": "buy",
+          "label": "收北貂",
+          "text": "牧人把两张貂皮摊在毡上。皮毛细密，边上还缝着北地的线。",
+          "good": "sable_fur",
+          "qty": 2,
+          "price_mul": 0.97,
+          "impact": false
+        },
+        {
+          "id": "sd_mashi_tea",
+          "type": "sell",
+          "label": "出茶砖",
+          "text": "你卸下几块茶砖。马市的人先掰一块煮了，尝过才肯论价。",
+          "good": "tea",
+          "qty": 4,
+          "price_mul": 1.03,
+          "impact": false
+        }
+      ]
+    },
+    {
+      "id": "sd_yizhan",
+      "port": "shangdu",
+      "pending_port": true,
+      "name": "城关站赤",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_sd_yizhan.jpg",
+      "description": "城关的驿馆与站赤挨在一处。铺马换班，书信与使臣都从这里往南走。",
+      "interactions": [
+        {
+          "id": "sd_yizhan_letter",
+          "type": "favour",
+          "label": "寄书",
+          "text": "你把一封书信交给站吏，附上驿钱。站吏在簿上写了日子，说下一班铺马明早走。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "sd_yizhan_horse",
+          "type": "choice",
+          "label": "换马",
+          "text": "你的马跑得慢了。站吏说，换快马要加钱，等下一班却不用。",
+          "once": true,
+          "options": [
+            {
+              "id": "sd_yizhan_horse_fast",
+              "label": "换快马",
+              "text": "你添了钱，站吏牵来一匹青马。马夫把旧马牵回槽边。",
+              "cost": 20,
+              "effects": {
+                "network": 1,
+                "fame": 1
+              }
+            },
+            {
+              "id": "sd_yizhan_horse_wait",
+              "label": "等下一班",
+              "text": "你把鞍卸下来，坐在廊下等。铺马到的时候，天已经黑了。",
+              "cost": 0,
+              "effects": {
+                "pu_attention": -1
+              }
+            }
+          ]
+        },
+        {
+          "id": "sd_yizhan_hire",
+          "type": "hire",
+          "label": "雇马夫",
+          "text": "站赤的马夫识得去各处的路。你问他肯不肯跟船队走，他说要先辞了站里的差。",
+          "who": "站赤马夫",
+          "cost": 70,
+          "wage": 16,
+          "attention_ease": 1
+        }
+      ]
+    },
+    {
+      "id": "sd_xiguan",
+      "port": "shangdu",
+      "pending_port": true,
+      "name": "西关商旅",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_sd_xiguan.jpg",
+      "description": "西关在皇城西门外。车马店、货栈、回回商人的铺面挤在一条街上，斡脱钱也在这里转。",
+      "interactions": [
+        {
+          "id": "sd_xiguan_invest",
+          "type": "invest",
+          "label": "入股货栈",
+          "text": "西关的货栈要添一排仓房，掌柜请你入本。账上写明，每月按股分钱。",
+          "shop": "西关货栈",
+          "costs": [
+            340,
+            780
+          ],
+          "monthly": [
+            14,
+            40
+          ]
+        },
+        {
+          "id": "sd_xiguan_licence",
+          "type": "licence",
+          "label": "领市凭",
+          "text": "留守司的吏人验过你的货，给了一张市易凭。西关的铺子认这张纸。",
+          "cost": 180,
+          "licence": "lic_sd_xiguan",
+          "effects": {
+            "merchant_credit": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "sd_xiguan_rumor",
+          "type": "rumor",
+          "label": "听车马店",
+          "text": "车马店的掌柜说，南边绢帛到得少，西关的回回商人正急着补货。",
+          "cost": 10,
+          "cooldown_days": 40,
+          "port": "mingzhou",
+          "good": "silk_fabric",
+          "mul": 1.09
+        }
+      ]
+    },
+    {
+      "id": "sd_chengqiang",
+      "port": "shangdu",
+      "pending_port": true,
+      "name": "城墙与护城壕",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_sd_chengqiang.jpg",
+      "description": "城墙用黄土夯筑，皇城与宫城包砖石。城外壕沟宽二十余步，墙根还留着宪宗六年的夯痕。",
+      "interactions": [
+        {
+          "id": "sd_chengqiang_base",
+          "type": "favour",
+          "label": "看夯痕",
+          "text": "墙根的黄土一层一层，夹着碎石子。领工的说过，宪宗六年刘秉忠择了这块地，三年才把城筑成。",
+          "cost": 0,
+          "once": true,
+          "unlock": {
+            "year_min": 1256
+          },
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "sd_chengqiang_trench",
+          "type": "favour",
+          "label": "量壕沟",
+          "text": "你沿着壕沟走了半圈，拿步子量了量。沟底还积着雨水，城头的巡卒看得见这里。",
+          "cost": 0,
+          "once": true,
+          "effects": {
+            "network": 1,
+            "fame": 1
+          }
+        }
+      ]
+    }
+  ]
+}
