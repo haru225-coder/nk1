@@ -42,14 +42,17 @@
           "id": "sd_gongcheng_eave",
           "type": "favour",
           "label": "数斗拱",
-          "text": "你仰头数檐下的斗拱，数到第七层便乱了。旁边的小吏笑说，这阁外观四层，里面还藏着三层。",
+          "text": "你仰头数檐下的斗拱，数到第七层便乱了。旁边的小吏笑说，这阁的梁木是从汴梁一路拆运来的。",
           "cost": 0,
           "once": true,
           "effects": {
             "scholar_tendency": 1
           }
         }
-      ]
+      ],
+      "unlock": {
+        "year_min": 1260
+      }
     },
     {
       "id": "sd_huangcheng",
@@ -94,7 +97,10 @@
           "good": "sable_fur",
           "mul": 1.07
         }
-      ]
+      ],
+      "unlock": {
+        "year_min": 1260
+      }
     },
     {
       "id": "sd_yutian",
@@ -149,14 +155,17 @@
           "id": "sd_yutian_rumor",
           "type": "rumor",
           "label": "听使臣",
-          "text": "高丽使臣在门下歇脚，随行的人说，人参在开京收得紧，到下月要贵。",
+          "text": "高丽使臣在门下歇脚，随行的人说，今年高丽的人参多半充了岁贡，商人手里收得紧，到下月要贵。",
           "cost": 10,
           "cooldown_days": 35,
           "port": "jeju",
           "good": "korean_ginseng",
           "mul": 1.1
         }
-      ]
+      ],
+      "unlock": {
+        "year_min": 1260
+      }
     },
     {
       "id": "sd_luanhe",
@@ -199,14 +208,17 @@
           "id": "sd_luanhe_rumor",
           "type": "rumor",
           "label": "问牧人",
-          "text": "牧人说，今夏雨水足，草场好，皮子出得多，鹿皮价要往下走。",
+          "text": "牧人说，今夏诸王军中征皮作甲，草地上的鹿皮都被收走；南来的客商听了，说兴化海口的鹿皮也要跟着涨。",
           "cost": 8,
           "cooldown_days": 40,
           "port": "xinghua_harbor",
           "good": "deer_hide",
-          "mul": 0.93
+          "mul": 1.07
         }
-      ]
+      ],
+      "unlock": {
+        "year_min": 1260
+      }
     },
     {
       "id": "sd_ordo",
@@ -225,7 +237,8 @@
           7,
           8,
           9
-        ]
+        ],
+        "year_min": 1260
       },
       "lock_reason": "车驾南去，帐殿只余空架。",
       "interactions": [
@@ -246,7 +259,7 @@
           "id": "sd_ordo_kumis",
           "type": "favour",
           "label": "献马酒",
-          "text": "你捧一碗马奶酒到帐前。执事接过去，回赠你一条白哈达。",
+          "text": "你捧一碗马奶酒到帐前。执事接过去，回赠你一方白绢。",
           "cost": 12,
           "once_per": "month",
           "effects": {
@@ -414,7 +427,10 @@
             "pu_attention": -1
           }
         }
-      ]
+      ],
+      "unlock": {
+        "year_min": 1260
+      }
     },
     {
       "id": "sd_sitian",
@@ -465,7 +481,10 @@
             "fame": 1
           }
         }
-      ]
+      ],
+      "unlock": {
+        "year_min": 1260
+      }
     },
     {
       "id": "sd_mashi",
@@ -508,7 +527,10 @@
           "price_mul": 1.03,
           "impact": false
         }
-      ]
+      ],
+      "unlock": {
+        "year_min": 1260
+      }
     },
     {
       "id": "sd_yizhan",
@@ -570,7 +592,10 @@
           "wage": 16,
           "attention_ease": 1
         }
-      ]
+      ],
+      "unlock": {
+        "year_min": 1260
+      }
     },
     {
       "id": "sd_xiguan",
@@ -620,7 +645,10 @@
           "good": "silk_fabric",
           "mul": 1.09
         }
-      ]
+      ],
+      "unlock": {
+        "year_min": 1260
+      }
     },
     {
       "id": "sd_chengqiang",
