@@ -8,7 +8,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_bl_xianguo.jpg",
-      "description": "大相国寺在州桥北，殿宇残了半边，山门里的香火没断。每月开市五回，僧人在断墙下摆出香烛旧器，来的人比城里别的街多。",
+      "description": "大相国寺在州桥东，汴河北岸，殿宇残了半边，山门里的香火没断。每月开市五回，僧人在断墙下摆出香烛旧器，来的人比城里别的街多。",
       "interactions": [
         {
           "id": "bl_xianguo_incense",
@@ -351,7 +351,7 @@
       "kind": "market",
       "pending_art": true,
       "bg": "bg_dist_bl_fanlou.jpg",
-      "description": "樊楼在宋门里，北宋时是汴京正店里有名的一座，白矾楼的名号传得远。如今楼架烧剩一排石础，酒旗早没了，只有卖酒浆的小摊在旧址前支着棚。",
+      "description": "樊楼在东华门外景明坊，北宋时是汴京正店里有名的一座，白矾楼的名号传得远。如今楼架烧剩一排石础，酒旗早没了，只有卖酒浆的小摊在旧址前支着棚。",
       "interactions": [
         {
           "id": "bl_fanlou_drink",
