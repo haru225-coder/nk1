@@ -320,6 +320,7 @@ const SCRIPTS := [
 	"res://tools/qa_w57_credit_probe.gd",  # lane sim4 牙人赊销探针
 	"res://tools/qa_w57_ship_probe.gd",  # lane ship2 捻缝改装探针
 	"res://tools/qa_w57_depth_probe.gd",  # lane bal2 按货深浅探针
+	"res://tools/qa_w57_quest_probe.gd",  # lane quest1 章二三条港岸委托线探针
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
