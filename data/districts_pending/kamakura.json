@@ -54,7 +54,7 @@
           "id": "kk_wakamiya_rumor",
           "type": "rumor",
           "label": "听堤上",
-          "text": "八幡宫秋祭要换供器，明州青白瓷先被大寺挑去一批，铺面货少，瓷价比上月高。",
+          "text": "八幡宫秋祭要换供器，庆元府的青白瓷先被大寺挑去一批，铺面货少，瓷价比上月高。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "mingzhou",
@@ -129,11 +129,11 @@
       "id": "kk_daibutsu",
       "port": "kamakura",
       "pending_port": true,
-      "name": "高德院镰仓大佛",
+      "name": "长谷大佛殿",
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_kk_daibutsu.jpg",
-      "description": "高德院在长谷，铜阿弥陀佛坐像 1252 年开始铸造，分段接缝仍可辨。佛身坐在殿内，高逾四丈。",
+      "description": "大佛殿在长谷，铜阿弥陀佛坐像 1252 年开始铸造，分段接缝仍可辨。佛身坐在殿内，高三丈有余。",
       "interactions": [
         {
           "id": "kk_daibutsu_seam",
@@ -144,7 +144,7 @@
           "once_per": "year",
           "effects": {
             "scholar_tendency": 1,
-            "note": "高德院看过铜佛接缝。"
+            "note": "长谷大佛殿看过铜佛接缝。"
           }
         },
         {
@@ -178,7 +178,7 @@
           "id": "kk_daibutsu_rumor",
           "type": "rumor",
           "label": "听寺僧",
-          "text": "高德院补佛身要铜，镰仓的铜先尽着寺里，明州铜船装不满，铜价抬了一截。",
+          "text": "大佛殿补佛身要铜，镰仓的铜先尽着寺里，庆元府来的铜船装不满，铜价抬了一截。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "mingzhou",
@@ -207,6 +207,9 @@
           "effects": {
             "scholar_tendency": 1,
             "network": 1
+          },
+          "unlock": {
+            "year_max": 1278
           }
         },
         {
@@ -241,7 +244,7 @@
           "id": "kk_kencho_rumor",
           "type": "rumor",
           "label": "问知客",
-          "text": "明州书估说，镰仓的禅寺今年添经，宋版经卷在明州就订去大半，书价高了。",
+          "text": "庆元府的书估说，镰仓的禅寺今年添经，宋版经卷在庆元就订去大半，书价高了。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "mingzhou",
@@ -303,7 +306,7 @@
           "id": "kk_jufuku_rumor",
           "type": "rumor",
           "label": "听茶僧",
-          "text": "寿福寺办秋茶会，萨摩的茶先送到寺里，茶铺剩得少。",
+          "text": "寿福寺办秋茶会，几座禅院托萨摩来的商船捎茶，坊津上岸的茶先被包下，铺面剩得少。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "kagoshima",
@@ -320,7 +323,7 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_kk_wakae.jpg",
-      "description": "和贺江岛在材木座外，1232 年用石块垒成防波堤与埠头。潮退时石堤露出，宋船与唐船在堤内下锚，小舟把货驳到滩上。",
+      "description": "和贺江岛在材木座外，1232 年用石块垒成防波堤与埠头。潮退时石堤露出，宋船在堤内下锚，小舟把货驳到滩上。",
       "interactions": [
         {
           "id": "kk_wakae_tea",
@@ -351,7 +354,7 @@
           "id": "kk_wakae_rumor",
           "type": "rumor",
           "label": "问埠头",
-          "text": "幕府要备火药，博多的硫黄先供军需，铺面能卖的少了。",
+          "text": "博多纲首说，今年宋船来收硫黄的多，丰后、萨摩运到博多的硫黄在码头就被包走。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "hakata",
@@ -471,7 +474,7 @@
           "id": "kk_mandokoro_letter",
           "type": "favour",
           "label": "看国书",
-          "text": "蒙古国书从太宰府送到镰仓，政所的廊下摊着抄件。你远远看见「蒙古」二字，墨迹很重。",
+          "text": "蒙古国书从大宰府送到镰仓，政所的廊下摊着抄件。你远远看见「蒙古」二字，墨迹很重。",
           "cost": 0,
           "once": true,
           "unlock": {
@@ -570,18 +573,24 @@
                 "merchant_credit": 1
               }
             }
-          ]
+          ],
+          "unlock": {
+            "year_min": 1275
+          }
         },
         {
           "id": "kk_tatsunokuchi_rumor",
           "type": "rumor",
           "label": "听差役",
-          "text": "龙口的差役说，幕府催博多送硫黄，海上巡检先扣下几船。",
+          "text": "龙口的差役说，元使被斩后，幕府令严查进出博多的船，几条运硫黄的船还扣在港外等验。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "hakata",
           "good": "sulfur",
-          "mul": 1.18
+          "mul": 1.18,
+          "unlock": {
+            "year_min": 1275
+          }
         }
       ]
     },
@@ -599,7 +608,7 @@
           "id": "kk_komachi_letter",
           "type": "favour",
           "label": "寄家书",
-          "text": "小町的代人书信铺替商船捎信。你写了一封，托明州船带回。",
+          "text": "小町的代人书信铺替商船捎信。你写了一封，托庆元府的回船带回。",
           "cost": 15,
           "once_per": "month",
           "effects": {
@@ -611,7 +620,7 @@
           "id": "kk_komachi_rumor",
           "type": "rumor",
           "label": "听钱铺",
-          "text": "钱铺的人说明州官库在收宋钱，回船带的钱串比上月短。",
+          "text": "钱铺的人说庆元府市舶务今年严查铜钱出海，回船夹带的钱串比上月短。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "mingzhou",
@@ -628,7 +637,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_kk_engakuji.jpg",
-      "description": "圆觉寺在山之内，寺尚未落成。1279 年无学祖元自宋渡日，北条时宗迎入镰仓，常来问法。",
+      "description": "圆觉寺在山之内，1279 年无学祖元自宋渡日，北条时宗迎入镰仓问法，在此择地建寺，寺要到 1282 年才落成。",
       "unlock": {
         "year_min": 1279
       },
@@ -650,7 +659,7 @@
           "id": "kk_engakuji_rumor",
           "type": "rumor",
           "label": "听译僧",
-          "text": "译僧说，山之内的新寺要置佛具，明州漆器先供着镰仓几座禅院，漆价涨了。",
+          "text": "译僧说，山之内的新寺要置佛具，庆元府的漆器先供着镰仓几座禅院，漆价涨了。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "mingzhou",
@@ -667,7 +676,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_kk_gokuraku.jpg",
-      "description": "极乐寺在西山边，1259 年北条重时助忍性开基。寺在谷口，堂宇朴素，僧人在寺侧施药。",
+      "description": "极乐寺在西山边，1259 年北条重时在此建寺，1267 年忍性入寺。寺在谷口，堂宇朴素，僧人在寺侧施药。",
       "unlock": {
         "year_min": 1259
       },
