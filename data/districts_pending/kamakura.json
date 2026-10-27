@@ -54,7 +54,7 @@
           "id": "kk_wakamiya_rumor",
           "type": "rumor",
           "label": "听堤上",
-          "text": "八幡宫秋祭要换供器，庆元府的青白瓷先被大寺挑去一批，铺面货少，瓷价比上月高。",
+          "text": "八幡宫秋祭要换供器，庆元府的青白瓷先被镰仓的禅寺挑去一批，铺面货少，瓷价比上月高。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "mingzhou",
@@ -178,7 +178,7 @@
           "id": "kk_daibutsu_rumor",
           "type": "rumor",
           "label": "听寺僧",
-          "text": "大佛殿补佛身要铜，镰仓的铜先尽着寺里，庆元府来的铜船装不满，铜价抬了一截。",
+          "text": "大佛殿补佛身要铜，镰仓的铜先尽着寺里，庆元府那边到的铜船装不满，铜价抬了一截。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "mingzhou",
@@ -489,7 +489,7 @@
           "id": "kk_mandokoro_kokugo",
           "type": "choice",
           "label": "警固札",
-          "text": "异国警固番役的札子传到镰仓，海边的船要被征。奉行问你肯不肯借一条快船。",
+          "text": "异国警固番役的札子传到镰仓，海边的船要被征。奉行指着札子上的船号，等你点头。",
           "unlock": {
             "year_min": 1274,
             "year_max": 1281
@@ -552,7 +552,7 @@
           "id": "kk_tatsunokuchi_lamp",
           "type": "choice",
           "label": "添灯",
-          "text": "行刑后，城里的人夜里在龙口点灯。你路过时，灯芯快要灭了。",
+          "text": "行刑后，龙口夜里偶尔有人点灯。你路过时，灯芯快要灭了。",
           "options": [
             {
               "id": "kk_tatsunokuchi_lamp_add",
@@ -620,7 +620,7 @@
           "id": "kk_komachi_rumor",
           "type": "rumor",
           "label": "听钱铺",
-          "text": "钱铺的人说庆元府市舶务今年严查铜钱出海，回船夹带的钱串比上月短。",
+          "text": "钱铺的人说，今年蕃商在庆元府收钱收得急，市上钱串周转不开，钱价涨了。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "mingzhou",
@@ -659,7 +659,7 @@
           "id": "kk_engakuji_rumor",
           "type": "rumor",
           "label": "听译僧",
-          "text": "译僧说，山之内的新寺要置佛具，庆元府的漆器先供着镰仓几座禅院，漆价涨了。",
+          "text": "译僧说，山之内的新寺要置佛具，庆元府的漆器先供着镰仓几座禅院，漆器价涨了。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "mingzhou",

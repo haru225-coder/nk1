@@ -29,7 +29,7 @@
           "id": "gh_gongque_audience",
           "type": "choice",
           "label": "贺正",
-          "text": "正月初一，宫门开一条缝，贺正的人依次入庭。门吏问你是随班，还是只递名帖。",
+          "text": "正月初一，宫门开一条缝，贺正的人依次入庭。门吏把名册和名帖分作两处。",
           "once_per": "year",
           "unlock": {
             "months": [1]
@@ -60,7 +60,7 @@
           "id": "gh_gongque_spring_silk",
           "type": "rumor",
           "label": "听朝房",
-          "text": "朝房的人说，江都官库要换春衣的绢，泉州的绢帛先短了一截。",
+          "text": "朝房的人说，江都官库要换春衣的绢，泉州那边被官买抽走一批，绢帛行的货架空了一截。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "quanzhou",
@@ -83,7 +83,7 @@
           "id": "gh_jiachuan_ferryman",
           "type": "hire",
           "label": "雇渡夫",
-          "text": "渡夫姓白，在甲串摇了二十年橹。有他掌橹，潮信与暗沙都先得一句。",
+          "text": "渡夫在甲串摇了二十年橹。有他掌橹，潮信与暗沙都先得一句。",
           "who": "渡夫",
           "cost": 70,
           "wage": 10,
@@ -95,7 +95,7 @@
           "id": "gh_jiachuan_tide",
           "type": "choice",
           "label": "候潮",
-          "text": "潮还没平，岸上排着三只渡船。渡夫问你要不要先上船等。",
+          "text": "潮还没平，岸上排着三只渡船。渡夫把跳板搭上，朝舱里让了让。",
           "once_per": "month",
           "options": [
             {
@@ -141,7 +141,7 @@
       "kind": "gate",
       "pending_art": true,
       "bg": "bg_dist_gh_chengqiang.jpg",
-      "description": "江都三城都是夯土：内城围着宫阙，1234 年起筑；中城是崔氏当国时加的，1250 年成；外城顺着海岸，1233 年动工，1237 年合围。1259 年议和，城堞依约撤去，土垄还在。",
+      "description": "江都三城都是夯土：内城围着宫阙，1234 年起筑；中城是崔氏当国时加的，1250 年成；外城顺着海岸，1233 年动工，1237 年合围。1259 年议和，城堞撤去一部分，土垄还在。",
       "interactions": [
         {
           "id": "gh_chengqiang_earth",
@@ -198,7 +198,7 @@
       "kind": "workshop",
       "pending_art": true,
       "bg": "bg_dist_gh_dazang.jpg",
-      "description": "大藏都监设在江都，1236 年开雕，1251 年印成全藏。西门外的大藏经板堂里，八万余板按函次上架，松烟与墨香不散。",
+      "description": "大藏都监 1236 年设于江都，1237 年开雕，1251 年印成全藏。西门外的大藏经板堂里，八万余板按函次上架，松烟与墨香不散。",
       "interactions": [
         {
           "id": "gh_dazang_proof",
@@ -216,7 +216,7 @@
           "id": "gh_dazang_carve",
           "type": "choice",
           "label": "助刻",
-          "text": "都监要补刻几块残板，刻工说木料还缺一段。问你出钱，还是出纸。",
+          "text": "都监要补刻几块残板，刻工说木料还缺一段，校样纸也快用完了。",
           "once": true,
           "options": [
             {
@@ -248,7 +248,7 @@
           "id": "gh_dazang_print",
           "type": "rumor",
           "label": "听印工",
-          "text": "印工说，印经要的高丽纸被官库先截，福州的纸货到得少了。",
+          "text": "印工说，印经要的高丽纸被官库先截，福州码头的高丽纸到得少了。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "fuzhou",
@@ -265,7 +265,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_gh_chanyuan.jpg",
-      "description": "禅源寺在江都城中，崔氏的愿刹，1245 年落成。殿廊齐整，经板与经卷常在这里过手，僧徒多从开京来。",
+      "description": "禅源寺在江都城中，崔氏的愿刹，1245 年落成。殿廊齐整，经卷与纸墨常在这里过手，僧徒多从开京来。",
       "interactions": [
         {
           "id": "gh_chanyuan_copy",
@@ -283,7 +283,7 @@
           "id": "gh_chanyuan_donate",
           "type": "choice",
           "label": "施经",
-          "text": "寺里要补一部《华严经》，知客问你是舍钱，还是舍纸。",
+          "text": "寺里要补一部《华严经》，知客把缘簿和纸样一并放在案上。",
           "once": true,
           "options": [
             {
@@ -343,7 +343,7 @@
           "id": "gh_yecheng_interpreter",
           "type": "hire",
           "label": "雇通事",
-          "text": "通事姓金，会说宋音与高丽话。他在中间传话，宋商与官库之间的价先谈得拢。",
+          "text": "通事会说宋音与高丽话。他在中间传话，宋商与官库之间的价先谈得拢。",
           "who": "通事",
           "cost": 90,
           "wage": 12,
@@ -355,7 +355,7 @@
           "id": "gh_yecheng_incense",
           "type": "rumor",
           "label": "听船主",
-          "text": "船主说，江都官库收香药供佛事，广州的香药行已有人抬价。",
+          "text": "船主说，江都官库收香药供佛事，广州的香药行被市舶司抽买，市面上货少，行价已经涨了。",
           "cost": 18,
           "cooldown_days": 40,
           "port": "guangzhou",
@@ -372,7 +372,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_gh_manyue.jpg",
-      "description": "开京正宫依松岳山南麓，殿台层层。江都的三十九年里宫门常闭；1270 年还都，官匠先修会庆殿，荒草还没除尽。",
+      "description": "开京正宫依松岳山南麓，殿台层层。江都的三十九年里宫门常闭；1270 年还都，官匠先修会庆殿，梁架换过新木。",
       "interactions": [
         {
           "id": "gh_manyue_timber",
@@ -409,7 +409,7 @@
           "id": "gh_manyue_paint",
           "type": "rumor",
           "label": "听宫监",
-          "text": "宫监说，修殿要漆，温州的漆器行里先留了一批。",
+          "text": "宫监说，修殿之外还要添漆器陈设，温州的漆器行先留了一批。",
           "cost": 12,
           "cooldown_days": 35,
           "unlock": {
@@ -444,7 +444,7 @@
           "id": "gh_shichan_ginseng",
           "type": "choice",
           "label": "验参",
-          "text": "一船人参刚卸下，牙人问你要按支收，还是按斤收。",
+          "text": "一船人参刚卸下，牙人把参包摊开，一包按支扎好，一包散着。",
           "once_per": "month",
           "options": [
             {
@@ -479,7 +479,7 @@
           "id": "gh_shichan_rumor",
           "type": "rumor",
           "label": "听牙人",
-          "text": "牙人说，宋商把开京的人参整船收去，泉州的参市跟着起了。",
+          "text": "牙人说，宋商把开京的人参整船收去，泉州的参行收不上货，参价跟着起了。",
           "cost": 16,
           "cooldown_days": 40,
           "port": "quanzhou",
@@ -502,7 +502,7 @@
           "id": "gh_sanbie_stay",
           "type": "choice",
           "label": "去留",
-          "text": "还都的榜文贴在营门，营中的人收拾甲仗。队正问你是随船南下，还是回开京。",
+          "text": "还都的榜文贴在营门，营中的人收拾甲仗。队正把名册摊在案上，南下与回开京的分作两列。",
           "once": true,
           "unlock": {
             "year_min": 1270,
@@ -513,7 +513,7 @@
             {
               "id": "gh_sanbie_stay_south",
               "label": "南下",
-              "text": "你把船让出一舱，载了十几名别抄的家眷。船出甲串时，岸上没有送行的人。",
+              "text": "你把船让出一舱，载了十几名别抄的家眷。船离江华时，岸上没有送行的人。",
               "effects": {
                 "sea_tendency": 1,
                 "network": 1,
@@ -576,7 +576,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_gh_cuishi.jpg",
-      "description": "崔氏四代执国，江都的政令都从崔府出。1258 年崔氏末主被三别抄围在宅中，门客一夜散尽。",
+      "description": "崔氏四代执国，江都的政令都从崔府出。1258 年崔氏末主被林衍等围宅诛杀，门客一夜散尽。",
       "interactions": [
         {
           "id": "gh_cuishi_card",
@@ -613,7 +613,7 @@
           "id": "gh_cuishi_tea",
           "type": "rumor",
           "label": "听门客",
-          "text": "门客说，崔府要收茶办宴，兴化的茶栈先涨了。",
+          "text": "门客说，崔府要收茶办宴，兴化的茶栈先被府里订走一批，市面上已经不好买。",
           "cost": 12,
           "cooldown_days": 35,
           "unlock": {
@@ -674,7 +674,7 @@
           "id": "gh_mengshi_petition",
           "type": "choice",
           "label": "递状",
-          "text": "蒙古使的随员在馆前收状，问你有没有要呈的事。",
+          "text": "蒙古使的随员在馆前收状，案上压着一叠纸。",
           "once_per": "month",
           "unlock": {
             "year_min": 1260
@@ -705,7 +705,7 @@
           "id": "gh_mengshi_sable",
           "type": "rumor",
           "label": "听随员",
-          "text": "随员说，蒙古使要索貂皮，兴化的貂皮行把价抬了。",
+          "text": "随员说，蒙古使要索貂皮，兴化的貂皮行先被使团订走一批，价已抬了。",
           "cost": 20,
           "cooldown_days": 45,
           "unlock": {
