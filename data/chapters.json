@@ -72,6 +72,21 @@
       },
       "endings": [
         {
+          "id": "yashan_south",
+          "title": "崖山以南",
+          "scene": "ending_yashan_south",
+          "require_flag": "yashan_turned_back",
+          "text": "占城的潮声里，南来的水手说崖山已经烧完。你在十里外看过那片火，掉头时风顺，船比来时轻。如今回到占城，蕃坊的人只问船期，不问旗号。你把旧海图摊开，北边几处港名已被墨涂去。往南还有航路，往北只剩别人的旗。"
+        },
+        {
+          "id": "pu_register",
+          "title": "蒲家册上",
+          "scene": "ending_pu_register",
+          "require_flag": "sided_pu",
+          "hide_if_flag": "yashan_turned_back",
+          "text": "占城的潮退得早。蒲家的信使在蕃坊等你，带来一册新装订的市舶名册。泉州的旗已经换了，册上却没有删你的名字，只在「纲首」旁边添了一行小字。你翻到末页，看见旧日八折的茶钱仍记在蒲家账上。海路还通，只是每过一道关，都要先问过蒲家。"
+        },
+        {
           "id": "sea_letter",
           "title": "海口信路",
           "scene": "ending_sea_letter",

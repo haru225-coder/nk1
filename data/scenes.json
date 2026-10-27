@@ -1782,6 +1782,36 @@
       ]
     },
     {
+      "id": "ending_yashan_south",
+      "chapter": "chapter_4",
+      "title": "了结：崖山以南",
+      "location": "champa",
+      "body": "占城的晚潮漫上石阶。北边来的船少了，蕃坊里的人不再问崖山。",
+      "choices": [
+        {
+          "label": "把旧海图收进舱底，回占城港上",
+          "next": "champa",
+          "effects": {}
+        }
+      ],
+      "require_chapter": 4
+    },
+    {
+      "id": "ending_pu_register",
+      "chapter": "chapter_4",
+      "title": "了结：蒲家册上",
+      "location": "champa",
+      "body": "蒲家的信摆在案上，封口的火漆已经拆过。港外潮声照旧。",
+      "choices": [
+        {
+          "label": "把新册压在货引下面，回占城港上",
+          "next": "champa",
+          "effects": {}
+        }
+      ],
+      "require_chapter": 4
+    },
+    {
       "id": "ending_sea_letter",
       "chapter": "chapter_4",
       "title": "了结：海口信路",

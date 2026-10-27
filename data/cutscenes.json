@@ -842,6 +842,134 @@
      ]
     }
    ]
+  },
+  "ending_yashan_south": {
+   "title": "了结：崖山以南",
+   "letterbox": true,
+   "shots": [
+    {
+     "bg": "res://assets/cutscene/cs_yashan_burn.jpg",
+     "duration": 7.5,
+     "cam_from": [0.5, 0.5, 1.1],
+     "cam_to": [0.56, 0.46, 1.3],
+     "grade": "fire",
+     "fx": ["embers", "mist"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "崖山外海・祥兴二年", "style": "era", "pos": "right_vertical"},
+      {"t": 1.4, "text": "你在十里外看着那片火。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.0, "text": "风顺。掉头往南。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_south_champa.jpg",
+     "duration": 7.5,
+     "cam_from": [0.55, 0.42, 1.3],
+     "cam_to": [0.48, 0.45, 1.2],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "占城・蕃坊", "style": "era", "pos": "right_vertical"},
+      {"t": 1.6, "text": "南来的水手说，崖山已经烧完。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.4, "text": "蕃坊只问船期，不问旗号。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_xinghua_study.jpg",
+     "duration": 7.5,
+     "cam_from": [0.4, 0.66, 1.5],
+     "cam_to": [0.34, 0.68, 1.6],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "旧海图摊在案上。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.2, "text": "北边几处港名，已被墨涂去。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_nanhai_dusk.jpg",
+     "duration": 7.0,
+     "cam_from": [0.64, 0.5, 1.45],
+     "cam_to": [0.5, 0.5, 1.0],
+     "grade": "dusk",
+     "fx": ["sea_spray"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 1.0, "text": "往南还有航路。", "style": "line", "pos": "bottom"},
+      {"t": 4.0, "text": "往北，只剩别人的旗。", "style": "line", "pos": "bottom"}
+     ]
+    }
+   ]
+  },
+  "ending_pu_register": {
+   "title": "了结：蒲家册上",
+   "letterbox": true,
+   "shots": [
+    {
+     "bg": "res://assets/cutscene/cs_quanzhou_fall.jpg",
+     "duration": 7.5,
+     "cam_from": [0.5, 0.5, 1.1],
+     "cam_to": [0.58, 0.46, 1.3],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "泉州・开城之日", "style": "era", "pos": "right_vertical"},
+      {"t": 1.4, "text": "城开时，风从海上进来。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.0, "text": "旗换了。市舶司的册子没有烧。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_end_pu.jpg",
+     "duration": 7.5,
+     "cam_from": [0.4, 0.39, 1.3],
+     "cam_to": [0.58, 0.58, 1.2],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "占城・蕃坊", "style": "era", "pos": "right_vertical"},
+      {"t": 1.6, "text": "潮退得早。蒲家的信使在等你。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.4, "text": "一册新装订的市舶名册。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_paper_shop.jpg",
+     "duration": 7.5,
+     "cam_from": [0.66, 0.5, 1.5],
+     "cam_to": [0.68, 0.47, 1.65],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "册上没有删你的名字。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.4, "text": "「纲首」旁边，添了一行小字。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_quanzhou_bay_gold.jpg",
+     "duration": 7.0,
+     "cam_from": [0.5, 0.45, 1.15],
+     "cam_to": [0.42, 0.5, 1.35],
+     "grade": "dawn",
+     "fx": ["mist"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 1.0, "text": "海路还通。", "style": "line", "pos": "bottom"},
+      {"t": 3.4, "text": "每过一道关，都要先问过蒲家。", "style": "line", "pos": "bottom"}
+     ]
+    }
+   ]
   }
  },
  "chapters": {
@@ -860,7 +988,9 @@
   "sea_letter": "ending_sea_letter",
   "ledger_distance": "ending_ledger",
   "history_wind": "ending_history",
-  "south_sea": "ending_south_sea"
+  "south_sea": "ending_south_sea",
+  "yashan_south": "ending_yashan_south",
+  "pu_register": "ending_pu_register"
  },
  "port_banners": {
   "xinghua": {"name": "兴化", "sub": "兴化军・治莆田"},
