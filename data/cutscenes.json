@@ -873,7 +873,7 @@
      "shake": 0.0,
      "captions": [
       {"t": 0.8, "text": "占城・蕃坊", "style": "era", "pos": "right_vertical"},
-      {"t": 1.6, "text": "南来的水手说，崖山已经烧完。", "style": "narration", "pos": "lower_left"},
+      {"t": 1.6, "text": "北来的水手说，崖山已经烧完。", "style": "narration", "pos": "lower_left"},
       {"t": 4.4, "text": "蕃坊只问船期，不问旗号。", "style": "narration", "pos": "lower_left"}
      ]
     },
