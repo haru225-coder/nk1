@@ -959,13 +959,13 @@
       "name": "贡院榜墙",
       "kind": "exam",
       "bg": "bg_dist_qz_bang.jpg",
-      "description": "泉州州学在府文庙，贡院门外只有榜墙与两通石碑。放榜那日，名字贴在这面墙上。",
+      "description": "泉州州学与文庙同在一院，贡院门外只有榜墙与两通石碑。放榜那日，名字贴在这面墙上。",
       "interactions": [
         {
           "id": "qz_bang_look",
           "type": "favour",
           "label": "看榜",
-          "text": "府文庙外，今秋的榜刚贴上。看榜的人挤到碑前，有人念，有人默。",
+          "text": "州学门外，今秋的榜刚贴上。看榜的人挤到碑前，有人念，有人默。",
           "exam": true,
           "scholar_1268": true,
           "once_per": "year",
@@ -1000,14 +1000,14 @@
           "once_per": "year",
           "effects": {
             "fame": 1,
-            "note": "府文庙榜墙下按过碑。"
+            "note": "泉州州学榜墙下按过碑。"
           }
         },
         {
           "id": "qz_bang_aid",
           "type": "choice",
           "label": "助寒士",
-          "text": "大比之年，府文庙外的寒士捧着空卷，纸墨都缺。",
+          "text": "大比之年，泉州州学外的寒士捧着空卷，纸墨都缺。",
           "exam": true,
           "once_per": "year",
           "unlock": {
@@ -1930,7 +1930,7 @@
           "id": "xh_meizhou_rumor",
           "type": "rumor",
           "label": "听盐船",
-          "text": "景炎以后，渡口的人说泉州的盐船被军前截了，盐价一日三变。",
+          "text": "景炎以后，渡口的人说泉州的盐船被军前截了，渡口的盐改论斤卖。",
           "cost": 10,
           "cooldown_days": 45,
           "unlock": {
