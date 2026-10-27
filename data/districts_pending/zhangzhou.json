@@ -33,7 +33,7 @@
           "id": "zz_jiulong_rumor",
           "type": "rumor",
           "label": "问粮价",
-          "text": "梢公说泉州米粮近来紧。海路不畅，米到得慢。",
+          "text": "梢公说泉州米船候潮未进，米行里存粮不多。",
           "cost": 12,
           "cooldown_days": 30,
           "port": "quanzhou",
@@ -78,13 +78,13 @@
           "id": "zz_yanzhan_choice",
           "type": "choice",
           "label": "分盐",
-          "text": "陂上盐多。你可以按陂份分，也可以按牙行价卖。",
+          "text": "陂上盐堆着。按陂份分，或按牙行价卖，各有各的账。",
           "once_per": "month",
           "options": [
             {
               "id": "share",
               "label": "按陂份分",
-              "text": "你按陂份分了盐。乡里记你。",
+              "text": "你按陂份分了盐。乡里把你的名字添进簿子。",
               "cost": 0,
               "effects": {
                 "hometown_tendency": 1
@@ -136,7 +136,7 @@
           "id": "zz_yao_rumor",
           "type": "rumor",
           "label": "听瓷价",
-          "text": "匠人说广州福建瓷近来紧。窑火旺，货却送不出去。",
+          "text": "匠人说广州的福建瓷卖得快，窑里新货还没装船。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "guangzhou",
@@ -346,13 +346,13 @@
           "id": "zz_zhuxi_lecture",
           "type": "choice",
           "label": "讲学",
-          "text": "祠里有课。你可以送卷，也可以旁听。",
+          "text": "祠里开讲。送卷求批，或坐在庑下听。",
           "once_per": "month",
           "options": [
             {
               "id": "submit",
               "label": "送卷",
-              "text": "你把卷送上去。漳州先生记你。",
+              "text": "你把卷送上去。漳州先生批了几行字。",
               "cost": 10,
               "effects": {
                 "scholar_tendency": 2
@@ -414,7 +414,7 @@
           "id": "zz_shan_rumor",
           "type": "rumor",
           "label": "听硫黄",
-          "text": "山下人说温州硫黄近来紧。江船少，货到得慢。",
+          "text": "山下人说温州硫黄装不满船，牙行把价抬了一线。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "wenzhou",
@@ -576,7 +576,7 @@
           "id": "zz_shichang_rumor",
           "type": "rumor",
           "label": "听苏木",
-          "text": "牙人说泉州苏木近来紧。船期压后，货到得慢。",
+          "text": "牙人说泉州的苏木船在洋上误了风，市上只剩旧货。",
           "cost": 10,
           "cooldown_days": 30,
           "port": "quanzhou",
@@ -624,7 +624,7 @@
           "id": "zz_yamen_rumor",
           "type": "rumor",
           "label": "听粮价",
-          "text": "漳州小吏说福州米粮近来紧。江路不畅，米到得慢。",
+          "text": "漳州小吏说福州米船搁在浅滩，江路一时不通。",
           "cost": 10,
           "cooldown_days": 30,
           "port": "fuzhou",
@@ -731,7 +731,7 @@
           "id": "zz_bang_aid",
           "type": "choice",
           "label": "助寒士",
-          "text": "大比之年，漳州州学门外的寒士缺纸墨。你可以助，也可以旁观。",
+          "text": "大比之年，漳州州学门外寒士缺纸墨。有人递纸，有人袖手等榜。",
           "exam": true,
           "once_per": "year",
           "unlock": {
@@ -754,7 +754,7 @@
             {
               "id": "give",
               "label": "助纸墨",
-              "text": "你送了纸墨。漳州寒士记你。",
+              "text": "你送了纸墨。漳州寒士在墙下向你拱手。",
               "cost": 40,
               "effects": {
                 "fame": 2,
