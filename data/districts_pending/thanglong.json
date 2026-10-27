@@ -1,0 +1,665 @@
+{
+  "districts": [
+    {
+      "id": "tl_hoangthanh",
+      "port": "thanglong",
+      "pending_port": true,
+      "name": "升龙皇城",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_tl_hoangthanh.jpg",
+      "description": "皇城在升龙中心，外朝设官署，内廷隔着一道宫墙。陈氏受禅后仍用李朝旧殿，朝钟一响，廊下的官便按班次站定。",
+      "interactions": [
+        {
+          "id": "tl_hoangthanh_morning",
+          "type": "favour",
+          "label": "候朝",
+          "text": "天还没亮，官署檐下已经站了候朝的人。你把一匣茶饼交给门吏，同他们一起等钟声。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "tl_hoangthanh_gift",
+          "type": "choice",
+          "label": "门献",
+          "text": "门吏说，今日内廷收土物；献一炉沉香可以递名刺，不献便只在廊下等。",
+          "options": [
+            {
+              "id": "tl_hoangthanh_gift_incense",
+              "label": "献沉香",
+              "text": "你把沉香点进炉里，门吏把你的名刺压在内班那一叠上。",
+              "cost": 30,
+              "effects": {
+                "favour": 2,
+                "network": 1
+              }
+            },
+            {
+              "id": "tl_hoangthanh_gift_card",
+              "label": "递名刺",
+              "text": "你把名刺递进门缝，退到阶下。门吏看了一眼，仍旧按次序传。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tl_phuluong",
+      "port": "thanglong",
+      "pending_port": true,
+      "name": "富良江码头",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_tl_phuluong.jpg",
+      "description": "富良江从城东流过，水色浑黄，粮船、渔船与渡船挨着木栈。涨水时跳板一天要挪两回，脚夫赤脚踩在水里接货。",
+      "interactions": [
+        {
+          "id": "tl_phuluong_tea",
+          "type": "sell",
+          "label": "卖茶包",
+          "text": "江边脚店收茶，拆开一包闻了闻。船家只认干仓，受潮的茶包要另摆一边。",
+          "good": "tea",
+          "qty": 2,
+          "price_mul": 1.06,
+          "impact": false
+        },
+        {
+          "id": "tl_phuluong_water",
+          "type": "favour",
+          "label": "候水",
+          "text": "上游水涨，船家蹲在栈桥边重新系缆。你替他们看了一回水痕，记下今日涨落的时辰。",
+          "cost": 5,
+          "once_per": "month",
+          "effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "tl_phuluong_rumor",
+          "type": "rumor",
+          "label": "问瓷户",
+          "text": "瓷户从舱角取出一只青白碗，翻过底来看。他说饶州窑的碗要先下江再转海，庆元府市上今年到得迟，碗价跟着涨。",
+          "cost": 14,
+          "cooldown_days": 35,
+          "port": "mingzhou",
+          "good": "qingbai_porcelain",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "tl_docot",
+      "port": "thanglong",
+      "pending_port": true,
+      "name": "独柱寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_tl_docot.jpg",
+      "description": "独柱寺在皇城西侧，池心立一柱，柱上承殿，远看像一朵出水的莲。池水浅，小桥窄，香客只容两人并行。",
+      "interactions": [
+        {
+          "id": "tl_docot_incense",
+          "type": "favour",
+          "label": "绕池上香",
+          "text": "池边的香案只容一人俯身。你绕过水面，把香插进炉里，僧人替你敲了一下磬。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "tl_docot_ask",
+          "type": "choice",
+          "label": "问僧",
+          "text": "知客僧在廊下晒经，见你望着池心，问你是来问路，还是来问事。",
+          "options": [
+            {
+              "id": "tl_docot_ask_road",
+              "label": "问北边的路",
+              "text": "僧人用指节在案上画了一道线，说北去的驿路沿堤走，雨季里常被水冲断。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "note": "独柱寺问过北去驿路。"
+              }
+            },
+            {
+              "id": "tl_docot_ask_sutra",
+              "label": "只听经",
+              "text": "你在廊下坐到日影移过经架。僧人没有再说路，只把一卷经推到你的手边。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tl_vanmieu",
+      "port": "thanglong",
+      "pending_port": true,
+      "name": "文庙与国子监",
+      "kind": "academy",
+      "pending_art": true,
+      "bg": "bg_dist_tl_vanmieu.jpg",
+      "description": "文庙在皇城西，李朝时始建，国子监后来附在庙侧。殿门朝南，廊下摆着抄书的长案。",
+      "interactions": [
+        {
+          "id": "tl_vanmieu_incense",
+          "type": "favour",
+          "label": "谒庙",
+          "text": "你在殿前上了香，礼生把名签收进木匣。廊下的士子让出半张席，请你一同听讲。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "tl_vanmieu_copy",
+          "type": "choice",
+          "label": "监书",
+          "text": "监里的书不许带出，只许在廊下抄。你想抄一卷，还是只翻几页。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "tl_vanmieu_copy_scroll",
+              "label": "抄一卷",
+              "text": "你向监吏领了纸，坐到日偏西。抄到卷尾时，腕上已沾了一层墨。",
+              "cost": 8,
+              "effects": {
+                "scholar_tendency": 2,
+                "note": "在升龙国子监抄过一卷书。"
+              }
+            },
+            {
+              "id": "tl_vanmieu_copy_read",
+              "label": "翻几页",
+              "text": "你只翻了讲丧礼的几页，把疑处记在掌心。监吏把书收回架上。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tl_dahu",
+      "port": "thanglong",
+      "pending_port": true,
+      "name": "城中大湖",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_tl_dahu.jpg",
+      "description": "大湖在城西北，水面开阔，堤上种柳。晨雾未散时，渡船从桥洞下穿过，桨声比街市先醒。",
+      "interactions": [
+        {
+          "id": "tl_dahu_boat",
+          "type": "favour",
+          "label": "放舟",
+          "text": "你包下一条小舟，从湖西摇到湖东。船家收了桨，让船随水漂了一段。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "sea_tendency": 1
+          }
+        },
+        {
+          "id": "tl_dahu_walk",
+          "type": "choice",
+          "label": "湖堤",
+          "text": "暮色落下来，堤上的柳影浸在水里。守堤人问你是沿堤走，还是雇船过湖。",
+          "options": [
+            {
+              "id": "tl_dahu_walk_shore",
+              "label": "沿堤走",
+              "text": "你沿堤走到尽头，卖藕的人正在收摊，筐底还剩几节嫩藕。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            },
+            {
+              "id": "tl_dahu_walk_cross",
+              "label": "过湖",
+              "text": "船离了岸，城里的灯一盏盏亮起来，映在水面又被桨打碎。",
+              "cost": 6,
+              "effects": {
+                "sea_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tl_dongthi",
+      "port": "thanglong",
+      "pending_port": true,
+      "name": "东市",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_tl_dongthi.jpg",
+      "description": "东市在皇城东南，绸缎、药材与竹木各占一巷。铺面早上卸板，午后有挑担的来收零货，地上落着一层碎丝。",
+      "interactions": [
+        {
+          "id": "tl_dongthi_invest",
+          "type": "invest",
+          "label": "入股丝帛铺",
+          "text": "丝帛铺的机户要添本钱买生丝，你把钱放在柜上。掌柜展开一匹新织的素绢，让你先看经纬。",
+          "costs": [
+            260,
+            620
+          ],
+          "monthly": [
+            13,
+            31
+          ],
+          "shop": "东市丝帛铺"
+        },
+        {
+          "id": "tl_dongthi_silk",
+          "type": "sell",
+          "label": "出绢帛",
+          "text": "铺主把你的绢帛摊在案上，对着光看了一遍。他按匹收下，说染坊正等着这批坯料。",
+          "good": "silk_fabric",
+          "qty": 2,
+          "price_mul": 1.05,
+          "impact": false
+        },
+        {
+          "id": "tl_dongthi_rumor",
+          "type": "rumor",
+          "label": "问织坊",
+          "text": "织坊管事翻着订单，说泉州客商把细绢订去大半，刺桐港这一季的绢帛不宽裕。",
+          "cost": 16,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "silk_fabric",
+          "mul": 1.13
+        }
+      ]
+    },
+    {
+      "id": "tl_qinzhou",
+      "port": "thanglong",
+      "pending_port": true,
+      "name": "钦州客馆",
+      "kind": "warehouse",
+      "pending_art": true,
+      "bg": "bg_dist_tl_qinzhou.jpg",
+      "description": "钦州来的宋商在升龙城南合赁一院，前厅住人，后院存货。界上的消息常比货先到，院里有人整日替人写书信。",
+      "interactions": [
+        {
+          "id": "tl_qinzhou_hire",
+          "type": "hire",
+          "label": "雇通事",
+          "text": "院里的通事会说官话与交趾话。你按月雇下他，往后货单、关防与船期都有人替你转述。",
+          "who": "通事",
+          "cost": 60,
+          "wage": 9,
+          "attention_ease": 1
+        },
+        {
+          "id": "tl_qinzhou_ivory",
+          "type": "buy",
+          "label": "收象牙",
+          "text": "后院有人拆开一捆象牙，牙根还带着土。客商按旧秤过重，说这批从南边海路转来。",
+          "good": "ivory",
+          "qty": 1,
+          "price_mul": 0.96,
+          "impact": false
+        },
+        {
+          "id": "tl_qinzhou_rumor",
+          "type": "rumor",
+          "label": "问香价",
+          "text": "通事拆开泉州蕃坊的信，说乳香与沉香被市舶司抽买，泉州的香药这一季不宽裕。",
+          "cost": 15,
+          "cooldown_days": 45,
+          "port": "quanzhou",
+          "good": "aromatic_medicine",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "tl_tianchang",
+      "port": "thanglong",
+      "pending_port": true,
+      "name": "天长府行宫",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_tl_tianchang.jpg",
+      "unlock": {
+        "year_min": 1262
+      },
+      "lock_reason": "天长府尚未升府",
+      "description": "天长府在升龙以南，旧是陈氏故里即墨乡。升府之后，太上皇常居于此，行宫不用琉璃，只以木构围出一进院落。",
+      "interactions": [
+        {
+          "id": "tl_tianchang_gift",
+          "type": "favour",
+          "label": "献土物",
+          "text": "太上皇还乡小住，乡人把新米与槟榔送到行宫门外。你把一担土物排在队尾，门吏记下你的名字。",
+          "cost": 30,
+          "once_per": "month",
+          "effects": {
+            "favour": 2,
+            "fame": 1
+          }
+        },
+        {
+          "id": "tl_tianchang_letter",
+          "type": "choice",
+          "label": "门外投书",
+          "text": "行宫门外的木匣只收书札，不收货单。你手里有一封写给乡绅的引荐信。",
+          "options": [
+            {
+              "id": "tl_tianchang_letter_post",
+              "label": "投进木匣",
+              "text": "你把信投进匣口。门吏用朱笔在封皮上点了点，让你过三日来听回话。",
+              "cost": 0,
+              "effects": {
+                "network": 2
+              }
+            },
+            {
+              "id": "tl_tianchang_letter_keep",
+              "label": "收回袖中",
+              "text": "你把信收回袖里，沿着行宫墙根走了一圈。墙外的田里，人正弯腰插秧。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tl_kaiguo",
+      "port": "thanglong",
+      "pending_port": true,
+      "name": "开国寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_tl_kaiguo.jpg",
+      "description": "开国寺在城西水边，寺基很老，相传梁时已有香火。山门临水，僧人在廊下抄经，岸边的船系在木桩上。",
+      "interactions": [
+        {
+          "id": "tl_kaiguo_lecture",
+          "type": "favour",
+          "label": "殿后听讲",
+          "text": "殿后有一间小讲堂，僧人靠着窗讲经。你脱鞋进去，在后排坐到讲毕。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "tl_kaiguo_copy",
+          "type": "choice",
+          "label": "助抄经",
+          "text": "抄经的僧人缺纸，案上摊着半卷未干的经。他问你可愿意添一份纸墨。",
+          "options": [
+            {
+              "id": "tl_kaiguo_copy_give",
+              "label": "出纸墨",
+              "text": "你让伙计送进一担纸墨。僧人把施主的名字写在小签上，夹进经卷。",
+              "cost": 15,
+              "effects": {
+                "fame": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "tl_kaiguo_copy_sit",
+              "label": "坐着听",
+              "text": "你没有添纸墨，只在案边坐下，看僧人一笔一笔抄到日暮。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "tl_kaiguo_rumor",
+          "type": "rumor",
+          "label": "问经船",
+          "text": "抄经僧说福州新刻的经卷从海路来，寺里还缺一部《法华》，福州的经卷船到得少。",
+          "cost": 12,
+          "cooldown_days": 30,
+          "port": "fuzhou",
+          "good": "sutra_scrolls",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "tl_bacmon",
+      "port": "thanglong",
+      "pending_port": true,
+      "name": "北门",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_tl_bacmon.jpg",
+      "description": "北门是升龙往北的陆路门，门洞外接长堤，堤下是稻田。守门军认得往来脚商，也认得北边来的马队。",
+      "interactions": [
+        {
+          "id": "tl_bacmon_tea",
+          "type": "favour",
+          "label": "让茶",
+          "text": "门洞边的茶摊只摆两条长凳。换班的门卒坐下，你把他的茶钱一并付了，顺便问北去的路况。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "tl_bacmon_stay",
+          "type": "choice",
+          "label": "去留",
+          "once": true,
+          "unlock": {
+            "years": [
+              1257
+            ],
+            "months": [
+              12
+            ]
+          },
+          "text": "北边传来马队的消息，城门今日只开半扇。守门军问你，是把货留在城里，还是趁夜装船。",
+          "options": [
+            {
+              "id": "tl_bacmon_stay_boat",
+              "label": "连夜装船",
+              "text": "你雇了脚夫，把货从北门转到富良江边。城门在身后合上时，堤上已经起了雾。",
+              "cost": 20,
+              "effects": {
+                "sea_tendency": 1,
+                "network": 1,
+                "note": "1257年冬，从北门把货转上富良江船。"
+              }
+            },
+            {
+              "id": "tl_bacmon_stay_keep",
+              "label": "留下看仓",
+              "text": "你让伙计把仓门钉死，自己留在城里。街上的铺户也在收板，没人知道明日开不开门。",
+              "cost": 0,
+              "effects": {
+                "martial": 1,
+                "merchant_credit": 1,
+                "note": "1257年冬，留在升龙看仓。"
+              }
+            }
+          ]
+        },
+        {
+          "id": "tl_bacmon_repair",
+          "type": "favour",
+          "label": "修门",
+          "once": true,
+          "unlock": {
+            "years": [
+              1258
+            ],
+            "months": [
+              1
+            ]
+          },
+          "text": "蒙古兵退后，北门的门板烧缺一块。门吏在门外募木料，你让人送了一车旧板来。",
+          "cost": 25,
+          "effects": {
+            "fame": 1,
+            "favour": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "tl_shiguan",
+      "port": "thanglong",
+      "pending_port": true,
+      "name": "使馆",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_tl_shiguan.jpg",
+      "description": "使馆在皇城东，院墙高，门内两排厢房。宋使、南海诸国使与后来的北使都在这里歇马，馆吏按使节品级换帘幕。",
+      "interactions": [
+        {
+          "id": "tl_shiguan_wait",
+          "type": "favour",
+          "label": "候信",
+          "text": "馆门外的廊下坐着等回书的信使，脚边放着未拆的封筒。你陪他们等到日暮，听了一耳朵南来北往的行程。",
+          "cost": 5,
+          "once_per": "month",
+          "effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "tl_shiguan_receive",
+          "type": "favour",
+          "label": "接使",
+          "cost": 30,
+          "once_per": "year",
+          "unlock": {
+            "year_min": 1279
+          },
+          "text": "北使持书入馆，馆吏在廊下设席。你添了一桌茶酒，听他们问起港口与贡道。",
+          "effects": {
+            "network": 2,
+            "favour": 1
+          }
+        },
+        {
+          "id": "tl_shiguan_translate",
+          "type": "choice",
+          "label": "译语",
+          "once_per": "year",
+          "unlock": {
+            "year_min": 1279
+          },
+          "text": "北使的从人不通交趾话，馆吏把一封封着朱印的文书递到你面前，问你能不能替他把话说明白。",
+          "options": [
+            {
+              "id": "tl_shiguan_translate_speak",
+              "label": "一句句译",
+              "text": "你把文书里的名目一句句译给馆吏。北使的从人听到港名，抬眼看了你一下。",
+              "cost": 0,
+              "effects": {
+                "network": 2,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "tl_shiguan_translate_card",
+              "label": "只递名帖",
+              "text": "你没有接文书，只把自己的名帖递上去。馆吏收下名帖，转身去唤别的通事。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tl_taixue",
+      "port": "thanglong",
+      "pending_port": true,
+      "name": "太学斋舍",
+      "kind": "academy",
+      "pending_art": true,
+      "bg": "bg_dist_tl_taixue.jpg",
+      "description": "国学院在文庙侧，斋舍是一排低屋。三魁的名字写在斋牌上，新来的士子先在廊下听讲。",
+      "interactions": [
+        {
+          "id": "tl_taixue_listen",
+          "type": "favour",
+          "label": "檐下听讲",
+          "text": "讲席设在檐下，士子把纸铺在膝头。你站在廊柱边听了一篇《春秋》，直到日影移过门槛。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "tl_taixue_lesson",
+          "type": "choice",
+          "label": "问课",
+          "once_per": "month",
+          "text": "斋长收课业，案上压着一叠程文。他问你今日是呈卷，还是只讨一篇回去看。",
+          "options": [
+            {
+              "id": "tl_taixue_lesson_submit",
+              "label": "呈一卷",
+              "text": "你把夜里写的策论递上去。斋长读到一半，用朱笔在纸边点了两下，没说话。",
+              "cost": 10,
+              "effects": {
+                "scholar_tendency": 2,
+                "fame": 1,
+                "note": "在升龙国学院呈过一卷课业。"
+              }
+            },
+            {
+              "id": "tl_taixue_lesson_take",
+              "label": "讨程文",
+              "text": "你讨了一篇旧程文，坐在门槛上读完。斋长把卷角压平，才收进匣里。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
