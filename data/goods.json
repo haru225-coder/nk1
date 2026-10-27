@@ -16,7 +16,7 @@
       "perishable": 0.002,
       "fragile": 0.0,
       "contraband": false,
-      "origin": "兴化 / 福建路米区",
+      "origin": "兴化 / 福州",
       "historical_note": "兼作船上食料。兴化、福州一带产米，海船补给多取于此。",
       "depth_mul": 4.0
     },
@@ -45,7 +45,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "福建 / 建茶",
-      "historical_note": "建茶为宋代名品，输往日本与高丽，与寺院饮茶风气相连。",
+      "historical_note": "建茶为宋代名品，北苑岁贡；海舶载茶，日本、高丽寺院皆重。",
       "depth_mul": 2.5
     },
     {
@@ -89,7 +89,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "流求 / 南岛",
-      "historical_note": "流求土产，宋人记载岛夷以鹿皮易铁器盐布。",
+      "historical_note": "流求、南岛土产，鹿皮可充货；岛夷好铁器，海舶偶以铁易之。",
       "depth_mul": 1.0
     },
     {
@@ -145,7 +145,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "两浙 / 福建",
-      "historical_note": "对日贸易的支柱货，日本自产不足，唐房需求极大。",
+      "historical_note": "宋舶东渡，生丝为大宗；日本所产不足，唐房转贩于贵族、寺社。",
       "depth_mul": 2.0
     },
     {
@@ -175,7 +175,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "高丽 / 耽罗转口",
-      "historical_note": "高丽纸坚韧光洁，宋人推为纸中上品，士人与寺院争购。",
+      "historical_note": "高丽纸坚韧光洁，宋人用以书画、印书，士人与寺院争购。",
       "depth_mul": 1.0
     },
     {
@@ -205,7 +205,7 @@
       "origin": "泉州蕃坊 / 南洋转口",
       "destination_hint": "寺院、医家、远海商路",
       "risk": "怕潮，需油布与干舱",
-      "historical_note": "乳香、沉香、檀香皆属之，蕃舶载来，抽解不轻。",
+      "historical_note": "乳香、没药出大食，经三佛齐转舶；沉香出占城、真腊；龙脑出渤泥、三佛齐。蕃舶载来，抽解之外，尚有博买。",
       "depth_mul": 1.0
     },
     {
@@ -219,7 +219,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "日本 / 博多",
-      "historical_note": "南宋钱荒，日本铜输入是铸钱与器用的关键来源，回程压舱货首选。",
+      "historical_note": "宋钱荒时，铜贵；日本铜随舶而来，可铸器、充料，亦作回程压舱。",
       "depth_mul": 1.0
     },
     {
@@ -233,7 +233,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "两浙 / 福建织坊",
-      "historical_note": "成品丝织，价高于生丝，日本贵族与寺社需求稳定。",
+      "historical_note": "绢、罗、纱皆备，价高于生丝，日本贵族与寺社争购。",
       "depth_mul": 2.0
     },
     {
@@ -263,7 +263,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "占城 / 南洋",
-      "historical_note": "南海贸易的重货，抽解不轻。",
+      "historical_note": "胡椒出南海诸国，蕃舶贩来，抽解不轻。",
       "depth_mul": 1.0
     },
     {
@@ -305,7 +305,7 @@
       "fragile": 0.3,
       "contraband": false,
       "origin": "日本",
-      "historical_note": "日本螺钿工艺精绝，宋人视为奇货。",
+      "historical_note": "日本所制螺钿，宋人视为奇货。",
       "depth_mul": 1.0
     },
     {
@@ -375,7 +375,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "日本 / 奥州",
-      "historical_note": "日本产金，《岭外代答》称倭国多金。体积小、值高，小舟亦可载。",
+      "historical_note": "日本产金，《诸蕃志》称倭国东奥州产黄金。体积小、值高，小舟亦可载。",
       "depth_mul": 0.2
     },
 
