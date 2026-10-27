@@ -1,0 +1,812 @@
+{
+  "districts": [
+    {
+      "id": "pj_hequ",
+      "port": "pingjiang",
+      "pending_port": true,
+      "name": "临河后门",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_pj_hequ.jpg",
+      "description": "城中河道与街巷并行，人家后门临水，石阶一直砌到河面。妇人蹲在阶上淘米，小舟从檐下穿过，橹声贴着墙根走。",
+      "interactions": [
+        {
+          "id": "pj_hequ_steps",
+          "type": "favour",
+          "label": "磨阶",
+          "text": "雨后石阶生了青苔，你叫伙计挑来两担粗砂，把后门一段阶面磨过一遍。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "note": "平江后门石阶磨过。"
+          }
+        },
+        {
+          "id": "pj_hequ_boat",
+          "type": "choice",
+          "label": "让舟",
+          "text": "运柴的小舟到了窄处，船头抵住你家驳岸，梢公仰头问让不让。",
+          "options": [
+            {
+              "id": "pj_hequ_boat_move",
+              "label": "挪开柴垛",
+              "text": "你让伙计把岸上的柴垛往里挪。小舟贴着墙根过去了，梢公在船尾拱了拱手。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "pj_hequ_boat_wait",
+              "label": "叫他候潮",
+              "text": "你指了指潮信，叫他等水再退些。梢公把篙一横，索性在船头坐下。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pj_panmen",
+      "port": "pingjiang",
+      "pending_port": true,
+      "name": "盘门",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_pj_panmen.jpg",
+      "description": "盘门水陆两门并峙，陆门通车马，水门通舟楫。城楼循宋时旧制，砖色青灰，门洞里终年潮气，门吏按舟验引。",
+      "interactions": [
+        {
+          "id": "pj_panmen_tide",
+          "type": "favour",
+          "label": "候水门",
+          "text": "水门要等潮平才开。你在门洞边站了两刻，把货引递上去，门吏点头放舟。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "pj_panmen_night",
+          "type": "choice",
+          "label": "夜闭水门",
+          "text": "天色向晚，水门将闭，城外还有一船丝货未入。门吏握着门闩看你。",
+          "options": [
+            {
+              "id": "pj_panmen_night_open",
+              "label": "求开半扇",
+              "text": "门吏把水门推开半扇，丝船侧身挤进来。你递过去一小串钱，他收进袖里。",
+              "cost": 25,
+              "effects": {
+                "network": 1,
+                "favour": 1,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "pj_panmen_night_shut",
+              "label": "留船城外",
+              "text": "你让丝船泊在城外。门吏落下门闩，水声一下子闷住了。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "pj_panmen_rumor",
+          "type": "rumor",
+          "label": "听纲运",
+          "text": "门吏翻着纲运的札子，说浙西漕船先尽官仓，温州的米船这一旬到得少。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "wenzhou",
+          "good": "grain",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "pj_fuxue",
+      "port": "pingjiang",
+      "pending_port": true,
+      "name": "府学碑廊",
+      "kind": "academy",
+      "pending_art": true,
+      "bg": "bg_dist_pj_fuxue.jpg",
+      "description": "平江府学在城南，讲堂前立着《平江图》碑与《天文图》《地理图》碑。碑面字口很深，廊下另有一面榜墙，秋后糊纸。",
+      "interactions": [
+        {
+          "id": "pj_fuxue_rub",
+          "type": "favour",
+          "label": "拓平江图",
+          "text": "你请学吏拓一张《平江图》。墨包在纸上按了三遍，城门、水巷与桥名都显出来。",
+          "cost": 30,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1,
+            "note": "拓过一张《平江图》。"
+          }
+        },
+        {
+          "id": "pj_fuxue_read",
+          "type": "choice",
+          "label": "读碑",
+          "text": "学正问你先看哪一碑。天文图刻星官，地理图刻山川，平江图刻的是眼前这座城。",
+          "options": [
+            {
+              "id": "pj_fuxue_read_star",
+              "label": "看天文图",
+              "text": "你在天文图碑前找北极与三垣。学正指着一处星官，说这是前年重刻的。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 2
+              }
+            },
+            {
+              "id": "pj_fuxue_read_city",
+              "label": "看平江图",
+              "text": "你顺着碑上的水巷找自己泊船的那一段。桥名与河名一格一格对得上。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "pj_fuxue_list",
+          "type": "favour",
+          "label": "看解榜",
+          "text": "秋解放榜，榜墙前挤着士人。有人从人缝里退出来，把卷子卷紧，袖口沾了墨。",
+          "exam": true,
+          "scholar_1268": true,
+          "once_per": "year",
+          "cost": 0,
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "pj_xuanmiao",
+      "port": "pingjiang",
+      "pending_port": true,
+      "name": "玄妙观三清殿",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_pj_xuanmiao.jpg",
+      "description": "玄妙观在城心，三清殿是淳熙年间的木构，斗拱大，出檐深。殿前香炉终日不熄，廊下摆着算命与卖符的摊子。",
+      "interactions": [
+        {
+          "id": "pj_xuanmiao_lamp",
+          "type": "favour",
+          "label": "添灯油",
+          "text": "三清殿的长明灯缺油，你提一壶麻油添进灯盏。道士合了合手，把灯芯拨正。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "pj_xuanmiao_tile",
+          "type": "choice",
+          "label": "殿角漏雨",
+          "text": "殿角一片瓦松动了，雨水顺着梁架往下滴。道士指着漏痕，问你肯不肯随喜一回。",
+          "options": [
+            {
+              "id": "pj_xuanmiao_tile_give",
+              "label": "随喜修瓦",
+              "text": "你留下修瓦的钱。道士在缘簿上记了船号，说下回殿门为你早开半刻。",
+              "cost": 60,
+              "effects": {
+                "fame": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "pj_xuanmiao_tile_later",
+              "label": "改日再来",
+              "text": "你说改日再来。道士把缘簿合上，仍旧去接檐下的雨水。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "pj_xuanmiao_rumor",
+          "type": "rumor",
+          "label": "闻香药",
+          "text": "道士说，泉州来的香药船被抽解留了半舱，观里的乳香也要等下一批。",
+          "cost": 15,
+          "cooldown_days": 45,
+          "port": "quanzhou",
+          "good": "aromatic_medicine",
+          "mul": 1.14
+        }
+      ]
+    },
+    {
+      "id": "pj_huqiu",
+      "port": "pingjiang",
+      "pending_port": true,
+      "name": "虎丘云岩寺塔",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_pj_huqiu.jpg",
+      "description": "虎丘在城西北，云岩寺塔立在山顶，砖身八角七层，塔身已经微斜。山道上香客不断，剑池的水声从石壁下传上来。",
+      "interactions": [
+        {
+          "id": "pj_huqiu_climb",
+          "type": "favour",
+          "label": "登塔",
+          "text": "你沿塔内木梯上到顶层，城中的水巷与田畴都在脚下。风从塔檐穿过，铃响了一阵。",
+          "cost": 8,
+          "once_per": "year",
+          "effects": {
+            "fame": 1,
+            "network": 1,
+            "note": "登过虎丘塔顶。"
+          }
+        },
+        {
+          "id": "pj_huqiu_pool",
+          "type": "choice",
+          "label": "剑池",
+          "text": "剑池边的石壁渗水，传说底下埋着吴王。守塔僧问你可要下到池口看一看。",
+          "options": [
+            {
+              "id": "pj_huqiu_pool_down",
+              "label": "下池口",
+              "text": "你沿湿滑的石阶下到池口，水汽扑在脸上。石壁上凿痕很深，看不出年月。",
+              "cost": 0,
+              "effects": {
+                "martial": 1,
+                "note": "下过虎丘剑池。"
+              }
+            },
+            {
+              "id": "pj_huqiu_pool_stay",
+              "label": "留在塔院",
+              "text": "你留在塔院，看僧人扫落叶。池上的水声仍旧一阵一阵传来。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pj_canglang",
+      "port": "pingjiang",
+      "pending_port": true,
+      "name": "沧浪亭",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_pj_canglang.jpg",
+      "description": "沧浪亭在城南，苏舜钦筑园时借水为池，亭子架在土山上。竹影压着水面，园墙不加粉饰，石径只铺到水边。",
+      "interactions": [
+        {
+          "id": "pj_canglang_bamboo",
+          "type": "favour",
+          "label": "临水看竹",
+          "text": "你在亭下坐了一会儿，风把竹叶吹到水里。园丁扫开石径，没来打扰。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "pj_canglang_gather",
+          "type": "choice",
+          "label": "园中会文",
+          "text": "园门半掩，园丁说今日有士人在亭上会文，问你要不要同坐。",
+          "options": [
+            {
+              "id": "pj_canglang_gather_join",
+              "label": "同坐",
+              "text": "你上楼与士人同坐。有人把新作传过来，纸上是苏舜钦旧句。",
+              "cost": 20,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "pj_canglang_gather_walk",
+              "label": "绕水独行",
+              "text": "你绕过亭子，沿水走了一圈。竹影落在衣上，亭里的说话声渐渐远了。",
+              "cost": 0,
+              "effects": {
+                "fame": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pj_fanshi",
+      "port": "pingjiang",
+      "pending_port": true,
+      "name": "范氏义庄",
+      "kind": "manor",
+      "pending_art": true,
+      "bg": "bg_dist_pj_fanshi.jpg",
+      "description": "范氏义庄在城西，范仲淹置义田千亩，赡族中孤寡。庄门内是义仓与义学，庄正按簿发米，族中子弟在廊下读书。",
+      "interactions": [
+        {
+          "id": "pj_fanshi_rice",
+          "type": "favour",
+          "label": "纳义米",
+          "text": "你把一担米送进义仓。庄正过斗入簿，说这米要分给三房孤寡。",
+          "cost": 30,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1,
+            "note": "向范氏义庄纳过一担米。"
+          }
+        },
+        {
+          "id": "pj_fanshi_school",
+          "type": "choice",
+          "label": "义学纸笔",
+          "text": "义学的窗纸破了，庄正指着廊下的空席，说今年来读书的族子多了两个。",
+          "options": [
+            {
+              "id": "pj_fanshi_school_give",
+              "label": "助纸笔",
+              "text": "你留下纸笔钱。庄正把两个族子的名字写进义学簿，墨迹很淡。",
+              "cost": 40,
+              "effects": {
+                "fame": 2,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "pj_fanshi_school_seat",
+              "label": "添一席",
+              "text": "你只让人添了一张空席。族子们照旧读书，窗纸仍旧透风。",
+              "cost": 10,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pj_fengqiao",
+      "port": "pingjiang",
+      "pending_port": true,
+      "name": "枫桥与寒山寺",
+      "kind": "bridge",
+      "pending_art": true,
+      "bg": "bg_dist_pj_fengqiao.jpg",
+      "description": "枫桥跨在运河上，桥西就是寒山寺，宋时寺名普明禅院。夜半钟声从桥下传到客船，漕船在桥边依次停泊。",
+      "interactions": [
+        {
+          "id": "pj_fengqiao_bell",
+          "type": "favour",
+          "label": "听夜钟",
+          "text": "客船泊在桥下，你等到夜半，钟声从寺里出来，越过水面，又落回船篷上。",
+          "cost": 5,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "在枫桥听过夜半钟。"
+          }
+        },
+        {
+          "id": "pj_fengqiao_oil",
+          "type": "choice",
+          "label": "桥头缘簿",
+          "text": "寺里的长明灯该添油了。知客僧把缘簿摊在桥头，问你写不写名。",
+          "options": [
+            {
+              "id": "pj_fengqiao_oil_name",
+              "label": "写名",
+              "text": "你在缘簿上写了船号。知客僧合掌，说灯油里也有你一盏。",
+              "cost": 20,
+              "effects": {
+                "fame": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "pj_fengqiao_oil_anon",
+              "label": "只添油",
+              "text": "你没写名，只把油钱放进木匣。知客僧也不问，提起油壶往寺里走。",
+              "cost": 8,
+              "effects": {
+                "favour": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pj_changmen",
+      "port": "pingjiang",
+      "pending_port": true,
+      "name": "阊门外码头",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_pj_changmen.jpg",
+      "description": "阊门外的运河码头一段接一段，漕船与客舟挤在石驳岸下。脚夫挑米上仓，纲梢拿着朱牌点名，河面漂着碎稻草。",
+      "interactions": [
+        {
+          "id": "pj_changmen_watch",
+          "type": "favour",
+          "label": "看卸漕",
+          "text": "官仓开仓，你站在驳岸上点数。脚夫一担担往里挑，纲梢在簿上画押。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "pj_changmen_berth",
+          "type": "choice",
+          "label": "空驳岸",
+          "text": "一段空驳岸刚腾出来，旁边的米船和丝船都盯着。牙人问你出不出价。",
+          "options": [
+            {
+              "id": "pj_changmen_berth_bid",
+              "label": "出价",
+              "text": "你报了价，牙人把缆桩上的旧绳解开，让丝船靠过来。",
+              "cost": 25,
+              "effects": {
+                "network": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "pj_changmen_berth_yield",
+              "label": "让与米船",
+              "text": "你把驳岸让给米船。船户道了谢，把一筐新米搁在你脚边。",
+              "cost": 0,
+              "effects": {
+                "favour": 1,
+                "fame": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "pj_changmen_rumor",
+          "type": "rumor",
+          "label": "听纲梢",
+          "text": "纲梢说，太湖涨水，低田漫了，往明州的米船这一旬要少。",
+          "cost": 10,
+          "cooldown_days": 35,
+          "port": "mingzhou",
+          "good": "grain",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "pj_jihu",
+      "port": "pingjiang",
+      "pending_port": true,
+      "name": "机户与绣作",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_pj_jihu.jpg",
+      "description": "城西民家多以织为业，机杼声从早到晚。机户把生丝上机，绣作在绷子上走针，和买绢的吏人按月来点数目。",
+      "interactions": [
+        {
+          "id": "pj_jihu_loom",
+          "type": "invest",
+          "label": "合本织机",
+          "text": "机户要添一张花机，本钱不够。你把钱放在经轴上，主人请你看了新织的一匹。",
+          "costs": [
+            300,
+            700
+          ],
+          "monthly": [
+            12,
+            35
+          ],
+          "shop": "顾家机户"
+        },
+        {
+          "id": "pj_jihu_silk",
+          "type": "buy",
+          "label": "收绢",
+          "text": "机户刚下机的一匹绢还带着浆性。主人按匹论价，比牙行少一道佣钱。",
+          "good": "silk_fabric",
+          "qty": 2,
+          "price_mul": 0.94,
+          "impact": true
+        },
+        {
+          "id": "pj_jihu_levy",
+          "type": "choice",
+          "label": "和买点绢",
+          "text": "吏人拿着和买的帖子来点绢，机户把次一等的藏到机后。点不点破，在你。",
+          "options": [
+            {
+              "id": "pj_jihu_levy_tell",
+              "label": "点破",
+              "text": "你指了指机后那匹。吏人抽出绢来验了，机户的脸沉下去。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "pj_jihu_levy_hide",
+              "label": "装作不见",
+              "text": "你转身去看绣绷。吏人点完数走了，机户往你袖里塞了一小锭。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "money": 12
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pj_mihang",
+      "port": "pingjiang",
+      "pending_port": true,
+      "name": "米行",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_pj_mihang.jpg",
+      "description": "米行在城东，河埠头泊着苏湖来的米船。牙人用斗斛量米，麻袋堆到檐下，行里挂着「苏湖熟，天下足」的旧榜。",
+      "interactions": [
+        {
+          "id": "pj_mihang_grain",
+          "type": "buy",
+          "label": "收新米",
+          "text": "新米刚上岸，牙人抓一把摊在你掌心。米粒干爽，按斗论价。",
+          "good": "grain",
+          "qty": 4,
+          "price_mul": 0.97,
+          "impact": true
+        },
+        {
+          "id": "pj_mihang_measure",
+          "type": "favour",
+          "label": "看斗斛",
+          "text": "你看了行里的官斗，又看牙人手中的私斛。两把斛差了一指，行老把私斛收进柜下。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "note": "在平江米行校过斗斛。"
+          }
+        },
+        {
+          "id": "pj_mihang_rumor",
+          "type": "rumor",
+          "label": "听和籴",
+          "text": "行老翻着县里的和籴帖子，说今年苏湖的米先尽军仓，兴化的米船被商人订走。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "xinghua",
+          "good": "grain",
+          "mul": 1.13
+        }
+      ]
+    },
+    {
+      "id": "pj_taihu",
+      "port": "pingjiang",
+      "pending_port": true,
+      "name": "太湖石与洞庭橘",
+      "kind": "grove",
+      "pending_art": true,
+      "bg": "bg_dist_pj_taihu.jpg",
+      "description": "太湖东西山出石与橘。石户从水边起出瘦皱的石头，橘园在坡上，霜后摘下的洞庭橘装进竹篓，由船运进城。",
+      "interactions": [
+        {
+          "id": "pj_taihu_stone",
+          "type": "favour",
+          "label": "选石",
+          "text": "石户带你到水边看新起的石头，瘦、皱、透、漏，各指一块给你看。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "note": "在洞庭西山看过太湖石。"
+          }
+        },
+        {
+          "id": "pj_taihu_orange",
+          "type": "choice",
+          "label": "橘船",
+          "text": "橘船靠岸，船家剥开一只洞庭橘让你尝。霜后的橘甜，价钱也比城里果摊低。",
+          "options": [
+            {
+              "id": "pj_taihu_orange_buy",
+              "label": "买一篓",
+              "text": "你买了一篓，船家用竹篾把篓口扎紧，又添了两只。",
+              "cost": 30,
+              "effects": {
+                "network": 1,
+                "note": "在洞庭橘船上买过一篓橘。"
+              }
+            },
+            {
+              "id": "pj_taihu_orange_taste",
+              "label": "只尝一只",
+              "text": "你只尝了一只，把橘皮留在船板上。船家笑笑，也不再劝。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pj_chasi",
+      "port": "pingjiang",
+      "pending_port": true,
+      "name": "茶肆",
+      "kind": "teahouse",
+      "pending_art": true,
+      "bg": "bg_dist_pj_chasi.jpg",
+      "description": "茶肆临街两层，楼下点茶，楼上坐的多是牙人与船户。壁上挂着水巷图，栀子灯入夜才点，茶博士提着汤瓶穿桌。",
+      "interactions": [
+        {
+          "id": "pj_chasi_tea",
+          "type": "favour",
+          "label": "点一盏",
+          "text": "你要了一盏建茶。茶博士提瓶点汤，茶筅击出白沫，盏沿咬得住。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "pj_chasi_talk",
+          "type": "choice",
+          "label": "邻桌船户",
+          "text": "邻桌的船户把盏推过来，说运河上的事比话本还快。问你听不听。",
+          "options": [
+            {
+              "id": "pj_chasi_talk_listen",
+              "label": "听一折",
+              "text": "船户凑近，讲了一个纲梢私卖官米的故事。你听完，把茶钱一并会了。",
+              "cost": 5,
+              "effects": {
+                "network": 1
+              }
+            },
+            {
+              "id": "pj_chasi_talk_drink",
+              "label": "只饮茶",
+              "text": "你只低头饮茶。船户见你不接话，转头去同别人说。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "pj_chasi_rumor",
+          "type": "rumor",
+          "label": "听会子",
+          "text": "掌柜说，新界会子还没印齐，市上先认铜钱。广州的宋钱一天一个价。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "guangzhou",
+          "good": "song_coin",
+          "mul": 1.13
+        }
+      ]
+    },
+    {
+      "id": "pj_shufang",
+      "port": "pingjiang",
+      "pending_port": true,
+      "name": "书坊",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_pj_shufang.jpg",
+      "description": "书坊在府学西侧，刻板靠墙码着，新刻的《吴郡志》与举业程文摊在门口。刻工在灯下修字，纸屑落了一地。",
+      "interactions": [
+        {
+          "id": "pj_shufang_book",
+          "type": "favour",
+          "label": "翻志书",
+          "text": "你在架上翻到一册《吴郡志》，记着城中水巷与桥名。主人说这版只印了二百部。",
+          "cost": 25,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "在平江书坊翻过《吴郡志》。"
+          }
+        },
+        {
+          "id": "pj_shufang_paper",
+          "type": "choice",
+          "label": "印纸",
+          "text": "印坊缺高丽纸，主人问你可否用泉州来的竹纸先印。竹纸色黄，字口却清。",
+          "options": [
+            {
+              "id": "pj_shufang_paper_use",
+              "label": "用竹纸",
+              "text": "你垫了纸钱。主人让刻工先印二十部，纸色虽黄，墨却吃得牢。",
+              "cost": 30,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "pj_shufang_paper_wait",
+              "label": "等好纸",
+              "text": "你说再等等。主人把纸样收回柜里，刻板仍旧码在墙边。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "pj_shufang_rumor",
+          "type": "rumor",
+          "label": "听纸价",
+          "text": "主人说，高丽纸的船在耽罗候了半月，泉州的纸价要往上去。",
+          "cost": 10,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "korean_paper",
+          "mul": 1.12
+        }
+      ]
+    }
+  ]
+}
