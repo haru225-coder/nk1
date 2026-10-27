@@ -1597,6 +1597,54 @@
       "portrait_note": ""
     },
     {
+      "id": "liang_wangdou",
+      "name": "梁望斗",
+      "alt_names": [],
+      "courtesy": "",
+      "title": "广州舟师·火长",
+      "faction": "seafarers",
+      "origin": "广州",
+      "born": null,
+      "died": null,
+      "historical": false,
+      "tier": "crew",
+      "chapters": [
+        3,
+        4,
+        5
+      ],
+      "sources": {
+        "npc_id": null,
+        "crew_id": "liang_wangdou",
+        "speaker_names": []
+      },
+      "attrs": {
+        "hang": 84,
+        "shang": 36,
+        "wu": 38,
+        "xue": 44,
+        "wang": 46
+      },
+      "traits": [
+        "qianxing",
+        "zhenlu"
+      ],
+      "personality": "话慢，眼尖；看星之前先闻风，认斗柄也认潮头。",
+      "bio_short": "广州蕃舶上的望斗人，祖孙三代替船看星。识得斗柄潮头，也能用几句大食话与蕃客对答。",
+      "bio": "梁望斗生在广州城南濠畔，家里三代替蕃舶望斗。他小时跟祖父睡在船尾，夜里被叫起来认星，认错一颗便挨一记竹尺。后来自己跑船，晴夜看斗柄高低，阴夜听潮头缓急，针盘只作旁证。广州蕃坊里的大食客商常雇他的船，他跟着学了几句大食话，讲价不够用，问路、报时辰却够。第三章起可在广州雇到，月俸一百二十钱。他说海上的路一半在天上，一半在人情里。",
+      "lines": [
+        "斗柄低一寸，船位就差一更。夜里不敢贪睡。",
+        "蕃客说星名，我说针位。各说各的，倒也说得通。",
+        "潮头闷，风在后头。先收帆，再论别的。"
+      ],
+      "relations": [],
+      "look": "三十上下，赤褐布缠头，粗麻交领短褐，腰间系绳；一手挽测深绳与铅锤，一手指着舱板上的针路，就着油灯细看，身后是成排陶瓮。",
+      "portrait": "res://assets/portraits/zheng_zhen.png",
+      "portrait_src": "reuse:zheng_zhen.png",
+      "portrait_status": "painted",
+      "portrait_note": "复用现成立绘：舱内就灯看针路的舟师，与本人身份相合。"
+    },
+    {
       "id": "ana_tongxiang",
       "name": "阿那同乡",
       "alt_names": [
@@ -1808,6 +1856,105 @@
       "portrait_note": ""
     },
     {
+      "id": "gu_sanjiang",
+      "name": "顾三江",
+      "alt_names": [],
+      "courtesy": "",
+      "title": "庆元府舵工",
+      "faction": "seafarers",
+      "origin": "明州庆元府",
+      "born": null,
+      "died": null,
+      "historical": false,
+      "tier": "crew",
+      "chapters": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "sources": {
+        "npc_id": null,
+        "crew_id": "gu_sanjiang",
+        "speaker_names": []
+      },
+      "attrs": {
+        "hang": 76,
+        "shang": 24,
+        "wu": 60,
+        "xue": 18,
+        "wang": 42
+      },
+      "traits": [
+        "caozhou",
+        "guanyun"
+      ],
+      "personality": "沉稳少言，把舵时两脚像钉在板上；认礁不看图，只看水色。",
+      "bio_short": "庆元府三江口人，官船渔船都替他掌过舵。明州口外暗礁多，他凭水色认礁线。",
+      "bio": "顾三江是庆元府三江口人，家就在江海交汇的滩上。少年时替渔船摇橹，后来上了官船掌舵，风急浪高时也不撒手。明州口外礁多，他不用看图，水色一深一浅，便知道底下是沙是石。有人问他师承，他只说跟江学的。第二章起可在明州雇到，月俸一百二十钱。",
+      "lines": [
+        "水色发青，底下是石；发黄，底下是沙。",
+        "舵把要握活，不能握死。死手遇浪，先断的是腕。",
+        "官船渔船都一样，风不认船上的旗。"
+      ],
+      "relations": [],
+      "look": "四十上下，虬髯浓黑，赤褐布缠头，粗麻交领短褐，双臂抱胸，腰前横一柄短刀，身后帆影与夜海。",
+      "portrait": "res://assets/portraits/zhang_xuan.png",
+      "portrait_src": "reuse:zhang_xuan.png",
+      "portrait_status": "painted",
+      "portrait_note": "复用现成立绘：虬髯、赤褐缠头、腰横短刀的舟人，与舵工身份相合。"
+    },
+    {
+      "id": "zhang_tiemao",
+      "name": "张铁猫",
+      "alt_names": [],
+      "courtesy": "",
+      "title": "漳州碇手·舵工",
+      "faction": "seafarers",
+      "origin": "漳州",
+      "born": null,
+      "died": null,
+      "historical": false,
+      "tier": "crew",
+      "chapters": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "sources": {
+        "npc_id": null,
+        "crew_id": "zhang_tiemao",
+        "speaker_names": []
+      },
+      "attrs": {
+        "hang": 52,
+        "shang": 16,
+        "wu": 66,
+        "xue": 10,
+        "wang": 34
+      },
+      "traits": [
+        "caozhou",
+        "gouni"
+      ],
+      "personality": "闷声有力，下碇前必先俯身看水色，嘴里念着沙底泥底。",
+      "bio_short": "漳州九龙江口的船户，替人管碇。铁锚重，收放全凭手劲，沙底泥底一摸便知。",
+      "bio": "张铁猫是漳州九龙江口的小船户，从小在滩涂上捡螺，手臂比同年人粗一圈。船上那只铁猫少说几十斤，收放全靠他一人，手心磨出的茧比铜钱厚。下碇前他总要先看水色，沙底吃碇浅，泥底吃碇深，他嘴里念一遍才肯松手。第一章起可在漳州雇到，月俸六十钱。他话不多，风大时只喊一个字：碇。",
+      "lines": [
+        "沙底吃碇浅，泥底吃碇深。看错了，夜里船就走。",
+        "铁猫下去，船才睡得着。",
+        "手上有茧，缆才不咬人。"
+      ],
+      "relations": [],
+      "look": "二十七八，肩背厚实，赤膊外披破麻短褂，腰缠粗布，背一只竹笠；一手按船舷，一手提满盛石块的竹篮，篮边插一柄铁凿。",
+      "portrait": "res://assets/portraits/he_sanhao.png",
+      "portrait_src": "reuse:he_sanhao.png",
+      "portrait_status": "painted",
+      "portrait_note": "复用现成立绘：赤膊厚背、手提石篮与铁凿的船工，与碇手身份相合。"
+    },
+    {
       "id": "wang_zhiku",
       "name": "王直库",
       "alt_names": [],
@@ -1959,6 +2106,55 @@
       "portrait_src": "codex:portrait_inn_scholar.png",
       "portrait_status": "painted",
       "portrait_note": ""
+    },
+    {
+      "id": "chen_dayou",
+      "name": "陈大有",
+      "alt_names": [],
+      "courtesy": "",
+      "title": "海口酒棚账房·杂事",
+      "faction": "townsfolk",
+      "origin": "兴化海口",
+      "born": null,
+      "died": null,
+      "historical": false,
+      "tier": "crew",
+      "chapters": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "sources": {
+        "npc_id": null,
+        "crew_id": "chen_dayou",
+        "speaker_names": []
+      },
+      "attrs": {
+        "hang": 14,
+        "shang": 72,
+        "wu": 12,
+        "xue": 46,
+        "wang": 40
+      },
+      "traits": [
+        "suanchou"
+      ],
+      "personality": "记性极好，嘴上说忘了，账上却一笔不差；算盘旧得发亮，珠子却不许人碰。",
+      "bio_short": "兴化海口酒棚里的老账房，替纲首记流水。谁的货上哪条船，他不翻簿也记得。",
+      "bio": "陈大有在兴化海口酒棚里替纲首记了几年流水，桌角就是他的账桌。酒客来来去去，他低头拨算盘，谁家几件货、上了哪条船、欠几文脚钱，不翻簿也能说出来。他的算盘用了二十来年，木框磨得发亮，珠子却一颗不少，也不许旁人碰。第一章起可在兴化海口雇到，月俸一百二十钱。他常说流水不认人情，只认日子。",
+      "lines": [
+        "某月某日，你家的瓷器上了蔡家的船。要查，我翻给你看。",
+        "流水不认人情，只认日子。",
+        "算盘旧不妨事，珠子齐就行。"
+      ],
+      "relations": [],
+      "look": "五十上下，清瘦，疏须；褪色青灰交领长衫，发以木簪束起，坐于案后，指间拈着货样，案头一杆小秤与成捆账簿。",
+      "portrait": "res://assets/portraits/zeng_gan.png",
+      "portrait_src": "reuse:zeng_gan.png",
+      "portrait_status": "painted",
+      "portrait_note": "复用现成立绘：案后拈货样、案头有小秤与账簿的年长账房，与身份相合。"
     },
     {
       "id": "huang_zhangfang",
@@ -2278,6 +2474,54 @@
       "portrait_src": "gen:grok:jin_tanluo.png",
       "portrait_status": "painted",
       "portrait_note": "2026-10-26 重出。宽檐马尾笠贴着头发，不是圆筒冠。腰有马鞭。天色改成暖暮色。"
+    },
+    {
+      "id": "wang_xin",
+      "name": "王信",
+      "alt_names": [],
+      "courtesy": "",
+      "title": "温州通事",
+      "faction": "seafarers",
+      "origin": "温州",
+      "born": null,
+      "died": null,
+      "historical": false,
+      "tier": "crew",
+      "chapters": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "sources": {
+        "npc_id": null,
+        "crew_id": "wang_xin",
+        "speaker_names": []
+      },
+      "attrs": {
+        "hang": 38,
+        "shang": 54,
+        "wu": 18,
+        "xue": 64,
+        "wang": 60
+      },
+      "traits": [
+        "fanyu"
+      ],
+      "personality": "耳朵灵，学话快；在码头上听几句便知是哪国船，谈价时先替两边把话说明白。",
+      "bio_short": "温州人，少年随船到明州天童寺，跟日本僧学倭语；后跑耽罗，高丽话也能应付。",
+      "bio": "王信是温州人，父亲在朔门码头替人修船。他十六岁随船到明州天童寺进香，在寺里住了一冬，跟日本僧学倭语，回来时已能替日本商船传话。后来又随船跑过耽罗，高丽话也学了个大概。温州港的日本船靠岸，牙人常请他居中；他说话不快，先听完两边，再一句一句翻。第二章起可在温州雇到，月俸一百二十钱。",
+      "lines": [
+        "倭语里「船」与「酒」音近，听错了要闹笑话。",
+        "高丽客说价先说货，倭客说价先说风。都得听完。",
+        "我只翻话，不替谁拿主意。"
+      ],
+      "relations": [],
+      "look": "三十上下，面容清瘦，眼角带笑；青蓝布缠头，深青交领长衫，腰束赭褐布带，带上系一枚木牌。",
+      "portrait": "res://assets/portraits/wang_tongshi.png",
+      "portrait_src": "reuse:wang_tongshi.png",
+      "portrait_status": "painted",
+      "portrait_note": "复用现成立绘：青蓝缠头、腰系木牌的通事，与本人身份相合。"
     },
     {
       "id": "monk_puji",
