@@ -150,7 +150,7 @@ func _sec_table() -> void:
 			order_bad += 1
 		if not _same(_arr(b.get("stop_before", [])), w[4]):
 			order_bad += 1
-		if entry == "quest_champa_offer" and int(req.get("chapter_at_least", 0)) != 2:
+		if entry == "quest_champa_offer" and (int(req.get("chapter_at_least", 0)) != 2 or int(req.get("chapter_at_most", 0)) != 3):
 			order_bad += 1
 	_check(order_bad == 0, "一、三条链的港、拍序、前置与下一拍逐针对上（坏 %d）" % order_bad)
 	var sc := _json("res://data/scenes.json")
@@ -213,13 +213,12 @@ func _sec_table() -> void:
 		if not reach.has(sid):
 			unreached += 1
 	_check(scene_bad == 0 and unreached == 0, "一、十二幕都在章二、选项落地、账目键接得住、三旗有主、从节拍走得到（坏 %d / 断 %d）" % [scene_bad, unreached])
-	var mc: Dictionary = (load("res://scripts/Main.gd") as GDScript).get_script_constant_map()
 	var bc: Dictionary = (load("res://scripts/core/PortBeats.gd") as GDScript).get_script_constant_map()
-	var ports: Array = mc.get("QUEST_BEAT_PORTS", [])
+	var ports: Array = bc.get("QUEST_PORTS", [])
 	var tails: Array = bc.get("QUEST_TAIL_ENTRIES", [])
 	_check(_same(ports, PORTS) and not ("ryukyu" in ports) and not ("xinghua" in ports)
 		and _same(tails, ["quest_sulfur_return", "quest_hakata_return", "quest_champa_return"]),
-		"一、Main 只放四港、流求与兴化不演；尾针常量与三链收尾同")
+		"一、接演港只放四港、流求与兴化不演；尾针常量与三链收尾同")
 
 
 func _sec_graph() -> void:
@@ -265,6 +264,8 @@ func _sec_graph() -> void:
 		"二、占城链：章一不演香约")
 	_check(_entry(_book.due("champa", cp_seen, cp_flags, ["champa"], 2, false)) == "quest_champa_offer",
 		"二、占城链：章二演香约")
+	_check(_book.due("champa", cp_seen, cp_flags, ["champa"], 4, false).is_empty(),
+		"二、占城链：章四让位终章、不演香约")
 	cp_seen.append("quest_champa_offer")
 	_check(_book.due("champa", cp_seen, cp_flags, ["champa"], 2, false).is_empty(),
 		"二、占城链：没应下香约不演香库")
