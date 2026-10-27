@@ -18,7 +18,7 @@
       "base_speed": 120,
       "price": 1200,
       "unlock": "ch1",
-      "historical_note": "福建沿海常见小型尖底船，只堪近岸转运与渔汛，出远洋是拿命赌。"
+      "historical_note": "福建沿海常见小型尖底船，只堪近岸转运与渔汛，不宜出远洋。"
     },
     {
       "id": "keel_boat",
@@ -46,7 +46,7 @@
       "base_speed": 150,
       "price": 6800,
       "unlock": "ch1",
-      "historical_note": "尖底高舷、水密隔舱，泉州海商的主力船型。舱多则货损可分摊。"
+      "historical_note": "尖底高舷、水密隔舱，泉州海商常用船型。舱多则货损可分摊。"
     },
     {
       "id": "canton_ship",
@@ -117,7 +117,7 @@
       "base_speed": 120,
       "price": 52000,
       "unlock": "ch4",
-      "historical_note": "神宗遣使高丽所造巨舰，「巍如山岳，浮动波上」。非有官身与巨资不可得。"
+      "historical_note": "神宗遣使高丽所造巨舰，「巍如山岳，浮动波上」。"
     }
   ]
 }

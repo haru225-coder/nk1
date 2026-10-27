@@ -17,7 +17,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "兴化 / 福建路米区",
-      "historical_note": "兼作船上食料。兴化、福州一带产米，是海船补给的基本盘。",
+      "historical_note": "兼作船上食料。兴化、福州一带产米，海船补给多取于此。",
       "depth_mul": 4.0
     },
     {
@@ -31,7 +31,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "福建沿海盐场",
-      "historical_note": "宋代盐为官榷，私盐利厚而险，适合表现地方胥吏与官场的灰色地带。",
+      "historical_note": "宋代盐为官榷，私盐利厚而险，胥吏、船户多缘此通同。",
       "depth_mul": 2.0
     },
     {
@@ -75,7 +75,7 @@
       "origin": "开元寺",
       "destination_hint": "寺院网络 / 博多寺社",
       "risk": "怕潮，不宜写入明账",
-      "historical_note": "不是普通买卖货，更多用于寺院网络与遮护。日本寺社出高价求经典。",
+      "historical_note": "经卷多随僧舶往来，寺社所重，非市上常货。日本寺社出高价求经典。",
       "depth_mul": 1.0
     },
     {
@@ -117,7 +117,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "日本 / 博多",
-      "historical_note": "折扇自日本传入，宋人士大夫视为雅玩，苏轼、欧阳修皆有咏。",
+      "historical_note": "折扇自日本传入，宋人士大夫视为雅玩。",
       "depth_mul": 1.0
     },
     {
@@ -131,7 +131,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "日本 / 南岛火山",
-      "historical_note": "火药原料，南宋军需紧要。日本硫黄经博多大量输宋，是最具战略意义的进口货。",
+      "historical_note": "火药原料，南宋军需紧要；日本硫黄经博多输宋，为军器所重。",
       "depth_mul": 1.0
     },
     {
@@ -161,7 +161,7 @@
       "origin": "泉州 / 德化窑口",
       "destination_hint": "蕃坊、近海商路、博多",
       "risk": "易碎，受潮后价值下降",
-      "historical_note": "泉州海商常见出口货，适合表现货主、舱位和货损分摊。",
+      "historical_note": "泉州海商常贩，德化、磁灶诸窑所出，装舱易碎，货损须按舱分摊。",
       "depth_mul": 2.0
     },
     {
@@ -205,7 +205,7 @@
       "origin": "泉州蕃坊 / 南洋转口",
       "destination_hint": "寺院、医家、远海商路",
       "risk": "怕潮，需油布与干舱",
-      "historical_note": "泉州蕃坊气味和贸易质感的代表货物。乳香沉香皆属之，抽解税重。",
+      "historical_note": "乳香、沉香、檀香皆属之，蕃舶载来，抽解不轻。",
       "depth_mul": 1.0
     },
     {
@@ -249,7 +249,7 @@
       "origin": "福建窑口 / 景德镇",
       "destination_hint": "唐房旧账 / 日本寺社",
       "risk": "易碎，风暴中最容易产生货损争议",
-      "historical_note": "比普通瓷货更牵动账面信用，适合林阿舶线。",
+      "historical_note": "青白瓷胎薄釉润，价高于常瓷，账面上最牵动信用。",
       "depth_mul": 2.0
     },
     {
@@ -263,7 +263,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "占城 / 南洋",
-      "historical_note": "南海贸易的硬通货之一，抽解重货。",
+      "historical_note": "南海贸易的重货，抽解不轻。",
       "depth_mul": 1.0
     },
     {
@@ -277,7 +277,7 @@
       "fragile": 0.0,
       "contraband": true,
       "origin": "境内",
-      "historical_note": "宋法严禁铜钱出海，是为「钱禁」。然日本、高丽皆行宋钱，一贯之值倍蓰于中土，走私之利最厚，罪亦最重。铜钱笨重，占舱远甚于绢帛。",
+      "historical_note": "宋法严禁铜钱出海，是为「钱禁」。然日本、高丽皆行宋钱，在彼处价高，走私之利最厚，罪亦最重。铜钱笨重，占舱远甚于绢帛。",
       "depth_mul": 2.0
     },
     {
@@ -319,7 +319,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "高丽 / 耽罗",
-      "historical_note": "药材之王，历代对高丽贸易的第一名品。",
+      "historical_note": "高丽所产人参，宋人称新罗参，为北货中的贵重药材。",
       "depth_mul": 0.3
     },
     {
@@ -347,7 +347,7 @@
       "fragile": 0.1,
       "contraband": false,
       "origin": "占城 / 南洋",
-      "historical_note": "蕃货重品，市舶司抽解定额最高的一类。",
+      "historical_note": "蕃货重品，与犀角、香药并称，抽解不轻。",
       "depth_mul": 0.25
     },
     {
@@ -375,7 +375,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "日本 / 奥州",
-      "historical_note": "日本产金，《岭外代答》称倭国多金。体积小价值高，最适合小船跑单帮。",
+      "historical_note": "日本产金，《岭外代答》称倭国多金。体积小、值高，小舟亦可载。",
       "depth_mul": 0.2
     },
 
@@ -392,7 +392,7 @@
       "origin": "泉州市舶司外牙人",
       "destination_hint": "账房、保人、货主",
       "risk": "押字不清会牵连保人与船主信用",
-      "historical_note": "用于表现验引、报货、抽解和风险分摊。",
+      "historical_note": "验引、报货、抽解皆凭押字；字迹不清，保人与船主同受牵连。",
       "depth_mul": 1.0
     },
     {
@@ -408,7 +408,7 @@
       "origin": "林阿舶账房",
       "destination_hint": "博多唐房旧账线索",
       "risk": "不宜外泄，丢失会损伤海商信用",
-      "historical_note": "仅为账册线索，非泉州出口货；作为远景钩子，不等于第一章直接远航博多。",
+      "historical_note": "林阿舶旧账所记硫黄出入，非泉州出口货；只是账上线索，未必即刻成行。",
       "depth_mul": 1.0
     },
     {
@@ -424,7 +424,7 @@
       "origin": "泉州蕃坊",
       "destination_hint": "博多唐房",
       "risk": "不问内物，但货损要算在账上",
-      "historical_note": "用于连接泉州海商信用与日本唐房远景。",
+      "historical_note": "泉州蕃坊寄往博多唐房的物件，凭海商信用转交。",
       "depth_mul": 1.0
     }
   ],
