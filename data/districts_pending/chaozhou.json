@@ -1,0 +1,690 @@
+{
+  "districts": [
+    {
+      "id": "cz_zhoucheng",
+      "port": "chaozhou",
+      "pending_port": true,
+      "pending_art": true,
+      "name": "州城与金山",
+      "kind": "hill",
+      "bg": "bg_dist_cz_zhoucheng.jpg",
+      "description": "州城东临韩江，北倚金山。城墙沿山脚起伏，女墙外就是江滩。金山石壁上有宋人题刻，登到高处，能看见江心的桥舟与城里的瓦脊。",
+      "interactions": [
+        {
+          "id": "cz_jinshan_climb",
+          "type": "favour",
+          "label": "登金山",
+          "text": "你从北门内的小径上金山。石壁间留着前人的题名，字口被海风吹得发白。江面在脚下展开，桥舟成了一条黑线。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "cz_jinshan_wall",
+          "type": "choice",
+          "label": "补城砖",
+          "text": "城墙西段塌了一角，厢军正把旧砖拆下重砌。军吏问你可肯认一段工料。",
+          "once": true,
+          "options": [
+            {
+              "id": "cz_jinshan_wall_give",
+              "label": "认一段",
+              "text": "你付了工料钱。军吏在木牌上写了认修人的名字，把牌子钉在墙根。",
+              "cost": 25,
+              "effects": {
+                "favour": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "cz_jinshan_wall_pass",
+              "label": "不认",
+              "text": "你说船上还有货等潮，转身下了城。军吏把木牌收回筐里，没再抬头。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "cz_jinshan_rumor",
+          "type": "rumor",
+          "label": "听州衙",
+          "text": "州衙的吏人说，泉州抽解加严，青白瓷船不肯进港，泉州的瓷价要往上走。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "rumor": {
+            "port": "quanzhou",
+            "good": "qingbai_porcelain",
+            "mul": 1.1
+          }
+        }
+      ]
+    },
+    {
+      "id": "cz_hanwengong",
+      "port": "chaozhou",
+      "pending_port": true,
+      "pending_art": true,
+      "name": "韩文公祠",
+      "kind": "temple",
+      "bg": "bg_dist_cz_hanwengong.jpg",
+      "description": "韩文公祠在韩山西麓，淳熙十六年自城南迁来。祠门朝江，阶下立着历次迁祠的碑记。祠祝每日扫叶，香案上只供一炉香。",
+      "interactions": [
+        {
+          "id": "cz_hanci_visit",
+          "type": "favour",
+          "label": "谒祠",
+          "text": "你过浮桥到韩山，在祠前整了整衣冠。祠祝替你点香，说苏学士的庙碑旧拓收在柜里，平日不轻易示人。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "cz_hanci_rubbing",
+          "type": "choice",
+          "label": "拓庙碑",
+          "text": "祠祝把一卷旧拓摊在廊下，纸边已经发脆。他说拓包可以借，碑石却不许再捶。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "cz_hanci_rubbing_take",
+              "label": "借拓包",
+              "text": "你在廊下拓了一张。墨色渗进纸纹，祠祝在纸角写了年月，才让你收好。",
+              "cost": 20,
+              "effects": {
+                "scholar_tendency": 2,
+                "note": "韩山祠下拓过庙碑。"
+              }
+            },
+            {
+              "id": "cz_hanci_rubbing_look",
+              "label": "只看旧拓",
+              "text": "你把旧拓从头读到尾，记住了几行字，把纸卷还给祠祝。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cz_jichuan",
+      "port": "chaozhou",
+      "pending_port": true,
+      "pending_art": true,
+      "name": "韩江与济川桥",
+      "kind": "bridge",
+      "bg": "bg_dist_cz_jichuan.jpg",
+      "description": "韩江自北而来，到州城东门外分成几股。济川桥东段以石墩架梁，中流还系着浮舟。涨水时桥面离江不过数尺，过桥的人都要看水势。",
+      "interactions": [
+        {
+          "id": "cz_jichuan_cross",
+          "type": "favour",
+          "label": "过浮桥",
+          "text": "你踏着浮舟过江。桥夫在船头收放铁缆，舟身随水一沉一浮，鞋底很快湿了。",
+          "cost": 5,
+          "once_per": "month",
+          "effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "cz_jichuan_repair",
+          "type": "choice",
+          "label": "助桥役",
+          "text": "开庆元年，知州林光世造新舟十四，又换七十丈铁缆。桥夫在滩上理缆，问你肯不肯帮一日。",
+          "once": true,
+          "unlock": {
+            "year_min": 1259,
+            "year_max": 1259
+          },
+          "options": [
+            {
+              "id": "cz_jichuan_repair_rope",
+              "label": "出铁缆",
+              "text": "你从货里匀出一段旧铁缆，交给桥夫回炉。桥夫在桥柱上刻了一道记号，说这截缆算你的。",
+              "cost": 30,
+              "effects": {
+                "favour": 1,
+                "network": 1,
+                "flag": "cz_jichuan_rope"
+              }
+            },
+            {
+              "id": "cz_jichuan_repair_hand",
+              "label": "帮一日",
+              "text": "你留在滩上帮桥夫拉缆。日头偏西时，新舟已在江心排齐。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "martial": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "cz_jichuan_rumor",
+          "type": "rumor",
+          "label": "听桥市",
+          "text": "桥市卖盐的人说，广州的盐船在洋上遇了逆风，回港的少，盐仓出货慢，盐价怕要抬。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "rumor": {
+            "port": "guangzhou",
+            "good": "sea_salt",
+            "mul": 1.12
+          }
+        }
+      ]
+    },
+    {
+      "id": "cz_kaiyuan",
+      "port": "chaozhou",
+      "pending_port": true,
+      "pending_art": true,
+      "name": "开元寺",
+      "kind": "temple",
+      "bg": "bg_dist_cz_kaiyuan.jpg",
+      "description": "开元寺在州城中心，前身是荔峰寺。庆历间重修后，殿阁连成五百余楹，为一郡之表。寺前石经幢立了多年，字口已被香客摸得发亮。",
+      "interactions": [
+        {
+          "id": "cz_kaiyuan_incense",
+          "type": "favour",
+          "label": "上香",
+          "text": "你在殿前上了一炷香。知客僧把香资记进功德簿，又指给你看廊下新补的经橱。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "cz_kaiyuan_sutra",
+          "type": "choice",
+          "label": "补经藏",
+          "text": "寺里要补几卷经，知客僧说泉州刻经的纸价高了，问你可肯先垫一笔。",
+          "once": true,
+          "options": [
+            {
+              "id": "cz_kaiyuan_sutra_give",
+              "label": "垫一笔",
+              "text": "你把钱交到库房。知客僧在册上记了你的船号，说经卷到寺后请你来看。",
+              "cost": 25,
+              "effects": {
+                "favour": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "cz_kaiyuan_sutra_wait",
+              "label": "等经价落",
+              "text": "你说等泉州那边的纸价落了再送。知客僧点头，把缘簿合上。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cz_bijiashan",
+      "port": "chaozhou",
+      "pending_port": true,
+      "pending_art": true,
+      "name": "笔架山窑",
+      "kind": "workshop",
+      "bg": "bg_dist_cz_bijiashan.jpg",
+      "description": "笔架山在韩江东岸，北宋时窑场连成数里，龙窑依山而建。南渡以后火渐少，坡上多剩废匣与碎瓷，只有几处窑户还在烧。",
+      "interactions": [
+        {
+          "id": "cz_bijia_buy",
+          "type": "buy",
+          "label": "收窑货",
+          "text": "窑户从坡下的废堆里拣出两只青白釉碗，釉口还整。他说这是前窑剩下的，价钱可以商量。",
+          "good": "qingbai_porcelain",
+          "qty": 2,
+          "price_mul": 0.95,
+          "impact": false
+        },
+        {
+          "id": "cz_bijia_kiln",
+          "type": "favour",
+          "label": "看龙窑",
+          "text": "窑户提灯带你钻进废窑。窑壁被火熏得发黑，匣钵一层层码到深处，脚下全是碎瓷。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "network": 1,
+            "note": "笔架山看过废龙窑。"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cz_fenghuang",
+      "port": "chaozhou",
+      "pending_port": true,
+      "pending_art": true,
+      "name": "凤凰山",
+      "kind": "hill",
+      "bg": "bg_dist_cz_fenghuang.jpg",
+      "description": "凤凰山在州北，山高雾重，石径一直通到饶平、大埔。山民在坡上种些旱粮，路边搭着避雨的草寮。",
+      "interactions": [
+        {
+          "id": "cz_fenghuang_climb",
+          "type": "favour",
+          "label": "上山",
+          "text": "你沿石径上凤凰山。雾从谷底漫上来，草寮里有人添柴，山风把火烟压低。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "martial": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "cz_fenghuang_rain",
+          "type": "choice",
+          "label": "避雨",
+          "text": "午后急雨，山民让你进寮。火塘边只够坐两个人，门外石径转眼成了水沟。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "cz_fenghuang_rain_stay",
+              "label": "留一宿",
+              "text": "你在草寮里住了一夜。山民把干粮分你一半，天亮雨歇才送你下山。",
+              "cost": 10,
+              "effects": {
+                "hometown_tendency": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "cz_fenghuang_rain_go",
+              "label": "冒雨下山",
+              "text": "你把斗笠压低，踏着水沟下到山脚。鞋泥厚了一层，货担却没湿。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cz_chaoyang",
+      "port": "chaozhou",
+      "pending_port": true,
+      "pending_art": true,
+      "name": "潮阳与东山",
+      "kind": "hill",
+      "bg": "bg_dist_cz_chaoyang.jpg",
+      "description": "潮阳县城在练江边，东山环着城南。山上有水帘亭、望仙桥与宋人摩崖，海风大时，石壁间都是潮声。",
+      "interactions": [
+        {
+          "id": "cz_chaoyang_climb",
+          "type": "favour",
+          "label": "登东山",
+          "text": "你从城南石阶上东山。水帘亭下的泉水被风扯成碎珠，石壁上留有宋代题名，字迹深浅不一。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "cz_chaoyang_wen",
+          "type": "choice",
+          "label": "文丞相驻潮阳",
+          "text": "祥兴元年十一月，文丞相进屯潮阳，点集义兵，传令州县输粮。军中缺船装粮，都统问你可肯借一程。",
+          "once": true,
+          "unlock": {
+            "year_min": 1278,
+            "year_max": 1278,
+            "months": [
+              11,
+              12
+            ]
+          },
+          "options": [
+            {
+              "id": "cz_chaoyang_wen_lend",
+              "label": "借船",
+              "text": "你让船在练江边泊了两日，又送出十石粮。军吏在簿上记了船号，说日后还你。",
+              "cost": 40,
+              "effects": {
+                "fame": 2,
+                "network": 1,
+                "flag": "cz_wen_lend"
+              }
+            },
+            {
+              "id": "cz_chaoyang_wen_decline",
+              "label": "推说船小",
+              "text": "你说船小，装不下军粮。都统看了你一眼，转身去问别的船户。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "cz_chaoyang_rumor",
+          "type": "rumor",
+          "label": "听练江口",
+          "text": "练江口的船家说，占城的香市里胡椒船避风，一船货等不及，牙行正压价。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "rumor": {
+            "port": "champa",
+            "good": "pepper",
+            "mul": 0.9
+          }
+        }
+      ]
+    },
+    {
+      "id": "cz_yantian",
+      "port": "chaozhou",
+      "pending_port": true,
+      "pending_art": true,
+      "name": "海阳盐场",
+      "kind": "workshop",
+      "bg": "bg_dist_cz_yantian.jpg",
+      "description": "海阳濒海，宋设盐场三所。小江场在县东南，灶户引海水取卤，煎成盐颗，再由盐仓发运。",
+      "interactions": [
+        {
+          "id": "cz_yantian_buy",
+          "type": "buy",
+          "label": "收盐",
+          "text": "盐仓刚开，灶户把新盐挑到秤前。盐粒还带着灶灰，仓吏用木斗刮平，报了一个数。",
+          "good": "sea_salt",
+          "qty": 3,
+          "price_mul": 0.95,
+          "impact": false
+        },
+        {
+          "id": "cz_yantian_invest",
+          "type": "invest",
+          "label": "入股盐场",
+          "text": "灶户要添几口盐锅，盐仓的监官问你肯不肯垫本。入的是灶户的本钱，盐仍归仓收买。",
+          "costs": [
+            260,
+            600
+          ],
+          "monthly": [
+            14,
+            32
+          ],
+          "shop": "海阳盐场"
+        },
+        {
+          "id": "cz_yantian_help",
+          "type": "favour",
+          "label": "帮煎盐",
+          "text": "灶棚里缺人看火。你蹲在灶口添了半日柴，卤水在锅里慢慢结出白花。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "hometown_tendency": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "cz_hanjiangkou",
+      "port": "chaozhou",
+      "pending_port": true,
+      "pending_art": true,
+      "name": "韩江口商船与南洋来舶",
+      "kind": "dock",
+      "bg": "bg_dist_cz_hanjiangkou.jpg",
+      "description": "韩江口外泊着南北来的船。本地的盐船、瓷船候潮出海，南洋来舶在口外抛锚，小舟把香药与胡椒驳进来，牙人只说是广州转来的。",
+      "interactions": [
+        {
+          "id": "cz_hjk_pepper",
+          "type": "buy",
+          "label": "收胡椒",
+          "text": "番舶的胡椒装在竹篓里，牙人抓出一把给你看颗粒。海气重，篓底垫着干草。",
+          "good": "pepper",
+          "qty": 2,
+          "price_mul": 0.98,
+          "impact": false
+        },
+        {
+          "id": "cz_hjk_hire",
+          "type": "hire",
+          "label": "雇通事",
+          "text": "口外的番舶说的不是广南话。通事姓林，识得几国番语，肯替你上船问价。",
+          "who": "通事",
+          "cost": 70,
+          "wage": 9,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "cz_hjk_rumor",
+          "type": "rumor",
+          "label": "听番舶",
+          "text": "番舶的火长说，广州的香药船在口外候了半月，乳香到得少，香药价要上去。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "rumor": {
+            "port": "guangzhou",
+            "good": "aromatic_medicine",
+            "mul": 1.12
+          }
+        }
+      ]
+    },
+    {
+      "id": "cz_zhouxue",
+      "port": "chaozhou",
+      "pending_port": true,
+      "pending_art": true,
+      "name": "潮州州学",
+      "kind": "academy",
+      "bg": "bg_dist_cz_zhouxue.jpg",
+      "description": "州学在城东南，庆历间始建，后两迁而定。讲堂前立着题名碑，秋后榜纸贴在门外墙上。",
+      "interactions": [
+        {
+          "id": "cz_zhouxue_list",
+          "type": "favour",
+          "label": "看榜",
+          "text": "秋榜贴在州学门外。看榜的人从墙根挤到阶前，有人念到自己的名字，忽然停住。",
+          "cost": 0,
+          "exam": true,
+          "once_per": "year",
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "cz_zhouxue_rub",
+          "type": "favour",
+          "label": "拓题名碑",
+          "text": "学吏替你按好纸，墨包一捶，碑上的名字就翻到纸上。纸揭起来时，边角还粘着一点青苔。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "州学拓过题名碑。"
+          }
+        },
+        {
+          "id": "cz_zhouxue_field",
+          "type": "choice",
+          "label": "认学田",
+          "text": "学正说海潮侵了学田，租米短了一截，问你可肯认一段田，补这一年的学粮。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "cz_zhouxue_field_give",
+              "label": "认一段",
+              "text": "你在学田簿上写了名。学正把田界指给你看，说秋后租米先送州学。",
+              "cost": 40,
+              "effects": {
+                "favour": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "cz_zhouxue_field_pass",
+              "label": "不认",
+              "text": "你说田界不清，怕日后生讼。学正把簿子合上，道了一声谢。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cz_hanshan",
+      "port": "chaozhou",
+      "pending_port": true,
+      "pending_art": true,
+      "name": "韩山书院",
+      "kind": "academy",
+      "bg": "bg_dist_cz_hanshan.jpg",
+      "description": "韩山书院在城南韩庙旧址，一二四三年由知州郑良臣创建。讲堂匾题「城南书庄」，后堂祀韩公，两庑分列四斋。",
+      "interactions": [
+        {
+          "id": "cz_hanshan_listen",
+          "type": "favour",
+          "label": "听讲",
+          "text": "讲堂里正讲四书讲义。山长让你在窗下坐了一晌，斋生把抄本推过来，让你对一行字。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "cz_hanshan_repair",
+          "type": "choice",
+          "label": "修斋舍",
+          "text": "一二六九年，通判林式之见斋舍将倒，自出俸金四十两修葺。山长在廊下捧着缘簿，问你可肯添一份工料。",
+          "once": true,
+          "unlock": {
+            "year_min": 1269,
+            "year_max": 1269
+          },
+          "options": [
+            {
+              "id": "cz_hanshan_repair_give",
+              "label": "添工料",
+              "text": "你添了一份工料。木匠把新椽抬上屋架，山长在缘簿上记了你的名字。",
+              "cost": 30,
+              "effects": {
+                "fame": 1,
+                "favour": 1,
+                "flag": "cz_hanshan_repaired"
+              }
+            },
+            {
+              "id": "cz_hanshan_repair_pass",
+              "label": "不添",
+              "text": "你说船上也等钱修舱，山长点头，把缘簿递给下一位。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cz_xihu",
+      "port": "chaozhou",
+      "pending_port": true,
+      "pending_art": true,
+      "name": "西湖与葫芦山",
+      "kind": "hill",
+      "bg": "bg_dist_cz_xihu.jpg",
+      "description": "西湖在城西，旧为放生池。南宋两次重浚，引韩江水入湖，湖面才阔起来。湖边的葫芦山石壁上，宋人题刻连成一片。",
+      "interactions": [
+        {
+          "id": "cz_xihu_boat",
+          "type": "favour",
+          "label": "游湖",
+          "text": "你雇了一条小船，从虹桥下摇到湖心。岸边有人垂钓，葫芦山的倒影被桨划成几段。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "cz_xihu_rubbing",
+          "type": "choice",
+          "label": "看摩崖",
+          "text": "葫芦山北岩有一片宋人题刻，字口被苔痕填了半边。守湖的老人说可以拓，只是不许敲得太重。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "cz_xihu_rubbing_take",
+              "label": "拓一张",
+              "text": "你按纸轻捶，拓出一片模糊的字。老人看了看，说这处刻的是重浚西湖的记。",
+              "cost": 15,
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "葫芦山拓过重浚西湖记。"
+              }
+            },
+            {
+              "id": "cz_xihu_rubbing_read",
+              "label": "只读",
+              "text": "你把苔痕拨开，逐行读到落款，记住了几个名字，没有动纸墨。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
