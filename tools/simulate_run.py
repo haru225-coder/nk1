@@ -28,6 +28,7 @@ _E = eco_src.EcoSrc(ROOT, "simulate_run")
 _ECO_GD, _FLEET_GD, _GS_GD, _GM_GD = "scripts/core/Economy.gd", "scripts/core/Fleet.gd", "scripts/GameState.gd", "scripts/GameManager.gd"
 TARIFF = _E.num(_ECO_GD, "tariff_rate")
 BROKER = _E.num(_ECO_GD, "broker_fee")
+CREDIT_PREMIUM = _E.num(_ECO_GD, "CREDIT_PREMIUM")
 PRICE_SPREAD_MIN = _E.num(_ECO_GD, "PRICE_SPREAD_MIN")
 ROLE_MOD = _E.literal(_ECO_GD, "ROLE_MOD")
 RATE_MIN, RATE_MAX = _E.num(_ECO_GD, "RATE_MIN"), _E.num(_ECO_GD, "RATE_MAX")
@@ -1672,6 +1673,9 @@ _per = sorted(r[4]["net"] / max(1, r[3]["net"]) - 1 for r in _war_rows)
 check(_off_sum > 0 and -0.10 <= _gain <= 0.25,
       f"开开关后 {len(_war_rows)} 段战时跑商合计净利 {_gain * 100:+.1f}%（{_off_sum} → {_on_sum}；单段 {_per[0] * 100:+.0f}% 到 {_per[-1] * 100:+.0f}%）："
       f"不成摇钱树（≤ +25%），也不把战时生意掐死（≥ −10%）")
+
+# ── 牙人赊销 sanity（lane sim4，可选）──
+check(CREDIT_PREMIUM > 0, "赊销贴水为正（%.0f%%）" % (CREDIT_PREMIUM * 100))
 
 print()
 print("="*70)

@@ -1249,6 +1249,129 @@ func beat_flag_names() -> Array:
 	return flags.keys()
 
 
+# ── 牙人赊销（lane sim4）─────────────────────────────
+
+## 赊销簿。每笔 {id, port, good, qty, unit_price, due_ym}；due_ym = year * 12 + month。
+## 与蕃商赊贷 debt 是两本账：不借现钱、不生息；与委办 contract 也是两本账：不押船、不罚款。
+var broker_credit: Array = []
+
+
+## 赊销到期的年月序号。默认两月，由 Economy.CREDIT_TERM_MONTHS 定。
+func broker_credit_due_ym(months: int = -1) -> int:
+	var term := Economy.CREDIT_TERM_MONTHS if months < 0 else months
+	return Calendar.year * 12 + Calendar.month + maxi(1, term)
+
+
+## 本港赊销的倒账概率：海商信用越高越低，战况越坏越高。按笔用 id 定骰，读档前后同一结果。
+func broker_credit_default_chance(port_id: String) -> float:
+	var base := maxf(Economy.CREDIT_DEFAULT_FLOOR,
+		Economy.CREDIT_BASE_DEFAULT - float(merchant_credit) * Economy.CREDIT_DEFAULT_RELIEF)
+	var war_mul := float(Economy.CREDIT_WAR_DEFAULT.get(Economy.war_status(port_id), 1.0))
+	return clampf(base * war_mul, 0.0, 0.95)
+
+
+## 把船上 qty 件货赊给本港牙行。成功返回 {ok, msg, entry}；不改 debt / contract。
+func sell_on_credit(port_id: String, good_id: String, qty: int) -> Dictionary:
+	if qty <= 0:
+		return {"ok": false, "msg": "【赊销】件数不对。"}
+	if port_id == "" or not Economy.is_traded(port_id, good_id):
+		return {"ok": false, "msg": "【赊销】这件货本港牙行不收。"}
+	if not Economy.is_market_open(port_id):
+		return {"ok": false, "msg": "【赊销】牙行闭门，赊不出。"}
+	if Fleet.cargo_qty(good_id) < qty:
+		return {"ok": false, "msg": "【赊销】舱里没有这些货。"}
+	var unit := Economy.credit_sale_price(port_id, good_id, qty)
+	if unit <= 0:
+		return {"ok": false, "msg": "【赊销】牙人开不出价。"}
+	if not Fleet.remove_cargo(good_id, qty):
+		return {"ok": false, "msg": "【赊销】舱里没有这些货。"}
+	var day := Calendar.absolute_day()
+	var entry := {
+		"id": "bc_%d_%d" % [day, _stable_hash("%s|%s|%d|%d|%d" % [port_id, good_id, day, qty, unit])],
+		"port": port_id,
+		"good": good_id,
+		"qty": qty,
+		"unit_price": unit,
+		"due_ym": broker_credit_due_ym(),
+	}
+	broker_credit.append(entry)
+	Economy.apply_sell_impact(port_id, good_id, qty)
+	var msg := "【赊销】%s ×%d 交与%s牙行，言明每件 %d 钱，%s个月后结。" % [
+		GameManager.get_good_name(good_id), qty, GameManager.get_port_name(port_id), unit,
+		GameManager.cn_num(Economy.CREDIT_TERM_MONTHS, true),
+	]
+	return {"ok": true, "msg": msg, "entry": entry}
+
+
+## 到期赊账逐笔结清：按 id 定骰，倒账则货钱两空，否则按锁价付款。返回本月通告。
+func settle_broker_credit() -> Array:
+	var lines: Array = []
+	var now_ym := Calendar.year * 12 + Calendar.month
+	var keep: Array = []
+	for raw in broker_credit:
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = raw
+		if int(rec.get("due_ym", 0)) > now_ym:
+			keep.append(rec)
+			continue
+		var pid := str(rec.get("port", ""))
+		var gid := str(rec.get("good", ""))
+		var qty := int(rec.get("qty", 0))
+		var amount := qty * int(rec.get("unit_price", 0))
+		if amount <= 0:
+			continue
+		var roll := float(_stable_hash(str(rec.get("id", "")))) / 1000003.0
+		if roll < broker_credit_default_chance(pid):
+			lines.append("【倒账】%s牙行关了门，%s %d 件赊账没了着落。" % [
+				GameManager.get_port_name(pid), GameManager.get_good_name(gid), qty,
+			])
+		else:
+			add_money(amount)
+			lines.append("【赊账】%s牙行还了%s %d 件赊账，得 %d 钱。" % [
+				GameManager.get_port_name(pid), GameManager.get_good_name(gid), qty, amount,
+			])
+	broker_credit = keep
+	return lines
+
+
+## 未到期的赊销本金合计（账面数，不含倒账风险）。
+func broker_credit_outstanding() -> int:
+	var total := 0
+	for raw in broker_credit:
+		if typeof(raw) == TYPE_DICTIONARY:
+			total += int(raw.get("qty", 0)) * int(raw.get("unit_price", 0))
+	return total
+
+
+## 读档归一：坏条目丢掉，id 去重，字段只留定形六格。
+func _broker_credit_normalize(raw) -> Array:
+	var out: Array = []
+	if typeof(raw) != TYPE_ARRAY:
+		return out
+	var seen := {}
+	for item in raw:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = item
+		var id := str(rec.get("id", "")).strip_edges()
+		var port_id := str(rec.get("port", "")).strip_edges()
+		var good_id := str(rec.get("good", "")).strip_edges()
+		var qty := int(rec.get("qty", 0))
+		var unit := int(rec.get("unit_price", 0))
+		var due := int(rec.get("due_ym", 0))
+		if id == "" or port_id == "" or good_id == "" or qty <= 0 or unit <= 0 or due <= 0:
+			continue
+		if seen.has(id):
+			continue
+		seen[id] = true
+		out.append({
+			"id": id, "port": port_id, "good": good_id,
+			"qty": qty, "unit_price": unit, "due_ym": due,
+		})
+	return out
+
+
 # ── 存档 ──────────────────────────────────────────────
 
 func to_dict() -> Dictionary:
@@ -1265,6 +1388,7 @@ func to_dict() -> Dictionary:
 		"flags": flags,
 		"network": network,
 		"merchant_credit": merchant_credit,
+		"broker_credit": broker_credit,
 		"sea_tendency": sea_tendency,
 		"scholar_tendency": scholar_tendency,
 		"ledger_notes": ledger_notes,
@@ -1315,6 +1439,7 @@ func from_dict(d: Dictionary) -> void:
 	flags = d.get("flags", {})
 	network = int(d.get("network", 0))
 	merchant_credit = int(d.get("merchant_credit", 0))
+	broker_credit = _broker_credit_normalize(d.get("broker_credit", []))
 	sea_tendency = int(d.get("sea_tendency", 0))
 	scholar_tendency = int(d.get("scholar_tendency", 0))
 	# 旧档里剧情记下的是令牌，读回时照 LEDGER_NOTE_TEXT 换成字（add_ledger_note 同一道，顺带去重）

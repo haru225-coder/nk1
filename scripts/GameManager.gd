@@ -176,6 +176,8 @@ func advance_days(n: int) -> void:
 			_settle_history(gone)
 			for w in Economy.on_month_changed():
 				monthly_notice.emit(w)
+			for w in GameState.settle_broker_credit():
+				monthly_notice.emit(w)
 		Economy.on_day_passed()
 		Fleet.on_day_passed()
 		var broke := GameState.tick_contract()

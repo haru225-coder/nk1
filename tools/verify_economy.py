@@ -2623,6 +2623,25 @@ if "--tongshi-table" in sys.argv[1:]:
     print(f"  参照：小艍船舱位 {cap_sampan} 料；青白瓷每件 {goods['qingbai_porcelain']['bulk']} 料 → 满舱约 "
           f"{int(cap_sampan / goods['qingbai_porcelain']['bulk'])} 件（未扣水粮）。")
 
+# ── EV、牙人赊销（lane sim4）──────────────────────────────
+CREDIT_PREMIUM = gd_const("scripts/core/Economy.gd", "CREDIT_PREMIUM")
+CREDIT_TERM_MONTHS = int(gd_const("scripts/core/Economy.gd", "CREDIT_TERM_MONTHS"))
+CREDIT_BASE_DEFAULT = gd_const("scripts/core/Economy.gd", "CREDIT_BASE_DEFAULT")
+CREDIT_DEFAULT_RELIEF = gd_const("scripts/core/Economy.gd", "CREDIT_DEFAULT_RELIEF")
+CREDIT_DEFAULT_FLOOR = gd_const("scripts/core/Economy.gd", "CREDIT_DEFAULT_FLOOR")
+print()
+print("EV、牙人赊销（lane sim4）")
+print("=" * 68)
+print("  贴水 %.0f%%、期限 %d 月、倒账基率 %.0f%%、信用减免 %.3f、最低 %.0f%%。" % (
+    CREDIT_PREMIUM * 100, CREDIT_TERM_MONTHS, CREDIT_BASE_DEFAULT * 100,
+    CREDIT_DEFAULT_RELIEF, CREDIT_DEFAULT_FLOOR * 100))
+check(CREDIT_PREMIUM > 0, "赊销贴水为正")
+check(CREDIT_TERM_MONTHS >= 1, "赊销期限至少一月")
+check(CREDIT_DEFAULT_FLOOR >= 0.0 and CREDIT_DEFAULT_FLOOR <= CREDIT_BASE_DEFAULT,
+      "最低倒账率不高于基率")
+check(CREDIT_PREMIUM > CREDIT_DEFAULT_FLOOR,
+      "贴水 %.0f%% 高于最低倒账率 %.0f%%（premium vs default）" % (CREDIT_PREMIUM * 100, CREDIT_DEFAULT_FLOOR * 100))
+
 print()
 print("=" * 68)
 if fails:

@@ -655,3 +655,21 @@ func seasonal_mul(good_id: String, month: int = -1) -> float:
 		month = Calendar.month
 	var row = SEASONAL_MUL.get(good_id, {})
 	return float(row.get(month, 1.0))
+
+# ── 牙人赊销（lane sim4）─────────────────────────────
+## 赊销价 = 眼下卖价锁死，另加延后结账的贴水；不改 price_at_rate / 抽解 / 牙人佣金。
+## 两月后到期；倒账概率随海商信用降低、随战况升高。概率在 GameState.broker_credit_default_chance 里按笔定骰。
+const CREDIT_PREMIUM := 0.08
+const CREDIT_TERM_MONTHS := 2
+const CREDIT_BASE_DEFAULT := 0.08
+const CREDIT_DEFAULT_RELIEF := 0.003
+const CREDIT_DEFAULT_FLOOR := 0.02
+const CREDIT_WAR_DEFAULT := {"loyal": 1.0, "contested": 1.5, "besieged": 2.5, "fallen": 4.0, "closed": 4.0}
+
+
+## 赊 qty 件的每件锁价：按现卖逐件压价的均价（estimate_sell_revenue）加贴水，赊多了也照样压价，不成套利。
+func credit_sale_price(port_id: String, good_id: String, qty: int = 1) -> int:
+	var n := maxi(1, qty)
+	var avg := float(estimate_sell_revenue(port_id, good_id, n)) / float(n)
+	return maxi(1, int(round(avg * (1.0 + CREDIT_PREMIUM))))
+

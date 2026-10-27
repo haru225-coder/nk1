@@ -480,7 +480,7 @@ func _check_partitions(data: Dictionary) -> String:
 	var state: Dictionary = _as_dict(data.get("state", {}))
 	# beats_seen（拍账，lane w53-5 二轮补）同属直赋强类型 Array：给成别的型 from_dict 当场中断，拍账与 loaded_with_beats 串上一份档
 	why = _bad_fields(state, STATE_NUM_KEYS, ["era_routes", "port_bans", "siege", "rumors", "contract_ban"],
-			["ledger_notes", "visited_ports", "news_seen", "beats_seen", "crew_history", "met_ids"])
+			["ledger_notes", "visited_ports", "news_seen", "beats_seen", "crew_history", "met_ids", "broker_credit"])
 	if why != "":
 		return "state." + why
 	# 单格字符串 / 布尔位（from_dict 直赋强类型字段，给了却非该型即坏）

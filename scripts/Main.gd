@@ -1776,7 +1776,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	sall.pressed.connect(_on_sell.bind(port_id, good_id, held, -1))
 	sall.tooltip_text = _market_sell_tip(port_id, good_id, -1, held)
 	sell_row.add_child(sall)
-	UiTheme.style_chip(sall)
+	UiTheme.style_chip(sall); _mount_credit_chip(sell_row, port_id, good_id, held)  # 「赊 10」见文末
 
 	return card
 
@@ -5516,3 +5516,37 @@ func _open_districts() -> void:
 func _offer_season_note(good_id: String) -> void:
 	if not is_equal_approx(Economy.seasonal_mul(good_id), 1.0):
 		_COMBAT_NOTES.offer(self, "seasonal_price")
+
+
+## 牙人赊销（lane sim4）：货卡卖钮一行末尾「赊 10」。放在 Main 末尾，不挪 main_splits 记的转发快照行号。
+func _mount_credit_chip(sell_row: HBoxContainer, port_id: String, good_id: String, held: int) -> void:
+	var n := mini(10, held - GameState.contract_kept(good_id))
+	var c := Button.new()
+	c.text = "赊 %d" % maxi(n, 0) if n > 0 and n < 10 else "赊 10"
+	c.disabled = n <= 0
+	c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	c.custom_minimum_size = Vector2(0, 28)
+	c.pressed.connect(_on_credit_sell.bind(port_id, good_id, n))
+	if n > 0:
+		var unit := Economy.credit_sale_price(port_id, good_id, n)
+		var risk := int(round(GameState.broker_credit_default_chance(port_id) * 100.0))
+		c.tooltip_text = "交与牙人赊卖，言明每件 %d 钱，%s个月后结。\n牙行倒账则货钱两空，眼下约百中%s。" % [
+			unit, GameManager.cn_num(Economy.CREDIT_TERM_MONTHS, true), GameManager.cn_num(maxi(risk, 1)),
+		]
+	sell_row.add_child(c)
+	UiTheme.style_chip(c)
+
+
+func _on_credit_sell(port_id: String, good_id: String, amount: int) -> void:
+	if good_id not in broker_hand:
+		log_msg("这件今日不在柜上。")
+		return
+	var n := mini(amount, Fleet.cargo_qty(good_id) - GameState.contract_kept(good_id))
+	if n <= 0:
+		return
+	var res: Dictionary = GameState.sell_on_credit(port_id, good_id, n)
+	log_msg(str(res.get("msg", "")))
+	if bool(res.get("ok", false)):
+		_offer_season_note(good_id)
+	_market_hold = true
+	load_scene(current_scene_id)
