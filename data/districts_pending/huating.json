@@ -1,0 +1,679 @@
+{
+ "districts": [
+  {
+   "id": "ht_cheng",
+   "port": "huating",
+   "pending_port": true,
+   "name": "华亭县城",
+   "kind": "street",
+   "pending_art": true,
+   "bg": "bg_dist_ht_cheng.jpg",
+   "description": "华亭县城在吴淞江之南，县衙坐北，市河穿城。庆元元年秀州升为嘉兴府，华亭仍是属县，县前每日辰时开市。",
+   "interactions": [
+    {
+     "id": "ht_cheng_yamen",
+     "type": "favour",
+     "label": "递状纸",
+     "text": "县衙前廊排着递状的人。你替船户把状纸递进东廊的木匣，书吏抬头问了一句船号。",
+     "cost": 20,
+     "once_per": "month",
+     "effects": {
+      "network": 1,
+      "favour": 1
+     }
+    },
+    {
+     "id": "ht_cheng_market",
+     "type": "choice",
+     "label": "县前米摊",
+     "text": "县前米摊的牙人把斗斛刮平，说今年秋粮到得迟，问你要不要先粜一石。",
+     "options": [
+      {
+       "id": "ht_cheng_market_sell",
+       "label": "粜一石",
+       "text": "你让伙计量出一石米。牙人把钱数在柜上，又替你记了一笔县仓的账。",
+       "cost": 0,
+       "effects": {
+        "cargo_take": {
+         "good": "grain",
+         "qty": 1
+        },
+        "money": 20,
+        "merchant_credit": 1
+       }
+      },
+      {
+       "id": "ht_cheng_market_hold",
+       "label": "再等等",
+       "text": "你把米袋口重新扎紧，说等河上下一批船到。牙人把斗斛放回架上。",
+       "cost": 0,
+       "effects": {
+        "merchant_credit": 1
+       }
+      }
+     ]
+    },
+    {
+     "id": "ht_cheng_rumor",
+     "type": "rumor",
+     "label": "听县前",
+     "text": "县衙清丈田亩，秋粮提前开征，漕司把华亭的米改拨庆元仓，庆元米行的斗价跟着往下压。",
+     "cost": 12,
+     "cooldown_days": 35,
+     "port": "mingzhou",
+     "good": "grain",
+     "mul": 0.9
+    }
+   ]
+  },
+  {
+   "id": "ht_qinglong",
+   "port": "huating",
+   "pending_port": true,
+   "name": "青龙镇",
+   "kind": "dock",
+   "pending_art": true,
+   "bg": "bg_dist_ht_qinglong.jpg",
+   "description": "青龙镇在吴淞江与青龙江交汇处，北宋政和三年华亭置市舶务，蕃舶多泊于此。南宋青龙江屡淤，商舶渐少，镇市只剩盐船与米船。",
+   "interactions": [
+    {
+     "id": "ht_qinglong_berth",
+     "type": "favour",
+     "label": "问旧泊位",
+     "text": "老牙人领你走到旧市舶务的石阶前。阶下只剩两条盐船，缆绳磨得发白。",
+     "cost": 10,
+     "once_per": "month",
+     "effects": {
+      "network": 1,
+      "note": "青龙镇旧泊位看过。"
+     }
+    },
+    {
+     "id": "ht_qinglong_choice",
+     "type": "choice",
+     "label": "旧货栈",
+     "text": "市舶务旧仓的瓦缝漏雨，牙人问你要不要租下半间堆货。",
+     "options": [
+      {
+       "id": "ht_qinglong_choice_rent",
+       "label": "租半间",
+       "text": "你付了租钱。牙人把仓门推开，霉味里还留着旧抽解簿的纸灰。",
+       "cost": 30,
+       "effects": {
+        "merchant_credit": 1,
+        "network": 1
+       }
+      },
+      {
+       "id": "ht_qinglong_choice_pass",
+       "label": "不租",
+       "text": "你看了看仓梁，摇头。牙人把门重新闩上，说这仓再放两年就要塌。",
+       "cost": 0,
+       "effects": {
+        "merchant_credit": 1
+       }
+      }
+     ]
+    },
+    {
+     "id": "ht_qinglong_rumor",
+     "type": "rumor",
+     "label": "听镇口",
+     "text": "青龙江又浅，镇前泊位空了大半。庆元的绢船不再进来，绢帛积在庆元码头，牙人只好让价。",
+     "cost": 12,
+     "cooldown_days": 40,
+     "port": "mingzhou",
+     "good": "silk_fabric",
+     "mul": 0.92
+    }
+   ]
+  },
+  {
+   "id": "ht_longping",
+   "port": "huating",
+   "pending_port": true,
+   "name": "隆平寺塔",
+   "kind": "temple",
+   "pending_art": true,
+   "bg": "bg_dist_ht_longping.jpg",
+   "description": "隆平寺是青龙镇北寺，塔始建于北宋天圣年间，七级八角，砖身木檐。塔立江口，海舶入港先认塔影。",
+   "interactions": [
+    {
+     "id": "ht_longping_climb",
+     "type": "favour",
+     "label": "登塔望江",
+     "text": "你沿木梯上到第五级，吴淞江在塔下拐了一个弯，远处盐场的灶烟贴着水面。",
+     "cost": 10,
+     "once_per": "year",
+     "effects": {
+      "scholar_tendency": 1,
+      "fame": 1
+     }
+    },
+    {
+     "id": "ht_longping_brick",
+     "type": "choice",
+     "label": "认修塔砖",
+     "text": "塔身有几块砖裂了，僧人捧出缘簿，说舍砖的人可以把名字模在砖侧。",
+     "options": [
+      {
+       "id": "ht_longping_brick_give",
+       "label": "舍砖",
+       "text": "你付了砖钱。僧人把一张砖样拓纸递给你，墨里还带着潮气。",
+       "cost": 30,
+       "effects": {
+        "fame": 2,
+        "note": "隆平寺塔舍过砖。"
+       }
+      },
+      {
+       "id": "ht_longping_brick_pass",
+       "label": "不署名",
+       "text": "你把缘簿合上推回，只绕着塔基走了一圈。僧人在簿上留了一页空白。",
+       "cost": 0,
+       "effects": {
+        "merchant_credit": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ht_junhe",
+   "port": "huating",
+   "pending_port": true,
+   "name": "青龙江浚河",
+   "kind": "dam",
+   "pending_art": true,
+   "bg": "bg_dist_ht_junhe.jpg",
+   "description": "青龙江承吴淞江，泥沙易淤。官府年年征夫开河，役夫把河泥挑上两岸，商舶在口外候潮。",
+   "interactions": [
+    {
+     "id": "ht_junhe_labor",
+     "type": "favour",
+     "label": "助役",
+     "text": "河段上缺挑夫，你把一担河泥从泥淖里挑到岸上。监工的吏人把你的船号写在役簿边。",
+     "cost": 0,
+     "once_per": "month",
+     "effects": {
+      "network": 1,
+      "hometown_tendency": 1
+     }
+    },
+    {
+     "id": "ht_junhe_choice",
+     "type": "choice",
+     "label": "分段",
+     "text": "吏人把河工分成两段，一段在镇前，一段通盐场支河。问你的人夫先开哪一段。",
+     "options": [
+      {
+       "id": "ht_junhe_choice_town",
+       "label": "先开镇前",
+       "text": "你让夫役先清镇前淤沙。镇上的牙人提了茶来，说往后泊船先给你留位。",
+       "cost": 10,
+       "effects": {
+        "merchant_credit": 1,
+        "network": 1
+       }
+      },
+      {
+       "id": "ht_junhe_choice_salt",
+       "label": "先开盐河",
+       "text": "你让夫役先开盐场支河。亭户把一包粗盐塞进你舱里，没说是哪一灶的。",
+       "cost": 10,
+       "effects": {
+        "hometown_tendency": 1,
+        "favour": 1
+       }
+      }
+     ]
+    },
+    {
+     "id": "ht_junhe_rumor",
+     "type": "rumor",
+     "label": "听河工",
+     "text": "漕司截下庆元米纲充作浚河工食，庆元仓里一时见底，城中米铺先挂出了高价牌。",
+     "cost": 12,
+     "cooldown_days": 35,
+     "port": "mingzhou",
+     "good": "grain",
+     "mul": 1.12
+    }
+   ]
+  },
+  {
+   "id": "ht_shanghai",
+   "port": "huating",
+   "pending_port": true,
+   "name": "上海镇",
+   "kind": "market",
+   "pending_art": true,
+   "bg": "bg_dist_ht_shanghai.jpg",
+   "unlock": {
+    "year_min": 1265
+   },
+   "description": "上海镇滨上海浦，宋末设镇。商舶渐聚，榷货场临浦，牙人把新到的货单摊在案上。",
+   "interactions": [
+    {
+     "id": "ht_shanghai_berth",
+     "type": "favour",
+     "label": "看泊位",
+     "text": "浦口新添了木桩，牙人领你从滩边走到榷货场后门。泊位按船宽分，宽一尺多收十钱。",
+     "cost": 10,
+     "once_per": "month",
+     "effects": {
+      "network": 1,
+      "sea_tendency": 1
+     }
+    },
+    {
+     "id": "ht_shanghai_hire",
+     "type": "hire",
+     "label": "雇舶牙",
+     "text": "舶牙姓顾，识得上海浦的潮候，也识得榷货场收筹的次序。",
+     "who": "舶牙",
+     "cost": 80,
+     "wage": 12,
+     "attention_ease": 0,
+     "monthly_effects": {
+      "network": 1
+     }
+    },
+    {
+     "id": "ht_shanghai_rumor",
+     "type": "rumor",
+     "label": "听榷货场",
+     "text": "上海镇新泊的蕃舶要福建瓷，泉州的瓷船多半改走北路，留在泉州的瓷货一时紧了。",
+     "cost": 15,
+     "cooldown_days": 40,
+     "port": "quanzhou",
+     "good": "fujian_porcelain",
+     "mul": 1.12
+    }
+   ]
+  },
+  {
+   "id": "ht_luyu",
+   "port": "huating",
+   "pending_port": true,
+   "name": "吴淞江鲈鱼",
+   "kind": "ferry",
+   "pending_art": true,
+   "bg": "bg_dist_ht_luyu.jpg",
+   "description": "吴淞江旧称松江，秋深水落，鲈鱼正肥。范仲淹有「江上往来人，但爱鲈鱼美」之句，张翰思莼鲈弃官归吴，后人称为莼鲈之思。",
+   "interactions": [
+    {
+     "id": "ht_luyu_fish",
+     "type": "favour",
+     "label": "买鲈鱼",
+     "text": "渔船傍岸，渔人从舱底提出一尾鲈鱼，鳃还张着。你用草绳穿了鱼鳃，又向他讨了一撮水草。",
+     "cost": 15,
+     "once_per": "year",
+     "unlock": {
+      "months": [
+       9,
+       10,
+       11
+      ]
+     },
+     "effects": {
+      "network": 1,
+      "favour": 1
+     }
+    },
+    {
+     "id": "ht_luyu_song",
+     "type": "choice",
+     "label": "渔歌",
+     "text": "老渔人收网时唱起「江上往来人」，调子拖得很长。他唱完看着你，等你给个赏。",
+     "options": [
+      {
+       "id": "ht_luyu_song_give",
+       "label": "给赏",
+       "text": "你把几文钱放在船板上。老渔人把钱收进竹筒，又唱了一遍，这回加了两句当地的土腔。",
+       "cost": 10,
+       "effects": {
+        "hometown_tendency": 1,
+        "fame": 1
+       }
+      },
+      {
+       "id": "ht_luyu_song_note",
+       "label": "记下歌词",
+       "text": "你从舱里取出纸笔，把歌词记下。老渔人凑过来看，说字比他唱的好看。",
+       "cost": 0,
+       "effects": {
+        "scholar_tendency": 1,
+        "network": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ht_yanting",
+   "port": "huating",
+   "pending_port": true,
+   "name": "华亭盐场",
+   "kind": "workshop",
+   "pending_art": true,
+   "bg": "bg_dist_ht_yanting.jpg",
+   "description": "华亭东南滨海，盐场煮海为盐。亭户把海水引入卤池，煎成盐，按灶纳课。",
+   "interactions": [
+    {
+     "id": "ht_yanting_watch",
+     "type": "favour",
+     "label": "看煎盐",
+     "text": "亭户掀开灶上的盐锅，卤水已经结出白粒。他用木耙推了推，热气扑到你脸上。",
+     "cost": 10,
+     "once_per": "month",
+     "effects": {
+      "network": 1,
+      "note": "华亭盐场看过煎盐。"
+     }
+    },
+    {
+     "id": "ht_yanting_choice",
+     "type": "choice",
+     "label": "借柴钱",
+     "text": "盐官催课，亭户的柴堆见了底。老亭户问你肯不肯先借一笔柴钱。",
+     "options": [
+      {
+       "id": "ht_yanting_choice_lend",
+       "label": "借柴钱",
+       "text": "你把钱数给老亭户。他翻过灶牌，在背面刻了一道记号，约定秋后归还。",
+       "cost": 20,
+       "effects": {
+        "hometown_tendency": 1,
+        "favour": 1
+       }
+      },
+      {
+       "id": "ht_yanting_choice_refuse",
+       "label": "不借",
+       "text": "你摇头，说船上也要用钱。老亭户把灶牌挂回墙上，没再说话。",
+       "cost": 0,
+       "effects": {
+        "merchant_credit": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ht_xianxue",
+   "port": "huating",
+   "pending_port": true,
+   "name": "华亭县学",
+   "kind": "academy",
+   "pending_art": true,
+   "bg": "bg_dist_ht_xianxue.jpg",
+   "description": "县学创于北宋，南渡后屡经修葺。堂前有题名碑，斋舍夜里常有人读书。",
+   "interactions": [
+    {
+     "id": "ht_xianxue_visit",
+     "type": "favour",
+     "label": "谒学",
+     "text": "你随士子走进讲堂，先圣位前只摆着几案与香炉。学正让你在廊下听讲，不算学籍。",
+     "cost": 10,
+     "once_per": "year",
+     "effects": {
+      "scholar_tendency": 1,
+      "fame": 1
+     }
+    },
+    {
+     "id": "ht_xianxue_choice",
+     "type": "choice",
+     "label": "借书",
+     "text": "斋舍的藏书不足，一个士子听说你船上有建本，问能不能借两册。",
+     "options": [
+      {
+       "id": "ht_xianxue_choice_lend",
+       "label": "借书",
+       "text": "你让伙计把书送到斋舍。士子用油纸包了书皮，说读完了亲自还到船上。",
+       "cost": 0,
+       "effects": {
+        "scholar_tendency": 1,
+        "network": 1
+       }
+      },
+      {
+       "id": "ht_xianxue_choice_refuse",
+       "label": "书在舱底",
+       "text": "你说书压在舱底，一时翻不出来。士子拱手谢过，转身去问邻船。",
+       "cost": 0,
+       "effects": {
+        "merchant_credit": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ht_jiufeng",
+   "port": "huating",
+   "pending_port": true,
+   "name": "九峰与佘山",
+   "kind": "hill",
+   "pending_art": true,
+   "bg": "bg_dist_ht_jiufeng.jpg",
+   "description": "华亭西北诸峰自佘山迤西，山不高而寺多。天马山圆智寺后有护珠塔，元丰间所建，塔砖已旧。",
+   "interactions": [
+    {
+     "id": "ht_jiufeng_climb",
+     "type": "favour",
+     "label": "登佘山",
+     "text": "你从山寺后的石径上到山脊，几处寺院的屋脊在树里露出来。江风从东边来，带着盐场的咸味。",
+     "cost": 10,
+     "once_per": "year",
+     "effects": {
+      "scholar_tendency": 1,
+      "fame": 1
+     }
+    },
+    {
+     "id": "ht_jiufeng_choice",
+     "type": "choice",
+     "label": "修塔",
+     "text": "圆智寺的护珠塔掉了两片塔砖，僧人把缘簿摊在塔基上。",
+     "options": [
+      {
+       "id": "ht_jiufeng_choice_give",
+       "label": "捐砖",
+       "text": "你付了砖钱。僧人在缘簿上记下你的船号，说下回塔砖烧好，替你留一块。",
+       "cost": 25,
+       "effects": {
+        "fame": 1,
+        "favour": 1
+       }
+      },
+      {
+       "id": "ht_jiufeng_choice_pass",
+       "label": "只绕塔",
+       "text": "你没接缘簿，绕塔走了一圈。塔影落在山道上，比寺门还长。",
+       "cost": 0,
+       "effects": {
+        "network": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ht_haitang",
+   "port": "huating",
+   "pending_port": true,
+   "name": "捍海塘",
+   "kind": "dam",
+   "pending_art": true,
+   "bg": "bg_dist_ht_haitang.jpg",
+   "description": "华亭海塘在县东南，乾道间修濒海诸堰，筑塘御潮。塘内是盐场与田亩，塘外是滩涂。",
+   "interactions": [
+    {
+     "id": "ht_haitang_walk",
+     "type": "favour",
+     "label": "巡塘",
+     "text": "塘长带你从闸口走到塘脚，潮水刚退，塘泥上留着蟹洞。他指给你看去年补过的一段。",
+     "cost": 0,
+     "once_per": "month",
+     "effects": {
+      "network": 1,
+      "hometown_tendency": 1
+     }
+    },
+    {
+     "id": "ht_haitang_choice",
+     "type": "choice",
+     "label": "修塘",
+     "text": "塘脚被潮水掏空了一截，塘长要募夫补土。他问你出钱还是出人。",
+     "options": [
+      {
+       "id": "ht_haitang_choice_money",
+       "label": "出钱",
+       "text": "你把钱交给塘长。他让夫役先去挑土，说这段塘要在下个潮期前补齐。",
+       "cost": 30,
+       "effects": {
+        "fame": 1,
+        "favour": 1
+       }
+      },
+      {
+       "id": "ht_haitang_choice_men",
+       "label": "出人",
+       "text": "你从船上点了两个人去挑土。塘长把他们的名字写在塘簿上，说管一顿饭。",
+       "cost": 0,
+       "effects": {
+        "hometown_tendency": 1,
+        "martial": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ht_bubo",
+   "port": "huating",
+   "pending_port": true,
+   "name": "布帛行",
+   "kind": "market",
+   "pending_art": true,
+   "bg": "bg_dist_ht_bubo.jpg",
+   "description": "县城东的布帛行收绫绢与苎布，货多从嘉兴府各乡机户来。行老验过经纬，税场在巷口抽商税。",
+   "interactions": [
+    {
+     "id": "ht_bubo_invest",
+     "type": "invest",
+     "label": "入股布帛行",
+     "text": "行老想多收几匹秋绢，缺一笔本钱。柜上摊着刚下机的绫，他问你要不要搭一份股。",
+     "shop": "布帛行",
+     "costs": [
+      300,
+      700
+     ],
+     "monthly": [
+      15,
+      36
+     ]
+    },
+    {
+     "id": "ht_bubo_sell",
+     "type": "sell",
+     "label": "出绢帛",
+     "text": "你把舱里的绢帛搬上柜台。行老先看边幅，再用尺量了长短，按匹给价。",
+     "good": "silk_fabric",
+     "qty": 2,
+     "price_mul": 1.02,
+     "impact": false
+    },
+    {
+     "id": "ht_bubo_rumor",
+     "type": "rumor",
+     "label": "听行老",
+     "text": "嘉兴府和买绢加码，机户先把官匹留下。运到庆元的绢帛少了两成，绢行的人手里攥着货不肯放。",
+     "cost": 12,
+     "cooldown_days": 35,
+     "port": "mingzhou",
+     "good": "silk_fabric",
+     "mul": 1.12
+    }
+   ]
+  },
+  {
+   "id": "ht_shibo",
+   "port": "huating",
+   "pending_port": true,
+   "name": "上海市舶司",
+   "kind": "office",
+   "pending_art": true,
+   "bg": "bg_dist_ht_shibo.jpg",
+   "unlock": {
+    "year_min": 1277,
+    "year_max": 1279
+   },
+   "description": "至元十四年，元于上海镇设市舶司，抽解蕃货，发给公凭。司署临上海浦，验货的棚子搭在榷货场西侧。",
+   "interactions": [
+    {
+     "id": "ht_shibo_licence",
+     "type": "licence",
+     "label": "请公凭",
+     "text": "司署书吏收了保状，从案上抽出一张公凭。朱印压在纸角，编号用墨笔填在骑缝。",
+     "cost": 500,
+     "licence": "lic_ht_shibo",
+     "unlock": {
+      "year_min": 1277
+     },
+     "effects": {
+      "merchant_credit": 2,
+      "fame": 1
+     }
+    },
+    {
+     "id": "ht_shibo_choice",
+     "type": "choice",
+     "label": "验货",
+     "text": "市舶司吏人把你的蕃货单摊开，问要不要照实报抽解。",
+     "options": [
+      {
+       "id": "ht_shibo_choice_report",
+       "label": "照实报",
+       "text": "你把货单推回去，让吏人逐件验过。他在单尾画了押，说往后上海口的船先验你的。",
+       "cost": 10,
+       "effects": {
+        "merchant_credit": 2,
+        "network": 1
+       }
+      },
+      {
+       "id": "ht_shibo_choice_hide",
+       "label": "少报两件",
+       "text": "你抽回两件货单，把余下的推过去。吏人没抬头，只在簿上添了一笔。",
+       "cost": 0,
+       "effects": {
+        "money": 15,
+        "pu_attention": 2
+       }
+      }
+     ]
+    },
+    {
+     "id": "ht_shibo_rumor",
+     "type": "rumor",
+     "label": "听司署",
+     "text": "上海新开市舶司，抽解比庆元轻，日本铜商改投上海，庆元的铜货一月少了好几船。",
+     "cost": 15,
+     "cooldown_days": 40,
+     "port": "mingzhou",
+     "good": "japanese_copper",
+     "mul": 1.1
+    }
+   ]
+  }
+ ]
+}
