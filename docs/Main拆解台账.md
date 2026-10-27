@@ -418,7 +418,7 @@ lane main10 的 brief 也点了「把 verify_economy / smoke 的直读改到拆�
 |---|---|---|---|
 | `_yard_port_name()` | 1886–1891 | `{港}_shipyard` 剥尾取港名，取不到回 `last_port` | 簇内 1 处（题签） |
 | `_yard_success_transition(act)` | 1894–1901 | `await play_transition(drydock_title, 历法日期, load_scene 本页, drydock_seal)` | 簇内 4 处（换坞 / 修船 / 购入 / 升级） |
-| `_setup_shipyard(port_id)` | 1904–2046 | 坞位一艘（升帆 / 升甲 / 添人 / 换上）→ 补给（水粮 30 / 100、修船、补齐人手）→ 蕃商赊贷（赊 500 / 2000、还）→ 坞外待售 → 离开钮 | `_setup_dynamic_scene`（1111） |
+| `_setup_shipyard(port_id)` | 1904–2046 | 坞位一艘（升帆 / 升甲 / 升捻 / 添人 / 换上）→ 补给（水粮 30 / 100、修船、补齐人手）→ 蕃商赊贷（赊 500 / 2000、还）→ 坞外待售 → 离开钮 | `_setup_dynamic_scene`（1111） |
 | `_yard_offer(catalog, sid)` | 2049–2056 | 按 id 在船表里找一行，非字典跳过 | 簇内 1 处 |
 | `_on_berth_switch(ship_index)` | 2059–2066 | 夹回船队 → 同一艘不理 → 写 `berth_index` → 记事 → 换坞题签 | 「换上」钮 |
 | `_on_repair_hull(cost)` | 2069–2081 | 连点闸 → 扣钱 → 上闸 → 修 → 题签 → 放闸；钱不够重载 | 「修船」钮 |

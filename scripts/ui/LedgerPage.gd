@@ -307,9 +307,9 @@ static func update_panel(main: Control) -> void:
 			var head := UiTheme.nobreak(sname)
 			if tname != "" and tname != sname:
 				head += "　" + UiTheme.nobreak(tname)
-			t += "　%s　%s\n　　%s　%s　[color=#%s]%s[/color]　%s\n" % [
+			t += "　%s　%s\n　　%s　%s　%s　[color=#%s]%s[/color]　%s\n" % [
 				head, UiTheme.nobreak("%d / %d 料" % [int(Fleet.ship_cargo_bulk(i)), int(Fleet.ship_capacity(i))]),
-				UiTheme.nobreak("帆" + main._fit_rank(Fleet.sail_level(i))), UiTheme.nobreak("甲" + main._fit_rank(Fleet.armor_level(i))),
+				UiTheme.nobreak("帆" + main._fit_rank(Fleet.sail_level(i))), UiTheme.nobreak("甲" + main._fit_rank(Fleet.armor_level(i))), UiTheme.nobreak("捻" + main._fit_rank(Fleet.seam_level(i))),
 				crew_color, crew_str, per_ship,
 			]
 

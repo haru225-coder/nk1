@@ -719,7 +719,7 @@ func _refugee_event() -> Dictionary:
 func _storm_event() -> Dictionary:
 	var severity := randf_range(0.3, 1.0)
 	# 每艘各吃这一份，再乘船数会把整场都堆到旗舰上。
-	var each := 12.0 * severity * Fleet.armor_damage_reduction()
+	var each := 12.0 * severity * Fleet.armor_damage_reduction() * Fleet.seam_damage_reduction()
 	var hull_dmg := Fleet.damage_each_ship(each)
 	# 易碎货按 fragile 系数受损
 	var lost := {}
@@ -733,7 +733,7 @@ func _storm_event() -> Dictionary:
 			continue
 		var q: int = Fleet.cargo[gid]["qty"]
 		# 总管分舱理货，风涛中的折损随之减轻
-		var l := mini(int(ceil(q * frag * severity * 0.5 * Crew.cargo_loss_factor())), q)
+		var l := mini(int(ceil(q * frag * severity * 0.5 * Crew.cargo_loss_factor() * Fleet.seam_damage_reduction())), q)
 		if l > 0:
 			Fleet.remove_cargo(gid, l)
 			lost[gid] = l
@@ -939,7 +939,7 @@ func _rumor_sentence(rumor: Dictionary) -> String:
 
 func _shoal_event() -> Dictionary:
 	# 傍岸一队船挨着走，每艘各擦一回、各吃 SHOAL_HULL（同风涛走 damage_each_ship；札记写实扣之和）。原先乘船数全压给旗舰——三船队旗舰一擦 15、护航不伤（lane w54-voyage）
-	var hull := Fleet.damage_each_ship(SHOAL_HULL * Fleet.armor_damage_reduction())
+	var hull := Fleet.damage_each_ship(SHOAL_HULL * Fleet.armor_damage_reduction() * Fleet.seam_damage_reduction())
 	Fleet.morale = maxi(0, Fleet.morale - 3)
 	return {
 		"kind": EventKind.SHOAL,

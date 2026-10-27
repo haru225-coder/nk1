@@ -53,8 +53,9 @@ static func setup_shipyard(main: Control, port_id: String) -> void:
 		var sname := Fleet.display_name(on)
 		var slv := Fleet.sail_level(on)
 		var alv := Fleet.armor_level(on)
+		var mlv := Fleet.seam_level(on)
 		var berth: VBoxContainer = main._slip_body()
-		main._slip_title(berth, "坞位　%s" % Fleet.ship_label(on), "帆　%s　甲　%s" % [main._fit_rank(slv), main._fit_rank(alv)])
+		main._slip_title(berth, "坞位　%s" % Fleet.ship_label(on), "帆　%s　甲　%s　捻　%s" % [main._fit_rank(slv), main._fit_rank(alv), main._fit_rank(mlv)])
 		_ShipArt.mount_plate(berth, str(hull.get("type", "")), 280)
 		main._slip_note(berth, "水手 %d / %d　耐久 %d / %d　载 %d 料" % [
 			Fleet.ship_crew(on),
@@ -80,6 +81,14 @@ static func setup_shipyard(main: Control, port_id: String) -> void:
 			var armor_phrase: String = main._armor_fit_phrase(alv)
 			armor_chip.tooltip_text = armor_phrase
 			main._slip_note(berth, armor_phrase)
+		if Fleet.is_seam_max(on):
+			main._slip_note(berth, "捻缝已是三等。")
+		else:
+			var mcost: int = Fleet.upgrade_cost(on, "seam")
+			var seam_chip: Button = main._slip_chip(fit_row, "升捻　%d" % mcost, main._on_upgrade.bind(on, "seam", mcost))
+			var seam_phrase: String = main._seam_fit_phrase(mlv)
+			seam_chip.tooltip_text = seam_phrase
+			main._slip_note(berth, seam_phrase)
 		var room: int = Fleet.ship_crew_room(on)
 		if room > 0:
 			var hire_n: int = mini(10, room)
@@ -289,10 +298,12 @@ static func on_upgrade(main: Control, ship_index: int, kind: String, shown_cost:
 		main.load_scene(main.current_scene_id)
 		return
 	var is_armor := kind == "armor"
-	var level_key := "armor_level" if is_armor else "sail_level"
-	var prev_lv: int = Fleet.armor_level(ship_index) if is_armor else Fleet.sail_level(ship_index)
-	if (Fleet.is_armor_max(ship_index) if is_armor else Fleet.is_sail_max(ship_index)):
-		main.log_msg("【满级】甲已无可再加。" if is_armor else "【满级】帆已无可再换。")
+	var is_seam := kind == "seam"
+	var level_key := "armor_level" if is_armor else ("seam_level" if is_seam else "sail_level")
+	var prev_lv: int = Fleet.armor_level(ship_index) if is_armor else (Fleet.seam_level(ship_index) if is_seam else Fleet.sail_level(ship_index))
+	var is_max: bool = Fleet.is_armor_max(ship_index) if is_armor else (Fleet.is_seam_max(ship_index) if is_seam else Fleet.is_sail_max(ship_index))
+	if is_max:
+		main.log_msg("【满级】甲已无可再加。" if is_armor else ("【满级】捻缝已无可再捻。" if is_seam else "【满级】帆已无可再换。"))
 		main.load_scene(main.current_scene_id)
 		return
 	# 按眼下等级重算，不信按钮上 bind 的旧价
@@ -301,9 +312,9 @@ static func on_upgrade(main: Control, ship_index: int, kind: String, shown_cost:
 		main.log_msg("【钱不够】船匠掂了掂银袋，摇了摇头。")
 		main.load_scene(main.current_scene_id)
 		return
-	var ok: bool = Fleet.upgrade_armor(ship_index) if is_armor else Fleet.upgrade_sail(ship_index)
+	var ok: bool = Fleet.upgrade_armor(ship_index) if is_armor else (Fleet.upgrade_seam(ship_index) if is_seam else Fleet.upgrade_sail(ship_index))
 	if not ok:
-		main.log_msg("【满级】甲已无可再加。" if is_armor else "【满级】帆已无可再换。")
+		main.log_msg("【满级】甲已无可再加。" if is_armor else ("【满级】捻缝已无可再捻。" if is_seam else "【满级】帆已无可再换。"))
 		main.load_scene(main.current_scene_id)
 		return
 	if not GameState.spend_money(cost):
@@ -320,6 +331,9 @@ static func on_upgrade(main: Control, ship_index: int, kind: String, shown_cost:
 	if is_armor:
 		main.log_msg("「%s」加厚了船壳，甲升至%s。" % [s.get("name", "船"), main._fit_rank(Fleet.armor_level(ship_index))])
 		act = "升甲"
+	elif is_seam:
+		main.log_msg("「%s」捻紧了船缝，捻缝升至%s。" % [s.get("name", "船"), main._fit_rank(Fleet.seam_level(ship_index))])
+		act = "捻缝"
 	else:
 		main.log_msg("「%s」换了新帆，帆升至%s。" % [s.get("name", "船"), main._fit_rank(Fleet.sail_level(ship_index))])
 		act = "升帆"

@@ -2,7 +2,7 @@ extends Node
 ## 舰队：船只、舱位、货物、补给、士气。
 ## 货分船、补给全队——每条船独立货舱，水/粮仍全队共用占全队总舱。
 
-## 每条船：{type, name, durability, max_durability, crew, sail_level, armor_level, cargo}
+## 每条船：{type, name, durability, max_durability, crew, sail_level, armor_level, seam_level, cargo}
 ## 其中 cargo 为该船独立货舱：{good_id: {"qty": int, "avg_cost": float}}
 var ships: Array = []
 
@@ -49,6 +49,7 @@ const CREW_DAYS_PER_SUPPLY := 2.0
 ## 改装上限。sail 满级航速 ×1.24，再高会架空季风候风；甲满级船体伤 ×0.80，风涛仍要命。
 const SAIL_LEVEL_MAX := 3
 const ARMOR_LEVEL_MAX := 3
+const SEAM_LEVEL_MAX := 3
 ## 升级成本 = ceil(船价 × 本比例 × 级数递增系数 × (甲则 ×1.25))，与每级 10% 加成同量级
 const UPGRADE_BASE_RATIO := 0.10
 
@@ -107,6 +108,7 @@ func add_ship(type_id: String, ship_name: String = "") -> bool:
 		"crew": int(d.get("crew_min", 5)),
 		"sail_level": 1,
 		"armor_level": 1,
+		"seam_level": 1,
 		"cargo": {},
 	})
 	return true
@@ -876,6 +878,13 @@ func armor_level(i: int) -> int:
 	return int(ships[i].get("armor_level", 1))
 
 
+## 指定船捻缝等级（越界返回 0）
+func seam_level(i: int) -> int:
+	if i < 0 or i >= ships.size():
+		return 0
+	return int(ships[i].get("seam_level", 1))
+
+
 func is_sail_max(i: int) -> bool:
 	return i < 0 or i >= ships.size() or sail_level(i) >= SAIL_LEVEL_MAX
 
@@ -884,12 +893,16 @@ func is_armor_max(i: int) -> bool:
 	return i < 0 or i >= ships.size() or armor_level(i) >= ARMOR_LEVEL_MAX
 
 
+func is_seam_max(i: int) -> bool:
+	return i < 0 or i >= ships.size() or seam_level(i) >= SEAM_LEVEL_MAX
+
+
 ## 指定船升级指定项到下一级的花费。满级返回 0（防御——调用方应先看 is_*_max）。
 func upgrade_cost(i: int, kind: String) -> int:
 	if i < 0 or i >= ships.size():
 		return 0
-	var lv := armor_level(i) if kind == "armor" else sail_level(i)
-	var mx := ARMOR_LEVEL_MAX if kind == "armor" else SAIL_LEVEL_MAX
+	var lv := armor_level(i) if kind == "armor" else (seam_level(i) if kind == "seam" else sail_level(i))
+	var mx := ARMOR_LEVEL_MAX if kind == "armor" else (SEAM_LEVEL_MAX if kind == "seam" else SAIL_LEVEL_MAX)
 	if lv >= mx:
 		return 0
 	var price := float(ship_def(ships[i].get("type", "")).get("price", 0))
@@ -910,6 +923,14 @@ func upgrade_armor(i: int) -> bool:
 	if is_armor_max(i):
 		return false
 	ships[i]["armor_level"] = armor_level(i) + 1
+	return true
+
+
+## 升捻缝。满级返回 false；只改等级不碰钱。
+func upgrade_seam(i: int) -> bool:
+	if is_seam_max(i):
+		return false
+	ships[i]["seam_level"] = seam_level(i) + 1
 	return true
 
 
@@ -935,6 +956,21 @@ func armor_damage_reduction() -> float:
 	for s in ships:
 		var w := float(s.get("max_durability", 1.0))
 		num += w * float(int(s.get("armor_level", 1)) - 1)
+		den += w
+	if den <= 0.0:
+		return 1.0
+	var avg := num / den
+	return clampf(1.0 - 0.10 * avg, 0.0, 1.0)
+
+
+## 全队水密捻缝系数：满级 0.80（最多减 20% 风涛 / 浅滩船体伤与货损），Lv1 为 1.0。
+## 风暴与浅滩船体伤、易碎货水损都乘此系数。加权口径同甲，防除零。
+func seam_damage_reduction() -> float:
+	var num := 0.0
+	var den := 0.0
+	for s in ships:
+		var w := float(s.get("max_durability", 1.0))
+		num += w * float(int(s.get("seam_level", 1)) - 1)
 		den += w
 	if den <= 0.0:
 		return 1.0
@@ -976,6 +1012,13 @@ func from_dict(d: Dictionary) -> void:
 			s["cargo"] = {}
 		if not (s["cargo"] as Dictionary).is_empty():
 			any_ship_cargo = true
+		# 旧档 / 手改档可能缺 seam_level：按 1 等兜底，与 add_ship 同口径
+		if not s.has("seam_level"):
+			s["seam_level"] = 1
+		if not s.has("sail_level"):
+			s["sail_level"] = 1
+		if not s.has("armor_level"):
+			s["armor_level"] = 1
 	# VERSION 1 旧档：全队货在顶层 cargo，各船皆空 → 迁入旗舰
 	if not legacy_cargo.is_empty() and not any_ship_cargo and not ships.is_empty():
 		ships[0]["cargo"] = legacy_cargo

@@ -5550,3 +5550,11 @@ func _on_credit_sell(port_id: String, good_id: String, amount: int) -> void:
 		_offer_season_note(good_id)
 	_market_hold = true
 	load_scene(current_scene_id)
+
+
+## 捻缝等级说法（lane ship2）：放在 Main 末尾，不挪 main_splits 记的转发快照行号。
+func _seam_fit_phrase(level: int) -> String:
+	var left := int(round((1.0 - 0.10 * float(level)) * 100.0))
+	if left >= 100:
+		return "缝未捻紧，风涛触浅照旧伤船湿货"
+	return "捻紧后，风涛触浅之伤与湿货剩%s" % _cheng_phrase(left)

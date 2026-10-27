@@ -443,7 +443,7 @@ func _check_partitions(data: Dictionary) -> String:
 			if typeof(s) != TYPE_DICTIONARY:
 				return "fleet.ships 含非对象条目"
 			var ship: Dictionary = s
-			why = _bad_fields(ship, ["durability", "max_durability", "crew", "sail_level", "armor_level"],
+			why = _bad_fields(ship, ["durability", "max_durability", "crew", "sail_level", "armor_level", "seam_level"],
 					["cargo"], [])
 			if why != "":
 				return "fleet.ships 条目：" + why
@@ -856,10 +856,13 @@ func _harden_fleet(raw) -> Variant:
 	if typeof(ships) != TYPE_ARRAY:
 		return fleet
 	for s in ships:
-		if typeof(s) != TYPE_DICTIONARY or (s as Dictionary).has("max_durability"):
+		if typeof(s) != TYPE_DICTIONARY:
 			continue
-		var top := float(Fleet.ship_def(str(s.get("type", ""))).get("durability", 100))
-		if _is_num(s.get("durability")):
-			top = maxf(top, float(s["durability"]))
-		s["max_durability"] = top
+		if not (s as Dictionary).has("max_durability"):
+			var top := float(Fleet.ship_def(str(s.get("type", ""))).get("durability", 100))
+			if _is_num(s.get("durability")):
+				top = maxf(top, float(s["durability"]))
+			s["max_durability"] = top
+		if not (s as Dictionary).has("seam_level"):
+			s["seam_level"] = 1
 	return fleet
