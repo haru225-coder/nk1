@@ -2861,7 +2861,7 @@
       "name": "海山楼",
       "kind": "hill",
       "bg": "bg_dist_gz_haishan.jpg",
-      "description": "海山楼在江边的坡上。楼上看得见帆。官人常在这里看船进出。",
+      "description": "海山楼在城南市舶亭侧，枕水而立。楼上正对五洲，其下叫小海。官人常在这里看船，十月里设市舶宴。",
       "interactions": [
         {
           "id": "gz_haishan_climb",
@@ -3060,7 +3060,7 @@
       "name": "州学宫",
       "kind": "academy",
       "bg": "bg_dist_gz_xue.jpg",
-      "description": "州学依着番山。讲堂前的石板刚扫过，学生铺开空白的卷子听讲。这里不卖书。",
+      "description": "州学依着番山。讲堂前的石板刚扫过，学生铺开空白的卷子听讲。侧门的书铺开着。",
       "interactions": [
         {
           "id": "gz_xue_listen",
@@ -3077,7 +3077,7 @@
           "id": "gz_xue_shop",
           "type": "invest",
           "label": "入股书铺",
-          "text": "学宫侧门的书铺印经帖。股钱先垫纸墨，印本卖出后照股分。书不进牙行。",
+          "text": "学宫侧门的书铺印经卷。股钱先垫纸墨，印本卖出后照股分。书不进牙行。",
           "shop": "书铺",
           "costs": [
             260,
@@ -3133,13 +3133,13 @@
       "name": "贡院榜墙",
       "kind": "exam",
       "bg": "bg_dist_gz_bang.jpg",
-      "description": "广州州学依着番山，贡院门外只有榜墙与两通石碑。碑座被手磨得发亮。榜上的名字一层压一层。",
+      "description": "广州贡院在城东北。门外只有榜墙与两通石碑。碑座被手磨得发亮。榜上的名字一层压一层。",
       "interactions": [
         {
           "id": "gz_bang_look",
           "type": "favour",
           "label": "看榜",
-          "text": "榜墙下挤满看榜的人。番山脚下，有人高声念，有人默。",
+          "text": "榜墙下挤满看榜的人。贡院门外，有人高声念，有人默。",
           "exam": true,
           "scholar_1268": true,
           "once_per": "year",
@@ -3169,19 +3169,19 @@
           "id": "gz_bang_stele",
           "type": "favour",
           "label": "看碑",
-          "text": "州学碑座被摸得发亮。你伸手按了一按。",
+          "text": "贡院碑座被摸得发亮。你伸手按了一按。",
           "cost": 0,
           "once_per": "year",
           "effects": {
             "fame": 1,
-            "note": "广州州学碑座按过。"
+            "note": "广州贡院碑座按过。"
           }
         },
         {
           "id": "gz_bang_aid",
           "type": "choice",
           "label": "帮衬寒士",
-          "text": "州学门外，寒士守着空卷，纸墨还没着落。",
+          "text": "贡院门外，寒士守着空卷，纸墨还没着落。",
           "exam": true,
           "once_per": "year",
           "unlock": {
@@ -3227,7 +3227,7 @@
           "id": "gz_bang_tea",
           "type": "favour",
           "label": "施茶",
-          "text": "州学门口施了一轮茶。应试的人喝完，碗摞在碑座旁。",
+          "text": "贡院门口施了一轮茶。应试的人喝完，碗摞在碑座旁。",
           "cost": 15,
           "once_per": "month",
           "cooldown_days": 30,
@@ -3325,7 +3325,7 @@
       "name": "素馨小铺",
       "kind": "market",
       "bg": "bg_dist_gz_suxin.jpg",
-      "description": "河南岸素馨田边上有一间小铺。花还没进城，铺里也收一点茶叶。",
+      "description": "城西十里的素馨田边上有一间小铺。花还没进城，铺里也收一点茶叶。",
       "interactions": [
         {
           "id": "gz_suxin_tea",
@@ -3372,7 +3372,7 @@
       "name": "珠江蛋排",
       "kind": "ferry",
       "bg": "bg_dist_gz_dan.jpg",
-      "description": "珠江上的蛋户把小船并成一排。船上起火做饭，远处石桥横在雾里。",
+      "description": "珠江上的蛋户把小船并成一排。船上起火做饭，远处城墙横在雾里。",
       "interactions": [
         {
           "id": "gz_dan_salt",
