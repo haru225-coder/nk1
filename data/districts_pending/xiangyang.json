@@ -1,0 +1,872 @@
+{
+  "districts": [
+    {
+      "id": "xy_cheng",
+      "port": "xiangyang",
+      "pending_port": true,
+      "name": "襄阳城与护城河",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_xy_cheng.jpg",
+      "description": "襄阳城在汉水南岸，城墙高厚，城外一圈护城河。北门对着浮桥，城楼上看得见樊城的屋脊。",
+      "interactions": [
+        {
+          "id": "xy_cheng_wall",
+          "type": "favour",
+          "label": "登城",
+          "text": "你沿马道上城，守卒验了随行货引。城头风大，汉水在脚下拐了一道弯。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "martial": 1
+          }
+        },
+        {
+          "id": "xy_cheng_moat",
+          "type": "choice",
+          "label": "护城河",
+          "text": "护城河的水闸只开半扇，守吏问你的船要不要从濠外绕行。",
+          "options": [
+            {
+              "id": "detour",
+              "label": "绕濠",
+              "text": "你让船从濠外绕过去。水浅处露出木桩，船底擦了一下。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "note": "襄阳护城河外绕过一回。"
+              }
+            },
+            {
+              "id": "wait",
+              "label": "等闸",
+              "text": "你把船泊在闸外，等守吏换班。日头偏西，闸门才开。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "xy_cheng_rumor",
+          "type": "rumor",
+          "label": "听城头",
+          "text": "守卒说北岸的粮船被勒令停泊，南边漳州的盐场又被盐司封桩，盐船装得迟。",
+          "cost": 14,
+          "cooldown_days": 45,
+          "port": "zhangzhou",
+          "good": "sea_salt",
+          "mul": 1.13
+        }
+      ],
+      "unlock": {
+        "year_max": 1273
+      }
+    },
+    {
+      "id": "xy_fancheng",
+      "port": "xiangyang",
+      "pending_port": true,
+      "name": "樊城",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_xy_fancheng.jpg",
+      "description": "樊城在汉水北岸，街市比南岸密。两城隔水相望，南门外的渡口整日有人上下。",
+      "interactions": [
+        {
+          "id": "xy_fancheng_market",
+          "type": "favour",
+          "label": "赶早市",
+          "text": "天未亮，北岸的粮行先开秤。你替船队问了一回米价，牙人把斗斛推过来。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "network": 1
+          },
+          "unlock": {
+            "year_max": 1272
+          }
+        },
+        {
+          "id": "xy_fancheng_wall",
+          "type": "favour",
+          "label": "看城",
+          "text": "你沿北岸走了一段。城砖缝里长着草，守卒在垛口后煮茶。",
+          "cost": 0,
+          "once_per": "month",
+          "unlock": {
+            "year_max": 1272
+          },
+          "effects": {
+            "martial": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "xy_fancheng_fall",
+          "type": "choice",
+          "label": "正月",
+          "text": "咸淳九年正月，北兵破樊城。城头火起，浮桥那头的人往南岸退。",
+          "once": true,
+          "unlock": {
+            "year_min": 1273,
+            "year_max": 1273,
+            "months": [
+              1
+            ]
+          },
+          "options": [
+            {
+              "id": "ferry",
+              "label": "撑船接人",
+              "text": "你把船靠上北岸石阶，接了几个溃卒。回程时樊城的箭楼已经塌了半边。",
+              "cost": 20,
+              "effects": {
+                "fame": 1,
+                "network": 1,
+                "note": "樊城破日，从北岸接回溃卒。"
+              }
+            },
+            {
+              "id": "moor",
+              "label": "泊在南岸",
+              "text": "你让船泊在南岸柳树下。北岸的喊声到午后渐渐稀了。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ],
+      "unlock": {
+        "year_max": 1273
+      }
+    },
+    {
+      "id": "xy_fuqiao",
+      "port": "xiangyang",
+      "pending_port": true,
+      "name": "汉水浮桥",
+      "kind": "bridge",
+      "pending_art": true,
+      "bg": "bg_dist_xy_fuqiao.jpg",
+      "description": "汉水浮桥以铁索连舟，南岸接襄阳北门，北岸接樊城。水涨时桥身低下去，守卒便减了过桥的人。",
+      "interactions": [
+        {
+          "id": "xy_fuqiao_cross",
+          "type": "favour",
+          "label": "过桥",
+          "text": "你牵马过浮桥。桥板在脚下起伏，铁索磨得发亮，守卒在两头的税棚里记数。",
+          "cost": 6,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "xy_fuqiao_repair",
+          "type": "favour",
+          "label": "换桥板",
+          "text": "水落时，守卒解开几节桥舟换板。你搭手抬了一块湿木，铁索上全是水锈。",
+          "cost": 5,
+          "once_per": "month",
+          "unlock": {
+            "year_min": 1268
+          },
+          "effects": {
+            "network": 1,
+            "martial": 1
+          }
+        },
+        {
+          "id": "xy_fuqiao_zhang",
+          "type": "choice",
+          "label": "援师",
+          "text": "咸淳八年五月，援师自下游来。张顺战殁，张贵入城，后来又突围被俘。浮桥边的守卒说起这两个名字，声音都低下去。",
+          "once": true,
+          "unlock": {
+            "year_min": 1272,
+            "year_max": 1272,
+            "months": [
+              5
+            ]
+          },
+          "options": [
+            {
+              "id": "wine",
+              "label": "洒一杯",
+              "text": "你把一杯酒洒在桥板上。铁索响了一声，像有人从水底走过。",
+              "cost": 10,
+              "effects": {
+                "fame": 1,
+                "martial": 1,
+                "note": "咸淳八年五月，在浮桥边祭过张顺、张贵。"
+              }
+            },
+            {
+              "id": "listen",
+              "label": "听守卒说",
+              "text": "守卒说张贵突围时被俘，再没有回来。你把这两个名字记在船簿背面。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ],
+      "unlock": {
+        "year_max": 1273
+      }
+    },
+    {
+      "id": "xy_yamen",
+      "port": "xiangyang",
+      "pending_port": true,
+      "name": "京西安抚司衙",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_xy_yamen.jpg",
+      "description": "安抚司衙在襄阳城中，庭中立着戒石，廊下堆着军报与粮簿。吕文焕守城时，这里昼夜有人候令。",
+      "interactions": [
+        {
+          "id": "xy_yamen_card",
+          "type": "favour",
+          "label": "投手刺",
+          "text": "你把船号与货引写在手刺上，递进门房。书吏看了一眼，让你在廊下等。",
+          "cost": 12,
+          "once_per": "month",
+          "unlock": {
+            "year_max": 1272
+          },
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "xy_yamen_grain",
+          "type": "choice",
+          "label": "军前借粮",
+          "text": "军粮簿摊在案上，书吏问你船上还有多少米，肯不肯先借。",
+          "unlock": {
+            "year_min": 1268,
+            "year_max": 1272
+          },
+          "options": [
+            {
+              "id": "lend",
+              "label": "先借二十石",
+              "text": "你让伙计把米袋搬到衙后仓里。书吏写下船号，说过些日子补价。",
+              "cost": 60,
+              "effects": {
+                "fame": 2,
+                "favour": 1,
+                "note": "襄阳围城中，向安抚司借过米。"
+              }
+            },
+            {
+              "id": "keep",
+              "label": "留作船食",
+              "text": "你说舱里的米只够回程。书吏把簿子合上，没有再多问。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "xy_yamen_lv",
+          "type": "choice",
+          "label": "见吕文焕",
+          "text": "城未破时，吕文焕在堂上见客。他问你的船能不能走汉水，又问你路上听见什么。",
+          "once": true,
+          "unlock": {
+            "year_min": 1273,
+            "year_max": 1273,
+            "months": [
+              1
+            ]
+          },
+          "options": [
+            {
+              "id": "truth",
+              "label": "照实说",
+              "text": "你把樊城火起、浮桥拥挤的话都说了。吕文焕听完，只让人添了一盏茶。",
+              "cost": 0,
+              "effects": {
+                "fame": 1,
+                "network": 1,
+                "note": "咸淳九年正月，在安抚司见过吕文焕。"
+              }
+            },
+            {
+              "id": "peace",
+              "label": "只说平安",
+              "text": "你只说水路还通。吕文焕看了你一会儿，让人送你出门。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ],
+      "unlock": {
+        "year_max": 1273
+      }
+    },
+    {
+      "id": "xy_lumen",
+      "port": "xiangyang",
+      "pending_port": true,
+      "name": "鹿门山与元军围城长堡",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_xy_lumen.jpg",
+      "description": "鹿门山在襄阳东南，山脚临汉水。咸淳四年以后，阿术在山下筑长堡，连营直到水边，城里的樵采一日难似一日。",
+      "interactions": [
+        {
+          "id": "xy_lumen_before",
+          "type": "favour",
+          "label": "望山",
+          "text": "鹿门山的松柏还密。你在山脚茶棚坐了一阵，樵夫挑着柴从寺后下来。",
+          "cost": 5,
+          "once_per": "month",
+          "unlock": {
+            "year_max": 1267
+          },
+          "effects": {
+            "hometown_tendency": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "xy_lumen_watch",
+          "type": "favour",
+          "label": "登山",
+          "text": "你登上鹿门山腰，望见山下的堡栅一节接一节。守卒不让你再往上走。",
+          "cost": 10,
+          "once_per": "month",
+          "unlock": {
+            "year_min": 1268
+          },
+          "effects": {
+            "martial": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "xy_lumen_fort",
+          "type": "choice",
+          "label": "绕堡",
+          "text": "樵路被长堡截断，守卒问你走山背还是等夜里。",
+          "unlock": {
+            "year_min": 1268
+          },
+          "options": [
+            {
+              "id": "ridge",
+              "label": "走山背",
+              "text": "你从山背绕过去。坡上尽是碎石，鞋底磨得发热。",
+              "cost": 0,
+              "effects": {
+                "martial": 1,
+                "note": "鹿门山背绕过北兵长堡。"
+              }
+            },
+            {
+              "id": "night",
+              "label": "等夜里",
+              "text": "你在守卒的火堆边等到二更，才摸黑过了樵路。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ],
+      "unlock": {
+        "year_max": 1273
+      }
+    },
+    {
+      "id": "xy_xianshan",
+      "port": "xiangyang",
+      "pending_port": true,
+      "name": "岘山与堕泪碑",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_xy_xianshan.jpg",
+      "description": "岘山在襄阳城南，山腰有碑亭。碑上刻着羊祜的名字，往来的人说起「堕泪」二字，多在亭下停一停。",
+      "interactions": [
+        {
+          "id": "xy_xianshan_stele",
+          "type": "favour",
+          "label": "读碑",
+          "text": "你在碑前站了一会儿。碑上的字被拓得发亮，守亭的老人替你拂去石座上的落叶。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "岘山读过堕泪碑。"
+          }
+        },
+        {
+          "id": "xy_xianshan_rubbing",
+          "type": "choice",
+          "label": "拓碑",
+          "text": "守亭人问你要不要拓一张。纸墨都现成，只是碑石旧了，怕拓坏。",
+          "options": [
+            {
+              "id": "rub",
+              "label": "拓一张",
+              "text": "你和守亭人一起把纸覆上碑面。墨扑下去，羊祜的名字慢慢显出来。",
+              "cost": 20,
+              "effects": {
+                "scholar_tendency": 1,
+                "fame": 1,
+                "flag": "xy_xianshan_rubbing",
+                "note": "岘山拓过堕泪碑。"
+              }
+            },
+            {
+              "id": "look",
+              "label": "只看",
+              "text": "你把纸卷收好，站在亭下又读了一遍。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "xy_xianshan_view",
+          "type": "favour",
+          "label": "山亭",
+          "text": "山亭朝北，汉水与两座城都在眼底。风从碑亭后面过来，带着松脂气。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "hometown_tendency": 1,
+            "note": "岘山亭上看过襄阳与樊城。"
+          }
+        }
+      ],
+      "unlock": {
+        "year_max": 1273
+      }
+    },
+    {
+      "id": "xy_longzhong",
+      "port": "xiangyang",
+      "pending_port": true,
+      "name": "隆中",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_xy_longzhong.jpg",
+      "description": "隆中在襄阳城西，山不高，竹树却密。诸葛亮旧庐的草檐压在山坳里，阶前石板被脚步磨得发亮。",
+      "interactions": [
+        {
+          "id": "xy_longzhong_visit",
+          "type": "favour",
+          "label": "访草庐",
+          "text": "你沿石阶上到草庐前。守庐的人正在扫落叶，说草庐后头留着一炉茶。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "xy_longzhong_think",
+          "type": "choice",
+          "label": "怀古",
+          "text": "草庐前很静。山风穿过竹林，阶下的溪水一直响。",
+          "options": [
+            {
+              "id": "ask",
+              "label": "问旧事",
+              "text": "守庐人说了些诸葛亮的旧事，也说不清哪一件是真的。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1,
+                "note": "隆中问过守庐人旧事。"
+              }
+            },
+            {
+              "id": "wind",
+              "label": "听风",
+              "text": "你靠着廊柱听风。日影从草檐上慢慢移过去。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        }
+      ],
+      "unlock": {
+        "year_max": 1273
+      }
+    },
+    {
+      "id": "xy_tanxi",
+      "port": "xiangyang",
+      "pending_port": true,
+      "name": "檀溪",
+      "kind": "bridge",
+      "pending_art": true,
+      "bg": "bg_dist_xy_tanxi.jpg",
+      "description": "檀溪在襄阳城西，溪水从山脚下来，溪上有桥。雨后水急，桥面漫水，桥边的渡船便收了桨。",
+      "interactions": [
+        {
+          "id": "xy_tanxi_cross",
+          "type": "favour",
+          "label": "过溪",
+          "text": "你把马牵过桥。桥板湿滑，溪水在桥墩下打了个旋，远处有人撑伞等渡。",
+          "cost": 4,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "martial": 1
+          }
+        },
+        {
+          "id": "xy_tanxi_wait",
+          "type": "choice",
+          "label": "等渡",
+          "text": "雨大了，渡船不肯开。岸边的人挤在茶棚下，有人说溪水要涨到桥面。",
+          "options": [
+            {
+              "id": "wait",
+              "label": "等雨停",
+              "text": "你坐到雨小，渡船才解缆。船家把桨压得很低，船身还是歪了一下。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            },
+            {
+              "id": "detour",
+              "label": "绕路",
+              "text": "你牵马从上游浅滩过去。水没到马腹，裤脚全湿了。",
+              "cost": 6,
+              "effects": {
+                "martial": 1,
+                "note": "檀溪涨水，从上游浅滩绕过。"
+              }
+            }
+          ]
+        }
+      ],
+      "unlock": {
+        "year_max": 1273
+      }
+    },
+    {
+      "id": "xy_matou",
+      "port": "xiangyang",
+      "pending_port": true,
+      "name": "汉水码头与盐米纲",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_xy_matou.jpg",
+      "description": "汉水码头在襄阳北门外，石阶一直下到水里。纲船靠岸时，盐包与米袋先卸，脚夫排成两行。",
+      "interactions": [
+        {
+          "id": "xy_matou_unload",
+          "type": "favour",
+          "label": "搭手",
+          "text": "你替纲船搭了一把手，盐包从跳板上一袋袋传下去。仓吏在你的货引上盖了个小印。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "xy_matou_grain",
+          "type": "choice",
+          "label": "断粮",
+          "text": "围城以后，码头的米袋一日比一日少。仓吏问你船上还有多少粮，肯不肯先借给军前。",
+          "unlock": {
+            "year_min": 1268
+          },
+          "options": [
+            {
+              "id": "give",
+              "label": "先出二十石",
+              "text": "你让伙计把米搬上码头。仓吏数过袋数，在簿上画了押。",
+              "cost": 80,
+              "effects": {
+                "fame": 2,
+                "favour": 1,
+                "note": "襄阳围城中，向军前出过米。"
+              }
+            },
+            {
+              "id": "keep",
+              "label": "留作船食",
+              "text": "你说舱里的粮还要留着走水路。仓吏把簿子合上，转身去问别家。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "xy_matou_rumor",
+          "type": "rumor",
+          "label": "听纲吏",
+          "text": "纲吏翻开粮簿，说兴化的米船被军前截买，那边的米价还要往上走。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "unlock": {
+            "year_min": 1268
+          },
+          "port": "xinghua",
+          "good": "grain",
+          "mul": 1.14
+        }
+      ],
+      "unlock": {
+        "year_max": 1273
+      }
+    },
+    {
+      "id": "xy_huihui",
+      "port": "xiangyang",
+      "pending_port": true,
+      "name": "回回炮",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_xy_huihui.jpg",
+      "description": "咸淳九年正月，回回炮推到樊城下。你从襄阳城头望过去，炮架以巨木为臂，石弹堆在阵前，亦思马因在旁看人发炮。",
+      "interactions": [
+        {
+          "id": "xy_huihui_watch",
+          "type": "favour",
+          "label": "看炮",
+          "text": "你隔着汉水看回回炮试发。巨臂抬起又落下，石弹砸在樊城城头，烟尘半天不散。",
+          "cost": 0,
+          "once": true,
+          "unlock": {
+            "year_min": 1273,
+            "year_max": 1273,
+            "months": [
+              1
+            ]
+          },
+          "effects": {
+            "martial": 1,
+            "note": "咸淳九年正月，见过回回炮试发。"
+          }
+        },
+        {
+          "id": "xy_huihui_engineer",
+          "type": "choice",
+          "label": "城头",
+          "text": "炮阵里的回回匠人朝汉水这边张望。城头的守卒问你可有绳索与牛油。",
+          "unlock": {
+            "year_min": 1273,
+            "year_max": 1273,
+            "months": [
+              1,
+              2
+            ]
+          },
+          "options": [
+            {
+              "id": "rope",
+              "label": "送一捆绳",
+              "text": "你让伙计把麻绳送到城头。守卒把绳系在城垛后的木架上。",
+              "cost": 15,
+              "effects": {
+                "network": 1,
+                "martial": 1,
+                "note": "襄阳城头给守卒送过绳索。"
+              }
+            },
+            {
+              "id": "back",
+              "label": "退开",
+              "text": "你退到城楼后面。炮臂落下时，脚下的砖都震了一下。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ],
+      "unlock": {
+        "year_min": 1273,
+        "year_max": 1273,
+        "months": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "id": "xy_jiang",
+      "port": "xiangyang",
+      "pending_port": true,
+      "name": "襄阳城降",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_xy_jiang.jpg",
+      "description": "咸淳九年二月，襄阳城门开了。吕文焕出降，北兵列队入城，街上的旗一夜之间换了颜色。",
+      "interactions": [
+        {
+          "id": "xy_jiang_surrender",
+          "type": "choice",
+          "label": "出降",
+          "text": "城门开时，吕文焕骑马出城。守卒把兵器堆在门洞边，百姓挤在街两侧，没有人说话。",
+          "once": true,
+          "unlock": {
+            "year_min": 1273,
+            "year_max": 1273,
+            "months": [
+              2
+            ]
+          },
+          "options": [
+            {
+              "id": "out",
+              "label": "随众出城",
+              "text": "你随着人流走到城门外。北兵的甲胄在日头下反光，吕文焕的马已经过了浮桥。",
+              "cost": 0,
+              "effects": {
+                "martial": 1,
+                "note": "咸淳九年二月，襄阳城降。"
+              }
+            },
+            {
+              "id": "stay",
+              "label": "留在城里",
+              "text": "你退回巷中。门洞那边的鼓声停了，街上的铺户一间接一间上门板。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "xy_jiang_ledger",
+          "type": "favour",
+          "label": "清账",
+          "text": "降后第三日，安抚司的旧吏在廊下清点粮簿。他认得你的船号，让你在最后一页按了手印。",
+          "cost": 0,
+          "once": true,
+          "unlock": {
+            "year_min": 1273,
+            "year_max": 1273,
+            "months": [
+              2
+            ]
+          },
+          "effects": {
+            "merchant_credit": 1,
+            "note": "襄阳降后，在安抚司旧廊清过粮簿。"
+          }
+        }
+      ],
+      "unlock": {
+        "year_min": 1273,
+        "year_max": 1273,
+        "months": [
+          2
+        ]
+      }
+    },
+    {
+      "id": "xy_shijing",
+      "port": "xiangyang",
+      "pending_port": true,
+      "name": "城中市井与竹木",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_xy_shijing.jpg",
+      "description": "襄阳城里的市井沿十字街铺开，竹器、木料、麻绳堆在檐下。围城日久，拆屋作薪的人多了，竹木价一日高过一日。",
+      "interactions": [
+        {
+          "id": "xy_shijing_invest",
+          "type": "invest",
+          "label": "入股竹木作",
+          "text": "竹木作的匠人缺本钱，肯让你入一股。往后城里的竹床、木桶与扁担都从他这里出。",
+          "costs": [
+            220,
+            360
+          ],
+          "monthly": [
+            12,
+            20
+          ],
+          "shop": "竹木作"
+        },
+        {
+          "id": "xy_shijing_hire",
+          "type": "hire",
+          "label": "雇篾匠",
+          "text": "篾匠肯留下。他在时，竹器活做得快，城里来问价的人也坐得住。",
+          "who": "篾匠",
+          "cost": 50,
+          "wage": 9,
+          "monthly_effects": {
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "xy_shijing_barrier",
+          "type": "choice",
+          "label": "市井",
+          "text": "守城之后，街口设了木栅。军吏问你船上的竹木是自用还是出货。",
+          "unlock": {
+            "year_min": 1268
+          },
+          "options": [
+            {
+              "id": "self",
+              "label": "自用",
+              "text": "你说是修船用。军吏在木栅上挂了块小牌，放你过去。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            },
+            {
+              "id": "army",
+              "label": "出货",
+              "text": "你说是给军前送货。军吏看了你的船号，让你从侧门走。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "pu_attention": 1
+              }
+            }
+          ]
+        }
+      ],
+      "unlock": {
+        "year_max": 1273
+      }
+    }
+  ]
+}
