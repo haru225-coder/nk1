@@ -5252,13 +5252,13 @@
       "name": "华盖山亭",
       "kind": "pavilion",
       "bg": "bg_dist_wz_huagai.jpg",
-      "description": "华盖山在城里，山腰有亭，亭边有洞。站在亭上，整座永嘉城都在脚下。",
+      "description": "华盖山在城里，山上有亭，山麓有蒙泉。站在亭上，整座永嘉城都在脚下。",
       "interactions": [
         {
           "id": "wz_huagai_view",
           "type": "choice",
           "label": "登亭",
-          "text": "华盖山亭上看得见城与江。一年只登一回。",
+          "text": "华盖山亭上看得见城与江。",
           "once_per": "year",
           "options": [
             {
