@@ -1139,7 +1139,7 @@ _pc, _pf = _delta(_pu_fn, "merchant_credit"), _delta(_pu_fn, "fame")
 _tariff = _gd_body(_src("scripts/core/Economy.gd"), "_base_tariff")
 check(_pu_txt is not None and _said(*_pu_txt.groups()[:2]) == _pc and _said(*_pu_txt.groups()[2:]) == _pf
       and 'GameState.set_flag("sided_pu")' in _pu_fn
-      and re.search(r'if port_id == "quanzhou" and GameState\.has_flag\("sided_pu"\):\n\t\twar_mul \*= 0\.8\n', _tariff) is not None,
+      and re.search(r'if port_id == "quanzhou" and GameState\.has_flag\("sided_pu"\) and not pu_discount_paused\(port_id\):\n\t\twar_mul \*= 0\.8\n', _tariff) is not None,
       f"征船名册「跟蒲家」钮文的海商信用 / 名声 = 实扣 {_pc} / {_pf}，「泉州抽解永久八折」= Economy._base_tariff 泉州 sided_pu × 0.8")
 
 print()

@@ -466,8 +466,8 @@ func from_dict(d: Dictionary) -> void:
 
 func _base_tariff(port_id: String = "") -> float:
 	var war_mul: float = WAR_TARIFF.get(war_status(port_id), 1.0) if port_id != "" else 1.0
-	# 对峙期站了蒲家：泉州抽解永久八折——「都是一家人」
-	if port_id == "quanzhou" and GameState.has_flag("sided_pu"):
+	# 对峙期站了蒲家：泉州抽解永久八折——「都是一家人」；泉州被围、封港时折扣暂停（pu_discount_paused）
+	if port_id == "quanzhou" and GameState.has_flag("sided_pu") and not pu_discount_paused(port_id):
 		war_mul *= 0.8
 	return tariff_rate * war_mul
 
@@ -676,3 +676,20 @@ func credit_sale_price(port_id: String, good_id: String, qty: int = 1) -> int:
 	var avg := float(estimate_sell_revenue(port_id, good_id, n)) / float(n)
 	return maxi(1, int(round(avg * (1.0 + CREDIT_PREMIUM))))
 
+
+# ── 蒲家八折遇围城 / 封港暂停（lane oc-pusiege，审计 S6 拍板）──────────
+## 站了蒲家的泉州抽解八折，城被围（besieged）或港被封（closed）时不作数：蒲寿庚降元后，1277 年张世杰回师围泉州，
+## 蒲家自顾不暇，市舶司的人情也就断了。战况一解，折扣照旧。
+const PU_PAUSE_STATUS := ["besieged", "closed"]
+const PU_PAUSE_NOTE := {"besieged": "城中被围，蒲家八折暂不作数。", "closed": "港门封闭，蒲家八折暂不作数。"}
+
+
+func pu_discount_paused(port_id: String) -> bool:
+	return port_id == "quanzhou" and GameState.has_flag("sided_pu") and war_status(port_id) in PU_PAUSE_STATUS
+
+
+## 市舶司页给玩家看的那一句；不暂停返回 ""
+func pu_discount_note(port_id: String) -> String:
+	if not pu_discount_paused(port_id):
+		return ""
+	return str(PU_PAUSE_NOTE.get(war_status(port_id), ""))

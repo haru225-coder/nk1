@@ -95,6 +95,37 @@ func _run() -> void:
 					gs.last_port = "penghu"
 					_check(s[0], st, pu, z, "arg")
 
+	# 蒲家八折遇围城 / 封港暂停（lane oc-pusiege）：往泉州战况表塞一段 besieged / closed，站蒲家的验引与不站同价、
+	# 市舶司页那一句照战况出；换回对峙，八折照旧、那一句不出。回退即红。
+	var qz: Dictionary = eco._port_def("quanzhou")
+	var had_war := qz.has("war")
+	var saved_war = qz.get("war", {})
+	crew.hired = {}
+	gs.fame = 0
+	gs.last_port = "quanzhou"
+	cal.year = 1270
+	cal.month = 2
+	cal.day = 1
+	for st2 in ["besieged", "closed", "contested"]:
+		qz["war"] = {"1270-01": st2}
+		gs.flags = {}
+		var plain: int = gs.customs_duty()
+		gs.flags = {"sided_pu": true}
+		var with_pu: int = gs.customs_duty()
+		var note := str(eco.pu_discount_note("quanzhou"))
+		cases += 1
+		var want := _expected("quanzhou", st2, st2 == "contested", 0)
+		if with_pu != want or (st2 != "contested" and with_pu != plain):
+			_fail("泉州%s、站蒲家验引 %d，预期 %d（不站蒲家 %d）" % [st2, with_pu, want, plain])
+		cases += 1
+		var want_note: String = str(eco.PU_PAUSE_NOTE.get(st2, ""))
+		if note != want_note or (st2 != "contested" and note == ""):
+			_fail("泉州%s、站蒲家市舶司短句「%s」，预期「%s」" % [st2, note, want_note])
+	if had_war:
+		qz["war"] = saved_war
+	else:
+		qz.erase("war")
+
 	# 空舱地板 20
 	fleet.ships = [{"cargo": {}}]
 	cases += 1

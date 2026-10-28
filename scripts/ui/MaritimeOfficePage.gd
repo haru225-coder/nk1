@@ -27,6 +27,8 @@ static func setup_yamen(main: Control, port_id: String) -> void:
 	if contraband > 0:
 		main._slip_note(permit, "舱底尚有违禁 %d 件。报不进明账，验引也遮不住。" % contraband, UiTheme.CINNABAR)
 	main._slip_note(permit, "蒲家留意 %d　%s" % [GameState.pu_attention, main._attention_desc()])
+	if Economy.pu_discount_note(port_id) != "":  # 站了蒲家、泉州被围或封港：八折暂停（lane oc-pusiege）
+		main._slip_note(permit, Economy.pu_discount_note(port_id), UiTheme.HONEY)
 
 	main._setup_reporting()
 	# 本地 main：泉州对峙期（1276-77）征船名册三选一，非对峙期内部自行返回
