@@ -89,7 +89,7 @@ static func guild_join_block(main: Control, port_id: String) -> String:
 	if GameState.merchant_credit < main.GUILD_JOIN_CREDIT:
 		return "海商信用不足（%d，须 %d）" % [GameState.merchant_credit, main.GUILD_JOIN_CREDIT]
 	if GameState.money < main.GUILD_JOIN_FEE:
-		return "现钱不足（%d，会费 %d）" % [GameState.money, main.GUILD_JOIN_FEE]
+		return "见钱不足（%d，会费 %d）" % [GameState.money, main.GUILD_JOIN_FEE]
 	return ""
 
 
@@ -116,7 +116,7 @@ static func on_guild_join(main: Control, port_id: String) -> void:
 static func setup_exam(main: Control, port_id: String) -> void:
 	main.scene_title.text = "%s・贡院" % GameManager.get_port_name(port_id)
 	# 兴化、泉州设科场，誊录旁边就是「入场赴试」：正文原先一律「今科未开。只能替人誊录」，与底下的钮相左（lane w53-6）
-	main.body_text.text = "科场每章开一回。平日替人誊录，笔墨钱现结。" if main.EXAM_SIT_PORTS.has(port_id) else "今科未开。只能替人誊录，笔墨钱现结。"
+	main.body_text.text = "科场每章开一回。平日替人誊录，笔墨钱当日付。" if main.EXAM_SIT_PORTS.has(port_id) else "今科未开。只能替人誊录，笔墨钱当日付。"
 	main._begin_benches()
 	main._center_benches()
 
@@ -129,7 +129,7 @@ static func setup_exam(main: Control, port_id: String) -> void:
 	var sit: VBoxContainer = main._exam_slip()
 	main._slip_title(sit, "赴试", "每章一次　费 %d 日" % main.EXAM_SIT_DAYS)
 	if not main.EXAM_SIT_PORTS.has(port_id):
-		main._slip_note(sit, "赴试只在兴化、泉州两处贡院。")
+		main._slip_note(sit, "解试只在兴化、泉州两处贡院。")
 		main._slip_stamp(main._slip_row(sit, true), "本港无贡院科场")
 	elif GameState.has_flag(main._exam_sat_flag()):
 		main._slip_note(sit, "本章已赴过，下一章再来。")
@@ -174,7 +174,7 @@ static func exam_sat_flag() -> String:
 ## 月初 _settle_history 会按 exam_sat 与倾向锁 1268 身份。
 static func on_exam_sit(main: Control, port_id: String) -> void:
 	if not main.EXAM_SIT_PORTS.has(port_id):
-		main.log_msg("【贡院】本港无贡院科场，赴试只在兴化、泉州。")
+		main.log_msg("【贡院】本港无贡院科场，解试只在兴化、泉州。")
 		return
 	var chapter_flag: String = main._exam_sat_flag()
 	if GameState.has_flag(chapter_flag):
@@ -187,7 +187,7 @@ static func on_exam_sit(main: Control, port_id: String) -> void:
 		res = GameState.add_fame(4)
 		GameState.scholar_tendency += 2
 		GameState.set_flag("exam_sat")
-		line = "卷子誊上了榜前的簿子。名声加 4，学者倾向 %d。" % GameState.scholar_tendency
+		line = "卷子誊过，名字上了榜墙。名声加 4，学者倾向 %d。" % GameState.scholar_tendency
 	else:
 		res = GameState.add_fame(1)
 		GameState.sea_tendency += 1
