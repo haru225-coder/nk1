@@ -70,7 +70,7 @@ func _run() -> void:
 	# 港 × 年月 × 预期战况；闽粤、异国、无战况表各取一
 	var spots := [
 		["quanzhou", 1270, 1, "loyal"], ["quanzhou", 1276, 6, "contested"],
-		["quanzhou", 1277, 1, "fallen"], ["wenzhou", 1276, 6, "fallen"],
+		["quanzhou", 1277, 1, "fallen"], ["quanzhou", 1277, 8, "besieged"], ["quanzhou", 1277, 10, "fallen"], ["wenzhou", 1276, 6, "fallen"],
 		["hakata", 1274, 11, "closed"], ["penghu", 1277, 1, "loyal"],
 	]
 	for s in spots:
@@ -153,7 +153,7 @@ func _cand(role: String, level: int) -> String:
 
 func _expected(pid: String, st: String, pu: bool, z: int) -> int:
 	var war_mul: float = float(eco.WAR_TARIFF.get(st, 1.0))
-	if pu and pid == "quanzhou":
+	if pu and pid == "quanzhou" and not (st in ["besieged", "closed"]):  # 1277 张世杰围泉州那几个月八折暂停（lane oc-pusiege2）
 		war_mul *= 0.8
 	var zashi := maxf(0.0, 1.0 - 0.12 * z)
 	var title := float(gs.title_rank().get("duty_factor", 1.0))
