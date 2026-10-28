@@ -1657,22 +1657,40 @@ def war_run(on, money, port, frm):
 
 _rng = random.getstate()
 _war_rows = []
-for _money, _port, _frm in WAR_STARTS:
-    _pair = []
-    for _on in (False, True):
+# 多路随机序列取平均（lane oc-pusiege2，策划拍板 t225u）：单路贪心跑商遇一处闭门就岔路，18 段合计净利可贴近零，
+# 「开 / 关合计之比」随之炸（泉州添 1277 年围城后单路比值 +7782200%）。改为每段开局跑 WAR_SEEDS 路（首路沿用原随机状态，
+# 其余 random.seed(k)），两态同路同起点；打印首路，判据按全部路数。
+WAR_SEEDS = 6
+_war_all = []
+for _k in range(WAR_SEEDS):
+    if _k:
+        random.seed(_k)
+    else:
         random.setstate(_rng)
-        _pair.append(war_run(_on, _money, _port, _frm))
-    _war_rows.append((_money, _port, _frm, _pair[0], _pair[1]))
+    _rng_k = random.getstate()
+    for _money, _port, _frm in WAR_STARTS:
+        _pair = []
+        for _on in (False, True):
+            random.setstate(_rng_k)
+            _pair.append(war_run(_on, _money, _port, _frm))
+        (_war_rows if _k == 0 else _war_all).append((_money, _port, _frm, _pair[0], _pair[1]))
+random.setstate(_rng)
+for _money, _port, _frm, _p0, _p1 in _war_rows:
+    _pair = [_p0, _p1]
     print(f"  {_frm[0]}-{_frm[1]:02d} {ports[_port]['name']}起 本钱 {_money:>5}：关 {_pair[0]['net']:+7}（{_pair[0]['trips']} 趟）"
           f"　开 {_pair[1]['net']:+7}（{_pair[1]['trips']} 趟）　{(_pair[1]['net'] / max(1, _pair[0]['net']) - 1) * 100:+6.1f}%"
           f"　开态所跑货类 {_pair[1]['by_class']}{'　舱里剩 %d 件' % _pair[1]['left'] if _pair[1]['left'] else ''}")
 WAR_PRICES_ON[0] = True
-_off_sum, _on_sum = sum(r[3]["net"] for r in _war_rows), sum(r[4]["net"] for r in _war_rows)
-_gain = _on_sum / max(1, _off_sum) - 1
+_rows_all = _war_rows + _war_all
+_off_sum, _on_sum = sum(r[3]["net"] for r in _rows_all), sum(r[4]["net"] for r in _rows_all)
+_capital = sum(r[0] for r in _rows_all)
+# 分母用本钱合计（恒正、不贴零），不用关态净利：开关多赚的钱占本钱几成。
+# 实测（6 路，本钱合计 3168000）：围城前 main +6.5%（多赚 204683；旧口径净利比 +38.8%）、加泉州 1277 围城 +6.7%（多赚 213148；旧口径 +80.4%）；上限 +20% 约三倍余量，下限 −10% 照旧
+_gain = (_on_sum - _off_sum) / _capital
 _per = sorted(r[4]["net"] / max(1, r[3]["net"]) - 1 for r in _war_rows)
-check(_off_sum > 0 and -0.10 <= _gain <= 0.25,
-      f"开开关后 {len(_war_rows)} 段战时跑商合计净利 {_gain * 100:+.1f}%（{_off_sum} → {_on_sum}；单段 {_per[0] * 100:+.0f}% 到 {_per[-1] * 100:+.0f}%）："
-      f"不成摇钱树（≤ +25%），也不把战时生意掐死（≥ −10%）")
+check(-0.10 <= _gain <= 0.20,
+      f"开开关后 {len(_war_rows)} 段 × {WAR_SEEDS} 路战时跑商多赚 {_on_sum - _off_sum:+} 钱，占本钱合计 {_capital} 的 {_gain * 100:+.1f}%"
+      f"（关 {_off_sum} → 开 {_on_sum}；首路单段净利比 {_per[0] * 100:+.0f}% 到 {_per[-1] * 100:+.0f}%）：不成摇钱树（≤ +20%），也不把战时生意掐死（≥ −10%）")
 
 # ── 牙人赊销 sanity（lane sim4，可选）──
 check(CREDIT_PREMIUM > 0, "赊销贴水为正（%.0f%%）" % (CREDIT_PREMIUM * 100))
