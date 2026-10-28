@@ -33,7 +33,7 @@
           "id": "ph_yugang_rumor",
           "type": "rumor",
           "label": "问南岛",
-          "text": "梢公说南岛海道北口的硫黄船还没回，澳里等货。",
+          "text": "梢工说南岛海道北口的硫黄船还没回，澳里等货。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "ryukyu",
