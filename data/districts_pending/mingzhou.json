@@ -32,8 +32,8 @@
         {
           "id": "mz_sanjiang_rumor",
           "type": "rumor",
-          "label": "问梢公",
-          "text": "梢公说萨摩今年硫黄山塌了一面，博多硫黄船少两条，庆元火药作坊在抢货。",
+          "label": "问梢工",
+          "text": "梢工说萨摩今年硫黄山塌了一面，博多硫黄船少两条，庆元火药作坊在抢货。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "hakata",
