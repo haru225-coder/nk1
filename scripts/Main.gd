@@ -228,7 +228,7 @@ const GENERIC_FACILITIES := [
 const DOOR_TIP := {
 	# 买价已含市舶抽解（同页脚注「含抽解・扣佣」）；出港验引另按舱货纳一次（GameState.customs_duty）
 	"market": "牙人过秤开票。市舶抽解另计。",
-	"guild": "会馆议价、立会籍。入行另有会费。",
+	"guild": "行会议价、立行籍。入行另有行用。",
 	"tavern": "酒桌边听市井动静，也可雇水手。",
 	"shipyard": "坞上修舱、上水、雇手。船开不出去时必开此门。",
 	"inn": "借宿候风。日数照过。",
@@ -1554,11 +1554,11 @@ func _add_contract_panel(port_id: String) -> void:
 				var purse_lbl := Label.new()
 				purse_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 				if on_counter:
-					purse_lbl.text = "此地首件 %d 钱，逐件加价。现银与舱货凑得出 %d 件，单须 %d 件。可接；交不齐则拿不满酬，不加名声。" % [
+					purse_lbl.text = "此地首件 %d 钱，逐件加价。现钱与舱货凑得出 %d 件，单须 %d 件。可接；交不齐则拿不满酬，不加名声。" % [
 						unit_cost, can_carry, need_qty,
 					]
 				else:
-					purse_lbl.text = "此货今日不在柜上，现银买不到一件。舱货凑得出 %d 件，单须 %d 件。明日再看，柜上或换上此货。可接；交不齐则拿不满酬，不加名声。" % [
+					purse_lbl.text = "此货今日不在柜上，现钱买不到一件。舱货凑得出 %d 件，单须 %d 件。明日再看，柜上或换上此货。可接；交不齐则拿不满酬，不加名声。" % [
 						can_carry, need_qty,
 					]
 				purse_lbl.add_theme_font_size_override("font_size", 16)
@@ -1693,7 +1693,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if g.get("contraband", false):
 		name_lbl.add_theme_color_override("font_color", UiTheme.CINNABAR)
-		name_lbl.tooltip_text = "违禁　宋法不许出海，验引护不住"
+		name_lbl.tooltip_text = "违禁　国法不许出海，验引护不住"
 	info.add_child(name_lbl)
 
 	var hint_lbl := Label.new()
@@ -1852,7 +1852,7 @@ func _market_buy_tip(port_id: String, good_id: String, amount: int, ship_index: 
 	var want := room if amount < 0 else mini(amount, room)
 	var n := _affordable_qty(port_id, good_id, want)
 	if n <= 0:
-		return "现银不够一件。"
+		return "现钱不够一件。"
 	var cost := Economy.estimate_buy_cost(port_id, good_id, n)
 	if n == 1:
 		return "付 %d 钱。" % cost
@@ -1862,7 +1862,7 @@ func _market_buy_tip(port_id: String, good_id: String, amount: int, ship_index: 
 	elif n < amount and n == room:
 		head = "舱只容 %d 件" % n
 	elif n < amount:
-		head = "现银只够 %d 件" % n
+		head = "现钱只够 %d 件" % n
 	else:
 		head = "%d 件" % n
 	return "%s，共付 %d 钱，均价 %d。逐件加价，首件 %d。" % [
