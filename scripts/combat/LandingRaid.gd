@@ -125,7 +125,7 @@ static func choices_for(outcome: String, source: Dictionary, port: String) -> Ar
 		return []
 	return [{
 		"key": "landing",
-		"label": "登岸剿寨（岸上那座海寇窝，放人下船去烧）",
+		"label": "登岸剿寨（岸上那座海寇巢，放人下船去烧）",
 		"options": [
 			{"id": "raid", "label": "登岸剿寨", "default": false},
 			{"id": "hold", "label": "收队回船", "default": true},
