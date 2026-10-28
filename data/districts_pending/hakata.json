@@ -7,7 +7,7 @@
       "kind": "gate",
       "pending_art": true,
       "bg": "bg_dist_hk_ishigaki.jpg",
-      "description": "博多海边正在筑石垒，防垒未合，石块沿沙滩排开。",
+      "description": "博多海边正在筑石垒，自今津至箱崎，防垒未合，石块沿沙滩排开。",
       "interactions": [
         {
           "id": "hk_ishigaki_sulfur",

@@ -104,7 +104,7 @@
           "id": "kg_gun_pass",
           "type": "licence",
           "label": "领入港书状",
-          "text": "入港书状到手。博多唐房的牙人验船时只看这纸书状。",
+          "text": "入港书状到手。坊津的船主验过押印，才肯让货上岸。",
           "cost": 600,
           "licence": "lic_kg_pass",
           "unlock": {"favour_min": 2},
@@ -170,7 +170,7 @@
       "kind": "market",
       "pending_art": true,
       "bg": "bg_dist_kg_sulfur.jpg",
-      "description": "滩上硫黄垛成堆，气味刺鼻。番商和宋商蹲在垛边议价。",
+      "description": "滩上硫黄垛成堆，气味刺鼻。唐商和倭商蹲在垛边议价。",
       "interactions": [
         {
           "id": "kg_sulfur_buy",
