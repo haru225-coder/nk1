@@ -33,7 +33,7 @@
           "id": "fz_minjiang_rumor",
           "type": "rumor",
           "label": "问江船",
-          "text": "梢公说北风压着温州茶船，港外还泊着两条，牙行仓里存货见少。",
+          "text": "梢工说北风压着温州茶船，港外还泊着两条，牙行仓里存货见少。",
           "cost": 12,
           "cooldown_days": 30,
           "port": "wenzhou",
