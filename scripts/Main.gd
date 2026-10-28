@@ -1489,7 +1489,7 @@ func _add_contract_panel(port_id: String) -> void:
 			var warn_col := UiTheme.HONEY
 			var lead := Label.new()
 			lead.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			lead.text = "酬 %d 钱，其中溢价 %d，交货不砸盘。静风针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日，期限 %d 日。" % [
+			lead.text = "酬 %d 钱，其中加价 %d，到港交货不压价。静风针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日，期限 %d 日。" % [
 				int(offer.get("purse", 0)), int(offer.get("premium", 0)),
 				rumb, off, coast, deadline,
 			]
