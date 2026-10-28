@@ -125,11 +125,11 @@ static func setup_title_and_invest(main: Control, port_id: String) -> void:
 		inv_aside = "已修至 %d 等" % lv
 	main._slip_title(inv, "修埠", inv_aside)
 	if cost <= 0:
-		main._slip_note(inv, "本港埠头已修至 %d 等。产货更廉，紧缺易售，市面更宽。" % lv)
+		main._slip_note(inv, "本港埠头已修至 %d 等。土产出得贱，缺货也走得快，市面更宽。" % lv)
 	elif lv <= 0:
-		main._slip_note(inv, "修埠则埠头加深。本地产货更廉，紧缺货易售。")
+		main._slip_note(inv, "修埠则埠头加深。土产出港便宜，缺货进港好卖。")
 	else:
-		main._slip_note(inv, "再修一等。埠头加深，产货更廉，紧缺易售，市面更宽。")
+		main._slip_note(inv, "再修一等。埠头加深，土产贱了，缺货好卖，市面自然宽。")
 	if cost > 0:
 		var chip: Button = main._slip_chip(main._slip_row(inv), "投钱　%d" % cost, main._on_invest_port.bind(port_id), true)
 		chip.tooltip_text = "向本港投钱修埠"
