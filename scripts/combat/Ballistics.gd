@@ -73,7 +73,7 @@ const WEAPONS := {
 		"kind": "stone", "amount": 30.0, "fx": "stone",
 	},
 	"huopao": {
-		"name": "火炮", "note": "炮抛火药包（火球、铁火炮），药线燃着飞去，落处起火。火攻令下、火药够才抛。",
+		"name": "火炮", "note": "炮抛纸布裹药的火药包，药线燃着飞去，落处起火。火攻令下、火药够才抛。",
 		"path": PATH_LOB, "ammo": "huoyao", "ammo_per": 24,
 		"speed": 280.0, "min_range": 160.0, "eff_range": 400.0, "max_range": 560.0, "far_mult": 0.9,
 		"spread": 0.060, "range_err": 0.12, "arc_full": 75.0, "arc_max": 110.0,
