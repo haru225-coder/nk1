@@ -31,7 +31,7 @@
             {
               "id": "gl_cheng_sluice_grain",
               "label": "先放粮舟",
-              "text": "粮舟先过。岸上的脚夫朝你拱手，货舟的梢公沉着脸。",
+              "text": "粮舟先过。岸上的脚夫朝你拱手，货舟的梢工沉着脸。",
               "effects": {
                 "favour": 1,
                 "hometown_tendency": 1
@@ -151,7 +151,7 @@
           "id": "gl_lijiang_moor",
           "type": "choice",
           "label": "择地泊舟",
-          "text": "洲北水缓，洲南近象鼻山。梢公问你泊在哪一边。",
+          "text": "洲北水缓，洲南近象鼻山。梢工问你泊在哪一边。",
           "options": [
             {
               "id": "gl_lijiang_moor_north",
@@ -177,8 +177,8 @@
           "id": "gl_lijiang_ferryman",
           "type": "hire",
           "label": "雇洲渡",
-          "text": "洲渡的老梢公识得漓江的沙线，也识得哪一段水底下有旧石。",
-          "who": "洲渡梢公",
+          "text": "洲渡的老梢工识得漓江的沙线，也识得哪一段水底下有旧石。",
+          "who": "洲渡梢工",
           "cost": 50,
           "wage": 9,
           "attention_ease": 1
