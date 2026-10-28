@@ -114,7 +114,7 @@
           "id": "fz_fanfang_copper",
           "type": "buy",
           "label": "收倭铜",
-          "text": "巷尾有番客暗卖倭铜，成色好，价却压得低，只收现钱。",
+          "text": "巷尾有番客暗卖倭铜，成色好，价却压得低，只收见钱。",
           "good": "japanese_copper",
           "qty": 3,
           "price_mul": 0.9,
