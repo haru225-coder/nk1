@@ -13,7 +13,7 @@
           "id": "jj_haenyeo_sable",
           "type": "buy",
           "label": "收貂皮",
-          "text": "山里刚背来的貂皮还带着潮气，毛锋没干，村人急着换盐。",
+          "text": "北边转来的貂皮还带着潮气，毛锋没干，村人急着换盐。",
           "good": "sable_fur",
           "qty": 4,
           "price_mul": 0.9,
@@ -79,17 +79,17 @@
     {
       "id": "jj_ginseng",
       "port": "jeju",
-      "name": "人参田",
-      "kind": "grove",
+      "name": "人参栈",
+      "kind": "warehouse",
       "pending_art": true,
       "bg": "bg_dist_jj_ginseng.jpg",
-      "description": "人参田在山脚，田上搭着草棚遮阴。参农蹲在畦边翻土，根须露出一截白。",
+      "description": "人参栈在山脚，北边来的鲜参摊在竹席上。参工蹲在席边按根分等，须白的另堆。",
       "interactions": [
         {
           "id": "jj_ginseng_buy",
           "type": "buy",
           "label": "收人参",
-          "text": "田口新收的人参，参农按根数点，须白的另堆。",
+          "text": "栈口新收的人参，参工按根数点，须白的另堆。",
           "good": "korean_ginseng",
           "qty": 4,
           "price_mul": 0.88,
@@ -98,9 +98,9 @@
         {
           "id": "jj_ginseng_invest",
           "type": "invest",
-          "label": "入股人参田",
-          "text": "参田主人凑股，秋后起参，按畦分鲜根，晒干的另折。",
-          "shop": "人参田",
+          "label": "入股人参栈",
+          "text": "参栈主人凑股，秋后参船到岸，按等分货，晒干的另折。",
+          "shop": "人参栈",
           "costs": [
             400,
             900
@@ -113,8 +113,8 @@
         {
           "id": "jj_ginseng_licence",
           "type": "licence",
-          "label": "领参田凭",
-          "text": "田主出一张凭，凭这张纸才能整片起参，不必一株一株零卖。",
+          "label": "领参栈凭",
+          "text": "栈主出一张凭，凭这张纸才能整批挑参，不必一株一株零卖。",
           "cost": 220,
           "licence": "lic_jj_ginseng",
           "effects": {
@@ -126,17 +126,17 @@
     {
       "id": "jj_paper",
       "port": "jeju",
-      "name": "纸作坊",
-      "kind": "workshop",
+      "name": "纸栈",
+      "kind": "warehouse",
       "pending_art": true,
       "bg": "bg_dist_jj_paper.jpg",
-      "description": "纸作坊挨着溪，工人把纸浆舀上竹帘，湿纸页贴在木板上晾。",
+      "description": "纸栈挨着溪，北边船运来的高丽纸一捆捆码在木架上。纸工翻检受潮的纸页，边角有破的另算。",
       "interactions": [
         {
           "id": "jj_paper_buy",
           "type": "buy",
           "label": "收高丽纸",
-          "text": "坊里新揭的纸还带着帘纹，纸工按刀数点，边角有破的另算。",
+          "text": "栈里新到的纸还带着帘纹，纸工按刀数点，边角有破的另算。",
           "good": "korean_paper",
           "qty": 8,
           "price_mul": 0.9,
@@ -145,9 +145,9 @@
         {
           "id": "jj_paper_invest",
           "type": "invest",
-          "label": "入股纸坊",
-          "text": "纸坊主人合本，一槽纸出一槽钱，腊月结总账。",
-          "shop": "纸作坊",
+          "label": "入股纸栈",
+          "text": "纸栈主人合本，一船纸出一船钱，腊月结总账。",
+          "shop": "纸栈",
           "costs": [
             320,
             760
@@ -161,7 +161,7 @@
           "id": "jj_paper_hire",
           "type": "hire",
           "label": "雇纸工",
-          "text": "纸工抄了半辈子纸，帘纹粗细一眼便知，买纸时不被诓。",
+          "text": "纸工验了半辈子纸，帘纹粗细一眼便知，买纸时不被诓。",
           "who": "耽罗纸工",
           "cost": 85,
           "wage": 14
@@ -175,13 +175,13 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_jj_sable.jpg",
-      "description": "貂皮滩在石崖下，猎人把皮子摊在卵石上。潮气重，皮腥味久久不散。",
+      "description": "貂皮滩在石崖下，皮商把北边转来的皮子摊在卵石上。潮气重，皮腥味久久不散。",
       "interactions": [
         {
           "id": "jj_sable_buy",
           "type": "buy",
           "label": "收貂皮",
-          "text": "滩上貂皮刚剥下，猎人在卵石上按毛色分堆，白针多的要价硬。",
+          "text": "滩上貂皮刚开包，皮商在卵石上按毛色分堆，白针多的要价硬。",
           "good": "sable_fur",
           "qty": 5,
           "price_mul": 0.88,
@@ -297,11 +297,11 @@
     {
       "id": "jj_temple",
       "port": "jeju",
-      "name": "潭林寺",
+      "name": "法华寺",
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_jj_temple.jpg",
-      "description": "潭林寺靠在山脚，香火冷清。供桌上摆着人参和土纸，老僧慢慢扫石阶。",
+      "description": "法华寺靠在山脚，殿宇虽旧，香火不断。供桌上摆着人参和土纸，老僧慢慢扫石阶。",
       "interactions": [
         {
           "id": "jj_temple_favour",
@@ -340,7 +340,7 @@
           "id": "jj_horse_invest",
           "type": "invest",
           "label": "入股马场",
-          "text": "马场主人招股，母马产驹，驹养大卖了按股分钱。",
+          "text": "马场管事合本，母马产驹，驹养大卖了按股分钱。",
           "shop": "牧马场",
           "costs": [
             450,

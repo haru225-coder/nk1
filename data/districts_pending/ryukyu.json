@@ -66,7 +66,7 @@
           "id": "rk_sulfur_invest",
           "type": "invest",
           "label": "入股硫黄",
-          "text": "谷中硫黄窑招股，一炉出一炉的钱，窑冷时不分。",
+          "text": "谷中硫黄坑招股，每炼一灶，按灶分钱，火熄时不分。",
           "shop": "硫黄谷",
           "costs": [
             360,
@@ -186,7 +186,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_rk_temple.jpg",
-      "description": "祈年祠立在石坡上，供一尊木雕海神。香火不旺，供桌摆着硫黄和贝壳。",
+      "description": "祈年祠立在石坡上，石垣围着一片神林。香火不旺，供桌摆着硫黄和贝壳。",
       "interactions": [
         {
           "id": "rk_temple_pray",
@@ -362,7 +362,7 @@
       "kind": "dam",
       "pending_art": true,
       "bg": "bg_dist_rk_salt.jpg",
-      "description": "盐滩在澳里，白盐结成硬块。岛人挑盐包走过，脚印陷进盐泥。",
+      "description": "盐滩在澳里，海盐卸下堆成硬块。岛人挑盐包走过，脚印陷进盐末。",
       "interactions": [
         {
           "id": "rk_salt_sell",
