@@ -545,7 +545,7 @@
           "id": "jj_inlet_aromatic",
           "type": "sell",
           "label": "卖香药",
-          "text": "澳里有人收香药，不问来路，看过成色便付现钱。",
+          "text": "澳里有人收香药，不问来路，看过成色便付见钱。",
           "good": "aromatic_medicine",
           "qty": 2,
           "price_mul": 0.92,
