@@ -399,10 +399,10 @@ static func grapple_factors(att_in: Dictionary, def_in: Dictionary, ctx := {}) -
 		var why := str(ctx.get("approach_note", "")).strip_edges()
 		notes.append(why if why != "" else "船势不合，钩不住")
 	elif dist > reach:
-		notes.append("舷距太远，钩索够不着")
+		notes.append("两船隔得太远，钩索够不着")
 	if float(f["speed"]) < 0.8:
 		if not blocked:
-			notes.append("两船相对太快")
+			notes.append("两船来势太急")
 	elif float(f["speed"]) > 0.95:
 		boons.append("并舷同速")
 	if float(f["wind"]) < 0.9:
