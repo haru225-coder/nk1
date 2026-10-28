@@ -679,7 +679,7 @@ func _yuan_patrol_event() -> Dictionary:
 		"kind": EventKind.YUAN_PATROL,
 		"title": "元军哨船",
 		# 「三条船」与 SeaChart.PATROL_ENEMY.count 同数（按「迎战」后墨边写「海鹘三艘」，也刷三艘）；story_check 对账
-		"text": "三条船从雾里出来，帆上是你没见过的旗。船头的人用福建话喊：「大元巡海，落帆受检。」\n口音是泉州的。",
+		"text": "三条船从雾里出来，帆上是你没见过的旗。船头的人用闽音喊：「大元巡海，落帆受检。」\n口音是泉州的。",
 	}
 
 
@@ -769,7 +769,7 @@ func _current_event(course_bearing: float) -> Dictionary:
 	return {
 		"kind": EventKind.CURRENT,
 		"title": "顺流",
-		"text": "撞上一股往%s去的海流，船身轻快了许多，舵手说这一日能多走几十里。" % DIR8[int(round(fposmod(course_bearing, 360.0) / 45.0)) % 8],
+		"text": "撞上一股往%s去的海流，船身轻快了许多，舵工说这一日能多走几十里。" % DIR8[int(round(fposmod(course_bearing, 360.0) / 45.0)) % 8],
 		"bonus": 1,
 	}
 
@@ -872,7 +872,7 @@ func _merchant_event(from_id: String) -> Dictionary:
 			ev["good_id"] = gid
 			ev["qty"] = qty
 			ev["unit"] = unit
-			ev["text"] = "右舷靠来一条空舱的船。对方指着你的%s，愿以每件 %d 钱收下 %d 件——比港里的好价钱差一截，银子却是当下就能到手。\n%s" % [
+			ev["text"] = "右舷靠来一条空舱的船。对方指着你的%s，愿以每件 %d 钱收下 %d 件——比港里的好价钱差一截，现钱却是当下就能到手。\n%s" % [
 				GameManager.get_good_name(gid), unit, qty, rumor_line,
 			]
 			return ev
@@ -1019,7 +1019,7 @@ func _discovery_event(from_id: String = "", to_id: String = "") -> Dictionary:
 	return {
 		"kind": EventKind.DISCOVERY,
 		"title": "岸影",
-		"text": "左舷远处露出一线陆影，海图上此处应是空白。舵手眯眼看了半晌，说那多半就是老辈人讲的%s。" % d.get("name", "旧泊地"),
+		"text": "左舷远处露出一线陆影，海图上此处应是空白。舵工眯眼看了半晌，说那多半就是老辈人讲的%s。" % d.get("name", "旧泊地"),
 		"discovery_id": d.get("id", ""),
 	}
 
