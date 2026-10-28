@@ -244,7 +244,7 @@ static func choices_for(outcome: String, data: Dictionary) -> Array:
 		if not fled.is_empty():
 			rows.append({
 				"key": "pursue",
-				"label": "追击（逃了 %d 艘）：可多夺一艘、也可能再挨一顿" % fled.size(),
+				"label": "追击（逃了 %d 艘）：可多夺一艘、也可能再挨一阵" % fled.size(),
 				"options": [
 					{"id": "hold", "label": "收队", "default": true},
 					{"id": "chase", "label": "追", "default": false},
