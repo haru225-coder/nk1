@@ -587,9 +587,9 @@
     {
      "id": "xa_weidu_boatman",
      "type": "hire",
-     "label": "雇艄公",
-     "text": "艄公在渭水上撑了半辈子，哪段河底有沙洲他闭着眼都知道。",
-     "who": "艄公",
+     "label": "雇梢工",
+     "text": "梢工在渭水上撑了半辈子，哪段河底有沙洲他闭着眼都知道。",
+     "who": "梢工",
      "cost": 45,
      "wage": 6,
      "attention_ease": 0,
