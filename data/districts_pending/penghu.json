@@ -45,17 +45,17 @@
     {
       "id": "ph_yantian",
       "port": "penghu",
-      "name": "盐田陂",
+      "name": "盐田",
       "kind": "dam",
       "pending_art": true,
       "bg": "bg_dist_ph_yantian.jpg",
-      "description": "盐田沿石陂铺开，日头毒，盐工挑盐包走过。陂塘水面映着白盐。",
+      "description": "盐田沿石堤铺开，日头毒，盐工挑盐包走过。盐沟水面映着白盐。",
       "interactions": [
         {
           "id": "ph_yantian_salt",
           "type": "buy",
           "label": "收海盐",
-          "text": "陂上盐刚晒成，盐工用木耙把盐粒刮成小堆。",
+          "text": "盐畦里盐刚晒成，盐工用木耙把盐粒刮成小堆。",
           "good": "sea_salt",
           "qty": 10,
           "price_mul": 0.88,
@@ -80,7 +80,7 @@
           "id": "ph_yantian_licence",
           "type": "licence",
           "label": "领盐田凭",
-          "text": "屿寨出一张凭，凭它才能整陂搬盐。",
+          "text": "屿寨出一张凭，凭它才能整片盐田搬盐。",
           "cost": 180,
           "licence": "lic_ph_salt",
           "effects": {
@@ -357,17 +357,17 @@
     {
       "id": "ph_tianhou",
       "port": "penghu",
-      "name": "顺济庙",
+      "name": "灵惠妃庙",
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_ph_tianhou.jpg",
-      "description": "顺济庙在石坡上，供灵惠妃。香火不旺，供桌摆着船模和渔网。",
+      "description": "庙在石坡上，供灵惠妃。香火不旺，供桌摆着船模和渔网。",
       "interactions": [
         {
           "id": "ph_tianhou_pray",
           "type": "favour",
           "label": "祈风",
-          "text": "你在顺济庙前点一炷香，问这一季北风何时起。",
+          "text": "你在灵惠妃庙前点一炷香，问这一季北风何时起。",
           "cost": 0,
           "once_per": "year",
           "effects": {
@@ -485,7 +485,7 @@
           "id": "ph_wangtou_rumor",
           "type": "rumor",
           "label": "问耽罗",
-          "text": "山下人说耽罗人参要等秋后下山，眼下收不到。",
+          "text": "山下人说高丽参山场今秋歉收，耽罗转口的人参也少。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "jeju",

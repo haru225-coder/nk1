@@ -33,7 +33,7 @@
           "id": "mz_sanjiang_rumor",
           "type": "rumor",
           "label": "问梢公",
-          "text": "梢公说博多今年硫黄山塌了一面，硫黄船少两条，庆元火药作坊在抢货。",
+          "text": "梢公说萨摩今年硫黄山塌了一面，博多硫黄船少两条，庆元火药作坊在抢货。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "hakata",
@@ -49,7 +49,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_mz_tiantong.jpg",
-      "description": "天童寺在四明山下，殿前松柏苍老，东国僧人入宋多到这里，寺前放着僧鞋与行囊。",
+      "description": "天童寺在太白山下，殿前松柏苍老，东国僧人入宋多到这里，寺前放着僧鞋与行囊。",
       "interactions": [
         {
           "id": "mz_tiantong_monk",
@@ -139,7 +139,7 @@
           "id": "mz_ashoka_rumor",
           "type": "rumor",
           "label": "听塔铃",
-          "text": "看塔老僧说，博多今冬入宋僧船少，寺里存茶不够分，唐房正等庆元船带茶去。",
+          "text": "看塔老僧说，今冬北风早，往博多的茶船还没回，唐房存茶不够分。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "hakata",
@@ -161,7 +161,7 @@
           "id": "mz_baoguo_listen",
           "type": "favour",
           "label": "听讲",
-          "text": "你站在殿廊外听了一讲，讲的是寺田租谷与海船抽解。",
+          "text": "你站在殿廊外听了一讲，讲的是寺田旧规与海舶捐施。",
           "cost": 0,
           "once_per": "month",
           "effects": {
@@ -232,7 +232,7 @@
           "id": "mz_shibo_rumor",
           "type": "rumor",
           "label": "听倭船",
-          "text": "市舶司书吏翻着抽解簿说，倭铜今年进得少，博多那头官府在收铜铸钱。",
+          "text": "市舶司书吏翻着抽解簿说，倭铜今年进得少，博多那头铜船在口外避风，还没到。",
           "cost": 18,
           "cooldown_days": 45,
           "port": "hakata",
@@ -327,7 +327,7 @@
           "id": "mz_shipyard_sulfur",
           "type": "buy",
           "label": "收硫黄",
-          "text": "萨摩硫黄在坞中过秤，麻袋一解开，匠人先捻一撮看干湿。",
+          "text": "萨摩硫黄在坞旁货棚过秤，麻袋一解开，牙人先捻一撮看干湿。",
           "good": "sulfur",
           "qty": 4,
           "price_mul": 0.93,
@@ -502,17 +502,17 @@
     {
       "id": "mz_bridge",
       "port": "mingzhou",
-      "name": "三江石桥",
+      "name": "东津浮桥",
       "kind": "bridge",
       "pending_art": true,
       "bg": "bg_dist_mz_bridge.jpg",
-      "description": "三江口上横着石桥，挑夫牵马都从桥面过，桥下江流很急。",
+      "description": "奉化江上横着浮桥，十六只船横江连成一线，上铺木板，挑夫牵马都从桥面过，桥下江流很急。",
       "interactions": [
         {
           "id": "mz_bridge_cross",
           "type": "favour",
           "label": "过桥",
-          "text": "你在三江石桥上停了一歇，看江流从脚下过去。",
+          "text": "你在东津浮桥上停了一歇，看江流从脚下过去。",
           "cost": 6,
           "once_per": "month",
           "effects": {
@@ -523,7 +523,7 @@
           "id": "mz_bridge_silk",
           "type": "buy",
           "label": "收生丝",
-          "text": "桥边有人从船上带来生丝，要换庆元钱。",
+          "text": "桥边有人从船上带来生丝，要换会子。",
           "good": "raw_silk",
           "qty": 5,
           "price_mul": 0.92,
@@ -549,7 +549,7 @@
       "kind": "academy",
       "pending_art": true,
       "bg": "bg_dist_mz_academy.jpg",
-      "description": "府学在城中，学生捧着卷听讲，这里不卖书。",
+      "description": "府学在城中，学生捧着卷听讲，廊下很静。",
       "interactions": [
         {
           "id": "mz_academy_listen",
@@ -621,7 +621,7 @@
           "id": "mz_ferry_rumor",
           "type": "rumor",
           "label": "问船家",
-          "text": "船家说耽罗参农遭了风灾，人参今年难收。",
+          "text": "船家说高丽参山场今秋歉收，耽罗转口的人参也少。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "jeju",
@@ -633,17 +633,17 @@
     {
       "id": "mz_hill",
       "port": "mingzhou",
-      "name": "四明山亭",
+      "name": "候涛山亭",
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_mz_hill.jpg",
-      "description": "山亭在四明山腰，三江口与海门在脚下分作两色，风从海上来。",
+      "description": "山亭在候涛山腰，甬江与海门在脚下分作两色，风从海上来。",
       "interactions": [
         {
           "id": "mz_hill_view",
           "type": "choice",
           "label": "登亭",
-          "text": "亭上风大，城在左手，海在右手。",
+          "text": "亭上风大，县城在脚下，海在眼前。",
           "once_per": "year",
           "options": [
             {
@@ -653,7 +653,7 @@
               "cost": 0,
               "effects": {
                 "sea_tendency": 1,
-                "note": "四明山亭上看过海。"
+                "note": "在候涛山上望过海。"
               }
             },
             {
@@ -671,7 +671,7 @@
           "id": "mz_hill_pray",
           "type": "favour",
           "label": "祈风",
-          "text": "你在四明山亭焚香，求海门这一季风信顺当。",
+          "text": "你在亭中焚香，求海门这一季风信顺当。",
           "cost": 10,
           "once_per": "month",
           "effects": {
