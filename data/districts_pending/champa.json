@@ -33,7 +33,7 @@
           "id": "cp_harbor_rumor",
           "type": "rumor",
           "label": "问番船",
-          "text": "梢公把一把胡椒摊在掌心，说三佛齐今春椒船迟了半月，广州蕃坊椒价已添一成。",
+          "text": "梢工把一把胡椒摊在掌心，说三佛齐今春椒船迟了半月，广州蕃坊椒价已添一成。",
           "cost": 16,
           "cooldown_days": 40,
           "port": "guangzhou",
@@ -225,7 +225,7 @@
         {
           "id": "cp_ferry_rumor",
           "type": "rumor",
-          "label": "问梢公",
+          "label": "问船家",
           "text": "船家说广州珊瑚多从大食船来，今年西洋风迟，蕃坊珊瑚珠见少。",
           "cost": 12,
           "cooldown_days": 40,
