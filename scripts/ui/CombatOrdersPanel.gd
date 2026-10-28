@@ -69,9 +69,9 @@ const ORDER_KEYS := {
 	"board": [KEY_4, KEY_KP_4], "parley": [KEY_5, KEY_KP_5], "cut": [KEY_6, KEY_KP_6], "wet": [KEY_7, KEY_KP_7],
 }
 const ORDER_TIPS := {
-	"windward": "缭手加倍上缭，篾篷逐片收紧，船可再贴风几度；弩炮手被抽去，装填慢。再按撤令。",
+	"windward": "缭手加倍上缭，篾篷逐片收紧，船可再贴风几度；放箭拽炮的人被抽去，装填慢。再按撤令。",
 	"load": "轮换：均装、专力装填。专力装填闲手都去递矢拽炮，装填快、帆索人少。",
-	"damage": "分人戽水扑火，扑火排水快数倍；帆与弩炮的人手跟着少。再按撤令。",
+	"damage": "分人戽水扑火，扑火排水快数倍；帆索与炮位的人手跟着少。再按撤令。",
 	"board": "甲士执钩拒聚到舷边，六秒聚齐：钩距远、白刃有力，聚在舷边挨矢石伤亡也多。再按撤令。",
 	"parley": "近敌喊话，令其竖降幡。敌士气低、船伤重、我众敌寡、已钩住、敌阵脚已乱时易成；不成二十秒内不能再喊。",
 	"cut": "敌船先抛的钩挂上时斧手斫缆脱开：每合砍断钩索的机会多一半；本船去钩的不济，签了也无用。",
@@ -79,11 +79,11 @@ const ORDER_TIPS := {
 }
 ## 火攻回到轮换（loads() 三档）时「装填侧重」签的提示；两档时照 ORDER_TIPS 原文（签面上的串与 w53-2 账逐字一致，w53-p3b）
 const ORDER_TIPS_FIRE := {
-	"load": "轮换：均装、专力装填、火攻。专力装填闲手都去递矢拽炮，装填快、帆索人少；火攻换装火箭火球，焚帆为主、装填稍慢，须居上风——居上风引火力倍，居下风减半。"
+	"load": "轮换：均装、专力装填、火攻。专力装填，闲手都去递矢拽炮，装填快、帆索人少；火攻改发火箭、火药包，焚帆为主、装填稍慢，须居上风——上风引火加倍，下风减半。"
 }
 
 const STATIONS := ["sail", "guns", "damage", "board"]
-const STATION_NAMES := {"sail": "帆", "guns": "弩炮", "damage": "水火", "board": "甲士"}
+const STATION_NAMES := {"sail": "帆", "guns": "矢石", "damage": "水火", "board": "甲士"}
 ## 平时人手分派（和为 1）
 const BASE_ALLOC := {"sail": 0.30, "guns": 0.40, "damage": 0.10, "board": 0.20}
 const WINDWARD_SAIL_W := 1.8
@@ -862,7 +862,7 @@ func state_text(order_id: String) -> String:
 			if _battle_over():
 				return "战毕"
 			if parley_cd > 0.0:
-				return "候 %d秒" % ceili(parley_cd)
+				return "候 %d 秒" % ceili(parley_cd)
 			var ctx := parley_context()
 			if not bool(ctx.get("ok", false)):
 				return parley_short(ctx)
@@ -876,15 +876,15 @@ func state_text(order_id: String) -> String:
 	return ""
 
 
-## 人手一行。旗舰有损伤簿（DamageModel）就写它此刻的实派：「人手 帆12 弩炮24 水火6 余38」；
-## 没有就按本面板的分派：「人手 帆24 弩炮32 水火8 甲士16」
+## 人手一行。旗舰有损伤簿（DamageModel）就写它此刻的实派：「人手 帆12 矢石24 水火6 余38」；
+## 没有就按本面板的分派：「人手 帆24 矢石32 水火8 甲士16」
 func alloc_text() -> String:
 	var dm := StatusHud.damage_of(_ship())
 	if dm != null and dm.has_method("crew_split"):
 		var sp = dm.call("crew_split")
 		if sp is Dictionary:
 			var water := int(sp.get("fire", 0)) + int(sp.get("flood", 0)) + int(sp.get("jury", 0))
-			return "人手 帆%d 弩炮%d 水火%d 余%d" % [int(sp.get("sail", 0)), int(sp.get("weapons", 0)), water, int(sp.get("spare", 0))]
+			return "人手 帆%d 矢石%d 水火%d 余%d" % [int(sp.get("sail", 0)), int(sp.get("weapons", 0)), water, int(sp.get("spare", 0))]
 	var total := crew_total()
 	var a := current_allocation()
 	var bits := PackedStringArray()
@@ -928,9 +928,9 @@ func effect_text() -> String:
 		if up < 0:
 			bits.append("火攻须居上风")
 	if bool(state().get("wet", false)):
-		bits.append("毡罩火・我射八折")
+		bits.append("湿毡御火・我射八折")
 	if bool(state().get("cut", false)):
-		bits.append("斧候钩")
+		bits.append("斧手候钩")
 	if bits.is_empty():
 		bits.append("平时")
 	bits.insert(0, "效力")
