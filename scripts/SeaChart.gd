@@ -926,7 +926,7 @@ func _monsoon_short() -> String:
 		return "东北风"
 	if desc.begins_with("西南"):
 		return "西南风"
-	return "转换期"
+	return "风未定"
 
 
 func _plain_note(text: String) -> String:
@@ -1805,7 +1805,7 @@ func _enter_battle() -> void:
 	back_button.disabled = true
 	var wm := preload("res://scenes/WorldMap.tscn").instantiate()
 	if not wm.has_signal("battle_finished"):
-		_log(_ink(UiTheme.CINNABAR, "海战脚本没挂上，未能开打。"))
+		_log(_ink(UiTheme.CINNABAR, "海上接战不成，船队照旧行船。"))
 		wm.queue_free()
 		_after_combat()
 		return
