@@ -97,7 +97,7 @@
           "id": "hn_baisha_rumor",
           "type": "rumor",
           "label": "问盐船",
-          "text": "雷州盐船在白沙津避风泊了三天，梢公掐着日子说，广州盐仓这一纲怕要误了。",
+          "text": "雷州盐船在白沙津避风泊了三天，梢工掐着日子说，广州盐仓这一纲怕要误了。",
           "cost": 14,
           "cooldown_days": 40,
           "port": "guangzhou",
