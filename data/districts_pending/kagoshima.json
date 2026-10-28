@@ -33,7 +33,7 @@
           "id": "kg_bonotsu_rumor",
           "type": "rumor",
           "label": "问回船",
-          "text": "梢公说博多硫黄船未靠岸，滩上的垛子矮了一截。",
+          "text": "梢工说博多硫黄船未靠岸，滩上的垛子矮了一截。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "hakata",
