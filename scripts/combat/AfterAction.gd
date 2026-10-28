@@ -431,7 +431,7 @@ static func _apply_pursue(chosen: String, data: Dictionary, out: Dictionary) -> 
 	else:
 		out["pursuit_roll"] = "missed"
 		var hits := maxi(1, int(s.get("broadside_hits", 3)))
-		out["note"] = "追不上，反挨了一顿舷炮（%d 门齐射）。" % hits
+		out["note"] = "追不上，反挨了一顿舷炮（%d 架齐射）。" % hits
 	out["ok"] = true
 	return out
 
