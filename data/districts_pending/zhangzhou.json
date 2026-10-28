@@ -49,7 +49,7 @@
       "kind": "dam",
       "pending_art": true,
       "bg": "bg_dist_zz_yanzhan.jpg",
-      "description": "盐场沿石陂铺开，海水引入陂田，日头一晒便成白盐。陂石年久，挑盐的人从石缝上过。",
+      "description": "盐场沿石陂铺开，海水引入盐畦，日头一晒便成白盐。陂石年久，挑盐的人从石缝上过。",
       "interactions": [
         {
           "id": "zz_yanzhan_salt",
@@ -316,7 +316,7 @@
       "kind": "academy",
       "pending_art": true,
       "bg": "bg_dist_zz_zhuxi.jpg",
-      "description": "朱熹祠在城中，石碑字迹已旧，香火却没有断过。士人来读碑，也在这里收生丝。",
+      "description": "朱熹祠在城中，石碑字迹已旧，香火却没有断过。士人来读碑，也把卷子送到这里求批。",
       "interactions": [
         {
           "id": "zz_zhuxi_stele",
@@ -375,27 +375,27 @@
     {
       "id": "zz_shan",
       "port": "zhangzhou",
-      "name": "九侯山",
+      "name": "云洞岩",
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_zz_shan.jpg",
-      "description": "九侯山在城北，松林里石径盘曲而上。坡顶有块大石，九龙江从石下转过。",
+      "description": "云洞岩在城东，岩洞里石径盘曲而上。坡顶有块大石，九龙江从南面绕过。",
       "interactions": [
         {
           "id": "zz_shan_climb",
           "type": "choice",
           "label": "登山",
-          "text": "九侯山石径在此分岔，一路临江，一路入城。",
+          "text": "云洞岩石径在此分岔，往南临江，往西入城。",
           "once_per": "year",
           "options": [
             {
               "id": "east",
-              "label": "东看江",
-              "text": "九龙江上桅樯渐远，潮风带着咸味。",
+              "label": "南看江",
+              "text": "九龙江上桅樯渐远，江风带着水气。",
               "cost": 0,
               "effects": {
                 "sea_tendency": 1,
-                "note": "登过九侯山看江。"
+                "note": "登过云洞岩看江。"
               }
             },
             {
@@ -405,7 +405,7 @@
               "cost": 0,
               "effects": {
                 "scholar_tendency": 1,
-                "note": "登过九侯山看城。"
+                "note": "登过云洞岩看城。"
               }
             }
           ]
@@ -425,7 +425,7 @@
           "id": "zz_shan_view",
           "type": "favour",
           "label": "望江",
-          "text": "你在九侯山石上站定，江风从背后吹来。",
+          "text": "你在云洞岩石上站定，江风从南面吹来。",
           "cost": 0,
           "once_per": "month",
           "effects": {
@@ -624,7 +624,7 @@
           "id": "zz_yamen_rumor",
           "type": "rumor",
           "label": "听粮价",
-          "text": "书吏说福州米船搁在浅滩，九龙江路一时断了。",
+          "text": "书吏说闽江上游米船搁在浅滩，福州米行一时断了货。",
           "cost": 10,
           "cooldown_days": 30,
           "port": "fuzhou",

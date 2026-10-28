@@ -7,7 +7,7 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_fz_minjiang.jpg",
-      "description": "闽江北岸的南台码头，潮涨时福船贴住石岸，茶包和漆器板箱压在跳板边。脚夫扛盐袋，赤脚踩过湿木。",
+      "description": "闽江南岸的南台码头，潮涨时福船贴住石岸，茶包和漆器板箱压在跳板边。脚夫扛盐袋，赤脚踩过湿木。",
       "interactions": [
         {
           "id": "fz_minjiang_salt",
@@ -94,18 +94,18 @@
     {
       "id": "fz_fanfang",
       "port": "fuzhou",
-      "name": "蕃坊石巷",
+      "name": "番客石巷",
       "kind": "street",
       "pending_art": true,
       "bg": "bg_dist_fz_fanfang.jpg",
-      "description": "城南蕃坊的石巷只容两人并肩，乳香靠墙码成垛，通事在番客与牙人之间来回传话。",
+      "description": "城南番客聚居的石巷只容两人并肩，乳香靠墙码成垛，通事在番客与牙人之间来回传话。",
       "interactions": [
         {
           "id": "fz_fanfang_interpreter",
           "type": "hire",
           "label": "雇通事",
           "text": "通事会说大食话与福州腔，番客报虚价时，他会用指节敲一敲秤盘。",
-          "who": "蕃坊通事",
+          "who": "番客通事",
           "cost": 120,
           "wage": 22,
           "attention_ease": 1
@@ -259,7 +259,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_fz_xichan.jpg",
-      "description": "西禅寺在城西，殿宇旧而香火不歇。寺后园里种茶，僧人也收香药，柜上摆着自制的香丸。",
+      "description": "西禅寺在城西，殿宇旧而香火不歇。寺后园里荔枝成林，僧人也收茶与香药，柜上摆着自制的香丸。",
       "interactions": [
         {
           "id": "fz_xichan_med",
@@ -336,13 +336,13 @@
           "id": "fz_wushan_climb",
           "type": "choice",
           "label": "登山",
-          "text": "乌山石径到这里分岔，往左临江，往右入城。",
+          "text": "乌山石径到这里分岔，往南临江，往北入城。",
           "once_per": "year",
           "options": [
             {
               "id": "east",
-              "label": "东看江",
-              "text": "东望闽江，布帆顺流而下，海风扑面。",
+              "label": "南看江",
+              "text": "南望闽江，布帆顺流而下，海风扑面。",
               "cost": 0,
               "effects": {
                 "sea_tendency": 1,
@@ -351,8 +351,8 @@
             },
             {
               "id": "west",
-              "label": "西看城",
-              "text": "西望城中，南台屋瓦一层压一层。",
+              "label": "北看城",
+              "text": "北望城中，屋瓦一层压一层。",
               "cost": 0,
               "effects": {
                 "scholar_tendency": 1,
@@ -602,7 +602,7 @@
           "id": "fz_yao_silk",
           "type": "sell",
           "label": "卖生丝",
-          "text": "窑主也收生丝，出价高过城中牙行。",
+          "text": "窑场外有泉州客收生丝，出价高过城中牙行。",
           "good": "raw_silk",
           "qty": 3,
           "price_mul": 1.05,
