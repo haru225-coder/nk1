@@ -3739,7 +3739,7 @@ func _on_resign_1275() -> void:
 	choices_container.add_child(quiet)
 
 	var defect := Button.new()
-	defect.text = "车转向南，去泉州找林阿舶（清算士人三锚）"
+	defect.text = "车转向南，去泉州找林阿舶（撕三张纸，断士人路）"
 	defect.disabled = GameState.money < 500
 	defect.tooltip_text = "县学籍册、名流举荐信、宗祠联名担保——撕这三张纸要钱，也要名声。"
 	defect.pressed.connect(func():
@@ -3940,7 +3940,7 @@ func _setup_quanzhou_standoff(port_id: String) -> void:
 
 	var zhang := Button.new()
 	if Fleet.ships.size() > 1:
-		zhang.text = "船借张世杰——编出最小一条船（名声 +8，海商信用 −15）"
+		zhang.text = "船借张世杰——拨出最小一条船（名声 +8，海商信用 −15）"
 	else:
 		zhang.text = "船借张世杰——只此一条，以粮代船（名声 +8，海商信用 −15，水粮减半）"
 	zhang.pressed.connect(func():
@@ -5244,7 +5244,7 @@ func _yashan_breakout(p_known_here: bool) -> void:
 	if not wm.has_signal("battle_finished"):
 		GameManager.pending_battle = {}
 		wm.queue_free()
-		log_msg("海战脚本没挂上，崖山这一仗没能开打。")
+		log_msg("崖山海上雾重，这一仗没能开打。")
 		return
 	wm.battle_finished.connect(_on_yashan_battle)
 	# 海战一层是全屏 Node2D，铺在港页上面会挡住船和 HUD：本页的 CanvasItem 先收起（与 SeaChart 同一手）
