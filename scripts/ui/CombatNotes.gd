@@ -285,7 +285,7 @@ func _build(e: Dictionary) -> PanelContainer:
 	card.custom_minimum_size = Vector2(SLIP_W, 0)
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
 	card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	card.tooltip_text = "点一下收起"
+	card.tooltip_text = "一按即收"
 	card.gui_input.connect(_on_slip_input)
 	var margin := MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
