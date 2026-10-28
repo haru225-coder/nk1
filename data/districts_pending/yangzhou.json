@@ -441,12 +441,12 @@
           "id": "yz_dongguan_credit",
           "type": "choice",
           "label": "赊布",
-          "text": "邻铺嫁女，来赊一匹红布。柜上现钱不凑手，掌柜看着你。",
+          "text": "邻铺嫁女，来赊一匹红布。柜上见钱不凑手，掌柜看着你。",
           "once_per": "month",
           "options": [
             {
               "id": "yz_dongguan_credit_full",
-              "label": "借他现钱",
+              "label": "借他见钱",
               "text": "你替邻铺垫了布钱。掌柜把红布包好，送亲的人从街上过。",
               "cost": 35,
               "effects": {
