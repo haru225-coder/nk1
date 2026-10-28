@@ -42,7 +42,7 @@ const BALLAST_PER_MOUNT := {"war": 6, "raider": 4, "merchant": 6}
 ## 代用弹：不按告急慎发，也不算进「远射弹药余量」
 const SUBSTITUTE_AMMO := ["yacang"]
 ## 弹尽哑火时报哪位（原配武器）
-const MOUNT_NAMES := {"gongnu": "弓弩", "chuangnu": "床子弩", "pao": "炮"}
+const MOUNT_NAMES := {"gongnu": "弓弩", "chuangnu": "床子弩", "pao": "炮位"}
 ## 一位也没放出去时，拒放原因按这个次序报
 const REFUSAL_ORDER := ["舷角外", "射程不及", "太近", "弹尽", "未装毕", "换舷", "缺人手"]
 ## CombatStatusHud 快照的弹种键（combat08 的 AMMO_NAMES：arrow 矢 / bolt 弩 / stone 石 / gunpowder 药）
@@ -512,11 +512,11 @@ static func _powder_text(liang: int) -> String:
 	return "%d 两" % liang
 
 
-## 一舷的状态短句：「左舷　就绪 3 / 5」或「左舷　装填 0 / 5，尚需 4 秒」。
+## 一舷的状态短句：「左舷　已装 3 / 5」或「左舷　装填 0 / 5，尚需 4 秒」。
 func side_line(side: int) -> String:
 	var ready_n := ready_count(side)
 	var total := mount_count(side)
-	var head := "%s　就绪 %d / %d" % [side_name(side), ready_n, total]
+	var head := "%s　已装 %d / %d" % [side_name(side), ready_n, total]
 	if ready_n > 0 or total == 0:
 		return head
 	var left := reload_left(side)
@@ -539,7 +539,7 @@ func ammo_line() -> String:
 	return "　".join(bits)
 
 
-## 状态条整句：两舷就绪 + 弹药，火攻令在时标出。
+## 状态条整句：两舷已装 + 弹药，火攻令在时标出。
 func status_line() -> String:
 	var s := "%s　　%s　　%s" % [side_line(SIDE_PORT), side_line(SIDE_STARBOARD), ammo_line()]
 	return s + "　　火攻" if fire_mode else s
