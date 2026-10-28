@@ -80,7 +80,7 @@
           "id": "ph_yantian_licence",
           "type": "licence",
           "label": "领盐田凭",
-          "text": "屿寨出一张凭，凭它才能整片盐田搬盐。",
+          "text": "屿寨出一张凭，凭它才能把盐搬出盐田。",
           "cost": 180,
           "licence": "lic_ph_salt",
           "effects": {
@@ -485,7 +485,7 @@
           "id": "ph_wangtou_rumor",
           "type": "rumor",
           "label": "问耽罗",
-          "text": "山下人说高丽参山场今秋歉收，耽罗转口的人参也少。",
+          "text": "山下人说高丽参今年来货少，耽罗转手的人参也贵了。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "jeju",
