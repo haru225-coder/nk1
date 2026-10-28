@@ -483,7 +483,7 @@ static func boarding_approach(a, b, wind_to := Vector2.ZERO, wind_speed := -1.0,
 			reason = "对冲太快　钩不住"
 			note = "两船对冲太快，钩索挂不住。"
 		elif speed_loss >= wind_loss:
-			reason = "船速悬殊　钩不住"
+			reason = "快慢悬殊　钩不住"
 			note = "两船快慢相差太大，钩索挂不住。"
 		elif gauge < -0.2:
 			reason = "身处下风　靠不上"
