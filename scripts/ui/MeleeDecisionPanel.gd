@@ -133,17 +133,17 @@ func _build() -> void:
 	btn_row.add_theme_constant_override("separation", 24)
 	vb.add_child(btn_row)
 
-	var push := _make_button("压上（Space）")
+	var push := _make_button("压上（空格）")
 	push.pressed.connect(_answer.bind(1))
 	btn_row.add_child(push)
 	_buttons.append(push)
 
-	var hold := _make_button("收势（Enter）")
+	var hold := _make_button("收势（回车）")
 	hold.pressed.connect(_answer.bind(0))
 	btn_row.add_child(hold)
 	_buttons.append(hold)
 
-	var auto := _make_button("本场自动（M）")
+	var auto := _make_button("此战自动（M）")
 	auto.pressed.connect(set_battle_auto.bind(true))
 	btn_row.add_child(auto)
 	_buttons.append(auto)
@@ -192,7 +192,7 @@ func _present(site: Dictionary) -> void:
 
 
 func _note_refresh() -> void:
-	_note.text = "压上：推进快、伤亡多　｜　收势：稳、慢，可能被反推　｜　%ds 不动自动" % int(DECISION_TIMEOUT)
+	_note.text = "压上：进得快、折损多　｜　收势：稳而慢，或被人反压　｜　%d 息不动自动" % int(DECISION_TIMEOUT)
 
 
 func _process(delta: float) -> void:

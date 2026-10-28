@@ -57,7 +57,7 @@ static func setup_shipyard(main: Control, port_id: String) -> void:
 		var berth: VBoxContainer = main._slip_body()
 		main._slip_title(berth, "坞位　%s" % Fleet.ship_label(on), "帆　%s　甲　%s　捻　%s" % [main._fit_rank(slv), main._fit_rank(alv), main._fit_rank(mlv)])
 		_ShipArt.mount_plate(berth, str(hull.get("type", "")), 280)
-		main._slip_note(berth, "水手 %d / %d　耐久 %d / %d　载 %d 料" % [
+		main._slip_note(berth, "水手 %d / %d　船身 %d / %d　载 %d 料" % [
 			Fleet.ship_crew(on),
 			Fleet.ship_crew_max(on),
 			int(hull.get("durability", 0)),
@@ -131,7 +131,7 @@ static func setup_shipyard(main: Control, port_id: String) -> void:
 	var rc := Fleet.repair_cost()
 	if rc > 0:
 		var repair_chip: Button = main._slip_chip(supply_row, "修船　%d" % rc, main._on_repair_hull.bind(rc))
-		repair_chip.tooltip_text = "坞上坞外各船一并修好，共差 %d 点耐久。" % int(ceil(Fleet.total_max_durability() - Fleet.total_durability()))
+		repair_chip.tooltip_text = "坞上坞外各船一并修好，船身尚差 %d。" % int(ceil(Fleet.total_max_durability() - Fleet.total_durability()))
 	var below_min: int = Fleet.crew_to_min_needed()
 	if below_min > 0:
 		var top_cost := below_min * 20
@@ -171,7 +171,7 @@ static func setup_shipyard(main: Control, port_id: String) -> void:
 	var for_sale := DrydockBerth.sale_ids(catalog, reached)
 	if for_sale.size() > 0:
 		var sale: VBoxContainer = main._slip_body()
-		main._slip_title(sale, "坞外待售", "新买的船泊在坞外，不自动占坞")
+		main._slip_title(sale, "坞外待售", "新买的船泊在坞外，不占坞位")
 		var sale_row: HFlowContainer = main._slip_row(sale)
 		for sid in for_sale:
 			var offer: Dictionary = main._yard_offer(catalog, sid)
@@ -180,7 +180,7 @@ static func setup_shipyard(main: Control, port_id: String) -> void:
 			var price: int = int(offer.get("price", 0))
 			var tid := str(offer.get("id", ""))
 			var buy: Button = main._slip_chip(sale_row, "%s　购入　%d" % [str(offer.get("name", "船")), price], main._on_buy_ship.bind(tid, price), true)
-			buy.tooltip_text = "载 %d 料　水手 %d 至 %d　耐久 %d" % [
+			buy.tooltip_text = "载 %d 料　水手 %d 至 %d　船身 %d" % [
 				int(offer.get("capacity", 0)), int(offer.get("crew_min", 0)),
 				int(offer.get("crew_max", 0)), int(offer.get("durability", 0)),
 			]
@@ -220,7 +220,7 @@ static func on_repair_hull(main: Control, cost: int) -> void:
 	if GameState.spend_money(cost):
 		main._upgrade_busy = true
 		Fleet.repair_all()
-		main.log_msg("船匠敲了一日。各船船体按簿修好。")
+		main.log_msg("船匠敲了一日。各船船身按簿修好，捻缝处补过桐油。")
 		await main._yard_success_transition("修船")
 		main._upgrade_busy = false
 	else:
@@ -303,36 +303,36 @@ static func on_upgrade(main: Control, ship_index: int, kind: String, shown_cost:
 	var prev_lv: int = Fleet.armor_level(ship_index) if is_armor else (Fleet.seam_level(ship_index) if is_seam else Fleet.sail_level(ship_index))
 	var is_max: bool = Fleet.is_armor_max(ship_index) if is_armor else (Fleet.is_seam_max(ship_index) if is_seam else Fleet.is_sail_max(ship_index))
 	if is_max:
-		main.log_msg("【满级】甲已无可再加。" if is_armor else ("【满级】捻缝已无可再捻。" if is_seam else "【满级】帆已无可再换。"))
+		main.log_msg("【已极】甲已无可再加。" if is_armor else ("【已极】捻缝已无可再捻。" if is_seam else "【已极】帆已无可再换。"))
 		main.load_scene(main.current_scene_id)
 		return
 	# 按眼下等级重算，不信按钮上 bind 的旧价
 	var cost: int = Fleet.upgrade_cost(ship_index, kind)
 	if cost <= 0 or GameState.money < cost:
-		main.log_msg("【钱不够】船匠掂了掂银袋，摇了摇头。")
+		main.log_msg("【钱不够】船匠掂了掂钱袋，摇了摇头。")
 		main.load_scene(main.current_scene_id)
 		return
 	var ok: bool = Fleet.upgrade_armor(ship_index) if is_armor else (Fleet.upgrade_seam(ship_index) if is_seam else Fleet.upgrade_sail(ship_index))
 	if not ok:
-		main.log_msg("【满级】甲已无可再加。" if is_armor else ("【满级】捻缝已无可再捻。" if is_seam else "【满级】帆已无可再换。"))
+		main.log_msg("【已极】甲已无可再加。" if is_armor else ("【已极】捻缝已无可再捻。" if is_seam else "【已极】帆已无可再换。"))
 		main.load_scene(main.current_scene_id)
 		return
 	if not GameState.spend_money(cost):
 		# 升级已落而钱没扣成：还原到原等级，不白升
 		Fleet.ships[ship_index][level_key] = prev_lv
-		main.log_msg("【钱不够】船匠掂了掂银袋，摇了摇头。")
+		main.log_msg("【钱不够】船匠掂了掂钱袋，摇了摇头。")
 		main.load_scene(main.current_scene_id)
 		return
 	main._upgrade_busy = true
 	var s: Dictionary = Fleet.ships[ship_index]
 	if cost != shown_cost:
-		main.log_msg("船匠照眼下的等重开了价，%d 钱。" % cost)
+		main.log_msg("船匠照眼下的等第重开了价，%d 钱。" % cost)
 	var act := ""
 	if is_armor:
 		main.log_msg("「%s」加厚了船壳，甲升至%s。" % [s.get("name", "船"), main._fit_rank(Fleet.armor_level(ship_index))])
 		act = "升甲"
 	elif is_seam:
-		main.log_msg("「%s」捻紧了船缝，捻缝升至%s。" % [s.get("name", "船"), main._fit_rank(Fleet.seam_level(ship_index))])
+		main.log_msg("「%s」以桐油捻缝，缝密升至%s。" % [s.get("name", "船"), main._fit_rank(Fleet.seam_level(ship_index))])
 		act = "捻缝"
 	else:
 		main.log_msg("「%s」换了新帆，帆升至%s。" % [s.get("name", "船"), main._fit_rank(Fleet.sail_level(ship_index))])

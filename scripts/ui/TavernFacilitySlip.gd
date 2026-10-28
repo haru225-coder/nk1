@@ -8,9 +8,9 @@ signal selected(facility_id: String)
 @export var port_name := "泉州"
 @export var facility_name := "酒馆"
 @export var facility_subtitle := "闻讯・募人"
-@export var status_text := "本日开放"
+@export var status_text := "今日开门"
 @export var record_text := "酒气与潮气同在。邻桌谈及远港价目。"
-@export var action_text := "进入酒馆"
+@export var action_text := "入酒馆"
 @export var icon_name := "tavern"
 
 func _ready() -> void:
@@ -79,7 +79,7 @@ func _render() -> void:
 	column.add_child(rule)
 
 	var status := Label.new()
-	status.text = "记录状态　%s" % status_text
+	status.text = status_text
 	status.add_theme_font_override("font", UiTheme.font())
 	status.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	status.add_theme_color_override("font_color", UiTheme.on_paper(UiTheme.MOSS))
@@ -87,7 +87,7 @@ func _render() -> void:
 	column.add_child(status)
 
 	var record_head := Label.new()
-	record_head.text = "现场记录"
+	record_head.text = "见闻"
 	record_head.add_theme_font_override("font", UiTheme.title_font() if UiTheme.IS_JUANBEN else UiTheme.font())
 	record_head.add_theme_font_size_override("font_size", 18)
 	record_head.add_theme_color_override("font_color", UiTheme.on_paper(UiTheme.GOLD))
