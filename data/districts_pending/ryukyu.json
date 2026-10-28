@@ -283,7 +283,7 @@
           "id": "rk_warehouse_quiet",
           "type": "sell",
           "label": "悄悄出皮",
-          "text": "鹿皮打后门运出，私秤过货，价压得低，只收现钱。",
+          "text": "鹿皮打后门运出，私秤过货，价压得低，只收见钱。",
           "good": "deer_hide",
           "qty": 4,
           "price_mul": 0.88,
