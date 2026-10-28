@@ -7,7 +7,7 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_fz_minjiang.jpg",
-      "description": "闽江南岸的南台码头，潮涨时福船贴住石岸，茶包和漆器板箱压在跳板边。脚夫扛盐袋，赤脚踩过湿木。",
+      "description": "闽江北岸的南台码头，潮涨时福船贴住石岸，茶包和漆器板箱压在跳板边。脚夫扛盐袋，赤脚踩过湿木。",
       "interactions": [
         {
           "id": "fz_minjiang_salt",
