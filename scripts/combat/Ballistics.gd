@@ -28,7 +28,7 @@ const PATH_LOB := "lob"  ## 抛射：越过中间的船，只在落点判
 ## fx：命中时 CombatFx.on_missile_hit 的观感（stone 木屑尘烟 / bolt 木屑少 / fire 火星焦烟 / bomb 一闪火药烟）；空 = 一排矢、几块抛石，不出命中观感。
 const WEAPONS := {
 	"gongnu": {
-		"name": "弓弩", "note": "弓弩手一队四人倚舷齐发一排矢。宋军以弩为长技。",
+		"name": "弓弩", "note": "弓弩手一队倚舷齐发一排矢。宋军以弩为长技。",
 		"path": PATH_DIRECT, "ammo": "jian", "ammo_per": 4,
 		"speed": 520.0, "min_range": 0.0, "eff_range": 300.0, "max_range": 500.0, "far_mult": 0.3,
 		"spread": 0.045, "range_err": 0.07, "arc_full": 60.0, "arc_max": 115.0,
@@ -73,7 +73,7 @@ const WEAPONS := {
 		"kind": "stone", "amount": 30.0, "fx": "stone",
 	},
 	"huopao": {
-		"name": "火炮", "note": "炮抛火药弹（火球、铁壳火炮），引信燃着飞去，落处起火。火攻令下、火药够才抛。",
+		"name": "火炮", "note": "炮抛火药包（火球、铁火炮），药线燃着飞去，落处起火。火攻令下、火药够才抛。",
 		"path": PATH_LOB, "ammo": "huoyao", "ammo_per": 24,
 		"speed": 280.0, "min_range": 160.0, "eff_range": 400.0, "max_range": 560.0, "far_mult": 0.9,
 		"spread": 0.060, "range_err": 0.12, "arc_full": 75.0, "arc_max": 110.0,
@@ -91,7 +91,7 @@ const WEAPONS := {
 		"kind": "stone", "amount": 16.0, "fx": "stone",
 	},
 	"paoshi": {
-		"name": "抛石", "note": "箭尽，弓弩手拾石、灰罐乱掷，只够得着贴舷的船。",
+		"name": "抛石", "note": "箭尽，弓弩手拾石、灰瓶乱掷，只够得着贴舷的船。",
 		"path": PATH_LOB, "ammo": "", "ammo_per": 0,
 		"speed": 220.0, "min_range": 0.0, "eff_range": 110.0, "max_range": 180.0, "far_mult": 1.0,
 		"spread": 0.120, "range_err": 0.20, "arc_full": 80.0, "arc_max": 130.0,
