@@ -33,7 +33,7 @@
           "id": "zz_jiulong_rumor",
           "type": "rumor",
           "label": "问粮价",
-          "text": "梢公说泉州米船等潮未进，米行仓里余粮不多。",
+          "text": "梢工说泉州米船等潮未进，米行仓里余粮不多。",
           "cost": 12,
           "cooldown_days": 30,
           "port": "quanzhou",
