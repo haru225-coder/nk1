@@ -346,7 +346,7 @@ func _build_grid(filter: String) -> Control:
 	scroll.add_child(list)
 	_order.clear()
 	if GameManager.all_characters().is_empty():
-		list.add_child(Art.label("人物设定集未载入。", UiTheme.SIZE_BODY, UiTheme.TEXT_DIM))
+		list.add_child(Art.label("人物册未载。", UiTheme.SIZE_BODY, UiTheme.TEXT_DIM))
 		return scroll
 	for g in _groups():
 		if filter != "all" and filter != str(g[0]):

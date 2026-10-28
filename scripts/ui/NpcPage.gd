@@ -252,7 +252,7 @@ static func on_npc_bribe(main: Control, n_name: String) -> void:
 	if GameState.spend_money(50):
 		GameState.pu_attention = maxi(0, GameState.pu_attention - 15)
 		main.update_status_panel()
-		main._set_npc_speech("%s颠了颠手里的碎银：「算你懂事。近来风声紧，自己当心。」" % n_name)
+		main._set_npc_speech("%s掂了掂手里的铜钱：「算你懂事。近来风声紧，自己当心。」" % n_name)
 	else:
 		main._set_npc_speech("%s满脸鄙夷：「就这点钱也想打通关节？」" % n_name)
 
@@ -266,7 +266,7 @@ static func on_npc_leave(main: Control) -> void:
 
 const NPC_GREETING := {
 	"customs_official": "小吏把册子掀开一条缝，眼皮都没抬。「验引、呈报、修埠，都在这案上。有话就说。」",
-	"merchant_lin": "林阿舶用指甲敲了敲账簿。「舱位、脚钱、货损，一样一样算。你叔父那笔，我还记着。」",
+	"merchant_lin": "林阿舶用指甲敲了敲账簿。「舱位、脚钱、折耗，一样一样算。你叔父那笔，我还记着。」",
 	"pilot_ana": "阿那望了一眼外海的水色。「潮声不对就别嘴硬。要问什么，就问。」",
 }
 

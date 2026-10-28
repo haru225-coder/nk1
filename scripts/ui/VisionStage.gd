@@ -713,7 +713,7 @@ func _display_name(ch: Dictionary) -> String:
 
 func _short_note(ch: Dictionary) -> String:
 	if ch.is_empty():
-		return "人物数据未载入。"
+		return "人物册未载。"
 	var s: String = Art.codex_short(ch)
 	if s.strip_edges() != "":
 		return Art.fill_names(s)
