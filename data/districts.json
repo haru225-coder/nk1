@@ -2218,8 +2218,8 @@
             },
             {
               "id": "cash",
-              "label": "现钱",
-              "text": "你现钱结清。库主更信你。",
+              "label": "见钱",
+              "text": "你见钱结清。库主更信你。",
               "cost": 30,
               "effects": {
                 "merchant_credit": 1
