@@ -554,7 +554,7 @@
           "id": "ph_cang_quiet",
           "type": "sell",
           "label": "悄悄出皮",
-          "text": "鹿皮趁夜搬出后门，私秤过货，只认现钱，价也低些。",
+          "text": "鹿皮趁夜搬出后门，私秤过货，只认见钱，价也低些。",
           "good": "deer_hide",
           "qty": 4,
           "price_mul": 0.9,
