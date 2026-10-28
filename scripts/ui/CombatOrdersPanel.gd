@@ -746,7 +746,7 @@ func issue(order_id: String, roll := -1.0) -> Dictionary:
 				"rapid":
 					_note("已令专力装填：闲手递矢拽炮。")
 				"fire":
-					_note("已令火攻：换装火箭火球。")
+					_note("已令火攻：改发火箭、火药包。")
 				_:
 					_note("装填复归均装。")
 		ORDER_DAMAGE:
