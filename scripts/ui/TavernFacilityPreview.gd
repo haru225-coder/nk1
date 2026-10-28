@@ -27,7 +27,7 @@ func _ready() -> void:
 	add_child(page)
 
 	var kicker := Label.new()
-	kicker.text = "岸带设施卡　样式记录"
+	kicker.text = "岸带设施卡　式样小记"
 	kicker.add_theme_font_override("font", UiTheme.font())
 	kicker.add_theme_font_size_override("font_size", 16)
 	kicker.add_theme_color_override("font_color", UiTheme.GOLD_HI)
@@ -43,7 +43,7 @@ func _ready() -> void:
 	page.add_child(heading)
 
 	var note := Label.new()
-	note.text = "卡面分列去处、记录状态与可执行动作；正文不使用宣传性形容。"
+	note.text = "卡面分列去处、状态与举动；正文不用夸饰语。"
 	note.add_theme_font_override("font", UiTheme.font())
 	note.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	note.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
@@ -57,11 +57,11 @@ func _ready() -> void:
 	page.add_child(cards)
 
 	_add_card(cards, "tavern", "兴化", "酒馆", "闻讯・募人", "本日开放", "劣酒与潮气同在。邻桌有人谈远港价目。", "进入酒馆", "tavern")
-	_add_card(cards, "inn", "兴化", "旅店", "歇息・候风", "本日开放", "通铺草席未干。风信不合时，海商在此候着。", "进入旅店", "inn")
-	_add_card(cards, "guild", "泉州", "行会", "行情・信用", "本日开放", "行首核对舱位与脚钱。墙上钉着一张远港价目。", "查看行会", "guild")
+	_add_card(cards, "inn", "兴化", "旅店", "歇息・候风", "本日开放", "铺上的草席还潮着。风信未到，海商就在这儿候风。", "进入旅店", "inn")
+	_add_card(cards, "guild", "泉州", "行会", "议价・立籍", "本日开放", "行首正与几名蕃商核对舱位与脚钱。墙上钉着一张抄来的远港价目。", "查看行会", "guild")
 
 	var footer := Label.new()
-	footer.text = "预览页不写入存档；动作钮只发出 selected 信号。"
+	footer.text = "此页只作式样，不入存档；按下只记所点，不行事。"
 	footer.add_theme_font_override("font", UiTheme.font())
 	footer.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	footer.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
@@ -95,4 +95,4 @@ func _on_card_selected(id: String) -> void:
 		stamp.add_theme_color_override("font_color", UiTheme.GOLD_HI)
 		stamp.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		add_child(stamp)
-	stamp.text = "已选：%s　（预览页不导航）" % id
+	stamp.text = "已选：%s　（只记，不引路）" % id
