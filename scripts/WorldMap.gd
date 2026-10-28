@@ -741,7 +741,7 @@ func _format_left_hud(
 		bits.append(mission_line)
 	if hint_line != "":
 		bits.append(hint_line)
-	bits.append("季风　%s　风力　%d" % [wind_desc, wind_strength])
+	bits.append("信风　%s　风势　%d" % [wind_desc, wind_strength])
 	bits.append("船体　[color=%s]%d / %d[/color]" % [hp_color, hull_hp, max_hp])
 	return "升帆　W　落帆　S　%s　　操舵　A　D　　齐射　J　K　　%s\n%s" % [
 		_sail_word(sail_gear), tail, "　　".join(bits),
@@ -1221,7 +1221,7 @@ func _on_captain_state_changed(state: StringName, label: String, reason: String,
 	if lab == "":
 		lab = str(state)
 	var why := reason.strip_edges()
-	var msg := "敌将改打法：%s" % lab
+	var msg := "敌将改计：%s" % lab
 	if why != "":
 		msg = "%s（%s）" % [msg, why]
 	_show_combat_notice(msg)
