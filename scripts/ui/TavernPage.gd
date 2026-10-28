@@ -215,7 +215,7 @@ static func seal_chip(btn: Button) -> void:
 ## 旅店：候风。季风按月转向，等到对的月份再发舶是这个游戏最要紧的判断之一。
 static func setup_inn(main: Control, port_id: String) -> void:
 	main.scene_title.text = "%s・旅店" % GameManager.get_port_name(port_id)
-	main.body_text.text = "通铺草席还潮着。风信不对时，海商在这儿候着。"
+	main.body_text.text = "铺上的草席还潮着。风信未到，海商就在这儿候风。"
 	main._begin_benches()
 
 	var rest: VBoxContainer = main._slip_body()
