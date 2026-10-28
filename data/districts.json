@@ -32,7 +32,7 @@
           "id": "qz_houzhu_rumor",
           "type": "rumor",
           "label": "问番船",
-          "text": "番船的梢公说，博多唐房这个月只到一船象牙，牙行把货压在栈里。",
+          "text": "番船的梢工说，博多唐房这个月只到一船象牙，牙行把货压在栈里。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "hakata",
@@ -42,8 +42,8 @@
         {
           "id": "qz_houzhu_pilot",
           "type": "favour",
-          "label": "请梢公",
-          "text": "你请后渚的梢公吃了一顿。往后你收盐，他先给你递话。",
+          "label": "请梢工",
+          "text": "你请后渚的梢工吃了一顿。往后你收盐，他先给你递话。",
           "cost": 30,
           "once": true,
           "effects": {
@@ -54,8 +54,8 @@
         {
           "id": "qz_houzhu_fast",
           "type": "buy",
-          "label": "托梢公收盐",
-          "text": "托了后渚的梢公，盐包直接抬上船，价比市上低。",
+          "label": "托梢工收盐",
+          "text": "托了后渚的梢工，盐包直接抬上船，价比市上低。",
           "good": "sea_salt",
           "qty": 10,
           "price_mul": 0.86,
@@ -2553,7 +2553,7 @@
           "id": "gz_fuxu_rumor",
           "type": "rumor",
           "label": "问番船",
-          "text": "番船的梢公说，占城今年雨水多，胡椒晒不干，番商只肯一点一点地放。",
+          "text": "番船的梢工说，占城今年雨水多，胡椒晒不干，番商只肯一点一点地放。",
           "cost": 16,
           "cooldown_days": 40,
           "port": "champa",
@@ -2563,8 +2563,8 @@
         {
           "id": "gz_fuxu_pilot",
           "type": "favour",
-          "label": "请梢公",
-          "text": "你请扶胥的梢公吃了一席。往后收盐，他先给你递话。",
+          "label": "请梢工",
+          "text": "你请扶胥的梢工吃了一席。往后收盐，他先给你递话。",
           "cost": 30,
           "once": true,
           "effects": {
@@ -2575,8 +2575,8 @@
         {
           "id": "gz_fuxu_fast",
           "type": "buy",
-          "label": "托梢公收盐",
-          "text": "扶胥的梢公替你留了盐包，过秤时少算了一截脚钱。",
+          "label": "托梢工收盐",
+          "text": "扶胥的梢工替你留了盐包，过秤时少算了一截脚钱。",
           "good": "sea_salt",
           "qty": 10,
           "price_mul": 0.86,
@@ -2616,13 +2616,13 @@
       "name": "南海神庙",
       "kind": "temple",
       "bg": "bg_dist_gz_nanhai.jpg",
-      "description": "南海神庙对着扶胥江。出海前，官与梢公在殿前上香。香案只摆果与绢，殿门开着。",
+      "description": "南海神庙对着扶胥江。出海前，官与梢工在殿前上香。香案只摆果与绢，殿门开着。",
       "interactions": [
         {
           "id": "gz_nanhai_rite",
           "type": "favour",
           "label": "祭海",
-          "text": "你跟梢公在殿前上了一炷香。庙祝把船号记在香簿上。",
+          "text": "你跟梢工在殿前上了一炷香。庙祝把船号记在香簿上。",
           "cost": 30,
           "once_per": "month",
           "effects": {
@@ -4196,8 +4196,8 @@
         {
           "id": "hk_oki_rumor",
           "type": "rumor",
-          "label": "问梢公",
-          "text": "宋船梢公说，萨摩的硫黄船遇风折回，温州的药铺还在等料。",
+          "label": "问梢工",
+          "text": "宋船梢工说，萨摩的硫黄船遇风折回，温州的药铺还在等料。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "wenzhou",
@@ -4574,8 +4574,8 @@
         {
           "id": "wz_shuomen_rumor",
           "type": "rumor",
-          "label": "问梢公",
-          "text": "北来的梢公说，博多唐房的绢帛被寺社订走，牙人手里没剩几匹。",
+          "label": "问梢工",
+          "text": "北来的梢工说，博多唐房的绢帛被寺社订走，牙人手里没剩几匹。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "hakata",
@@ -4599,7 +4599,7 @@
           "id": "wz_shuomen_rumor2",
           "type": "rumor",
           "label": "听绢帛",
-          "text": "北来的梢公说，博多唐房等着南边的船补绢帛，泊位排到月底。",
+          "text": "北来的梢工说，博多唐房等着南边的船补绢帛，泊位排到月底。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "hakata",
