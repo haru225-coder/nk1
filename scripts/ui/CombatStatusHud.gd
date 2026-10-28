@@ -90,7 +90,7 @@ const AMMO_LOW := 0.25
 ## 格子：键、题
 const CELLS := [
 	["wind", "风"], ["trim", "受风"], ["bearing", "敌舷角"], ["gauge", "风位"],
-	["ammo", "弹药"], ["reload", "装填"], ["sail", "帆"], ["rudder", "舵"],
+	["ammo", "矢石"], ["reload", "装填"], ["sail", "帆"], ["rudder", "舵"],
 	["flood", "浸水"], ["morale", "士气"],
 ]
 
@@ -900,7 +900,7 @@ static func _ammo_cell(ammo: Dictionary, ammo_max) -> Dictionary:
 		bits.append("%s%d" % [nm, n])
 		if cap > 0.0 and float(n) / cap < AMMO_LOW:
 			tone = "bad"
-	return {"title": "弹药", "text": " ".join(bits), "tone": tone}
+	return {"title": "矢石", "text": " ".join(bits), "tone": tone}
 
 
 # ── 节点 ──────────────────────────────────────────────
