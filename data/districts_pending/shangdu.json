@@ -8,7 +8,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_sd_gongcheng.jpg",
-      "description": "宫城在皇城偏北，四面包砖，角楼高过墙头。至元三年，南边拆来一座旧阁，改建成大安阁。",
+      "description": "宫城在皇城偏北，四面包砖，角楼高过墙头。南边拆来一座旧阁迁建至此，成为大安阁。",
       "interactions": [
         {
           "id": "sd_gongcheng_view",
