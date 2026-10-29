@@ -40,7 +40,7 @@
       "location": "澎湖诸屿",
       "value": 90,
       "near_ports": ["penghu", "zhangzhou"],
-      "historical_hook": "岛上有石垣旧基，非近岁所筑。泉人徙居澎湖已久，官府未尽知其数。"
+      "historical_hook": "岛上有石垣旧基，非近岁所筑。泉人徙居澎湖已久，旧有屯戍。"
     },
     {
       "id": "meizhou_shrine",
@@ -127,7 +127,7 @@
       "id": "champa_old_port",
       "name": "占城故港",
       "type": "遗迹",
-      "location": "占婆海岸",
+      "location": "占城海岸",
       "value": 220,
       "near_ports": ["champa"],
       "historical_hook": "港已淤塞，砖塔犹存。土人云昔年蕃舶云集，今则移泊他处矣。"
@@ -202,7 +202,7 @@
       "location": "庆元府梅岑山",
       "value": 130,
       "near_ports": ["mingzhou", "wenzhou"],
-      "historical_hook": "潮音洞在梅岑山下，海潮入洞作声。南宋以来东海香火渐盛，海舶至此焚香。"
+      "historical_hook": "潮音洞在梅岑山下，海潮入洞作声。南渡以来东海香火渐盛，海舶至此焚香。"
     },
     {
       "id": "guangzhou_light_pagoda",
@@ -238,7 +238,7 @@
       "location": "占城婆那加",
       "value": 190,
       "near_ports": ["champa"],
-      "historical_hook": "占婆砖塔，祀婆那加。塔身赤红，岁久不坏，土人香花奉之。"
+      "historical_hook": "占城砖塔，祀婆那加。塔身赤红，岁久不坏，土人香花奉之。"
     },
     {
       "id": "penghu_channel",
@@ -247,7 +247,7 @@
       "location": "澎湖与流求之间",
       "value": 150,
       "near_ports": ["penghu", "quanzhou"],
-      "historical_hook": "澎湖水道在澎湖以东、流求以西，潮落则沙线毕露，潮满则水深难探。候潮出入，可避暗礁。"
+      "historical_hook": "澎湖水道在澎湖以东、流求以西，水深流急，潮汐往来。舟人候潮出入，以避暗礁。"
     },
     {
       "id": "kuroshio_northbound",
