@@ -71,7 +71,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_bl_tieta.jpg",
-      "description": "开宝寺在城东北，1049年砌的琉璃砖塔还在，砖色褐里透红。兵火过后塔院冷清，塔檐缝里长出蒿草，塔下的碑字被人拓得发白。",
+      "description": "开宝寺在城东北，1049 年砌的琉璃砖塔还在，砖色褐里透红。兵火过后塔院冷清，塔檐缝里长出蒿草，塔下的碑字被人拓得发白。",
       "interactions": [
         {
           "id": "bl_tieta_climb",
@@ -299,7 +299,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_bl_gongcheng.jpg",
-      "description": "金宣宗南迁后，汴京作了南京，宫城就着旧大内重修。1233年崔立开城降蒙古，宫室拆毁大半，如今只剩台基断墙，蒙古兵在墙外扎营。",
+      "description": "金宣宗南迁后，汴京作了南京，宫城就着旧大内重修。1233 年崔立开城降蒙古，宫室拆毁大半，如今只剩台基断墙，蒙古兵在墙外扎营。",
       "interactions": [
         {
           "id": "bl_gongcheng_pick",
@@ -464,7 +464,7 @@
       "kind": "dam",
       "pending_art": true,
       "bg": "bg_dist_bl_huanghe.jpg",
-      "description": "寸金淀在城北，1234年端平入洛，宋军入汴，蒙古人掘开黄河堤，水漫到城外，粮道断了。此后浑水年年漫过旧田，土里翻出锈箭头。",
+      "description": "寸金淀在城北，1234 年宋军入汴，蒙古人掘开黄河堤，水漫到城外，粮道断了。此后浑水年年漫过旧田，土里翻出锈箭头。",
       "interactions": [
         {
           "id": "bl_huanghe_dike",

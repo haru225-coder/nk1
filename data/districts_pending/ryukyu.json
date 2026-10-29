@@ -326,18 +326,18 @@
     {
       "id": "rk_pilot",
       "port": "ryukyu",
-      "name": "舵手楼",
+      "name": "舵工楼",
       "kind": "street",
       "pending_art": true,
       "bg": "bg_dist_rk_pilot.jpg",
-      "description": "舵手楼建在石埠上，老舵手坐在楼中，墙上挂航线图，桌上摆硫黄和贝壳。",
+      "description": "舵工楼建在石埠上，老舵工坐在楼中，墙上挂航线图，桌上摆硫黄和贝壳。",
       "interactions": [
         {
           "id": "rk_pilot_hire",
           "type": "hire",
-          "label": "雇舵手",
-          "text": "老舵手记得各岛间的暗流，逆风时也能借沿岸回流走一程。",
-          "who": "南岛舵手",
+          "label": "雇舵工",
+          "text": "老舵工记得各岛间的暗流，逆风时也能借沿岸回流走一程。",
+          "who": "南岛舵工",
           "cost": 100,
           "wage": 17,
           "attention_ease": 1
@@ -346,7 +346,7 @@
           "id": "rk_pilot_rumor",
           "type": "rumor",
           "label": "听耽罗",
-          "text": "舵手说耽罗人参还没出山，船在等采参的人。",
+          "text": "舵工说耽罗人参还没出山，船在等采参的人。",
           "cost": 16,
           "cooldown_days": 45,
           "port": "jeju",

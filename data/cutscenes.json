@@ -281,7 +281,7 @@
      "captions": [
       {"t": 0.8, "text": "母亲与幼子扣在福州，说城里的人出来就放。", "style": "narration", "pos": "lower_left"},
       {"t": 3.4, "text": "史书上后来写：是年，兴化陷，守臣不知所终。", "style": "narration", "pos": "lower_left"},
-      {"t": 6.0, "text": "城里那个人没有出来——因为城里没有那个人。", "style": "line", "pos": "bottom"}
+      {"t": 6.0, "text": "福州的信送到城下时，城里本就没有那个人。", "style": "line", "pos": "bottom"}
      ]
     },
     {
@@ -363,7 +363,7 @@
       {"t": 0.6, "text": "一百多年后・福州台江", "style": "era", "pos": "right_vertical"},
       {"t": 1.2, "text": "江边没有庙。渔船只拜妈祖。", "style": "narration", "pos": "lower_left"},
       {"t": 3.6, "text": "二号封舟，空着。", "style": "narration", "pos": "lower_left"},
-      {"t": 5.8, "text": "这个世界少了一位海神，多了几条回来的船。", "style": "line", "pos": "bottom"}
+      {"t": 5.8, "text": "世上少了一尊水部尚书，海上多了几条归船。", "style": "line", "pos": "bottom"}
      ]
     }
    ]
@@ -412,7 +412,7 @@
      "shake": 0.0,
      "captions": [
       {"t": 0.5, "text": "泉州・至元年间", "style": "era", "pos": "right_vertical"},
-      {"t": 1.2, "text": "你活到了至元二十年代。泉州比从前更大。", "style": "narration", "pos": "lower_left"},
+      {"t": 1.2, "text": "你活过了至元二十年。泉州比从前更大。", "style": "narration", "pos": "lower_left"},
       {"t": 4.0, "text": "波斯人、大食人都在，还有从前不敢来的北方人。", "style": "narration", "pos": "lower_left"}
      ]
     },
@@ -429,7 +429,7 @@
       {"t": 0.6, "text": "一百多年后・福州台江", "style": "era", "pos": "right_vertical"},
       {"t": 1.2, "text": "江边没有庙。渔船只拜妈祖。", "style": "narration", "pos": "lower_left"},
       {"t": 3.4, "text": "二号封舟，空着。", "style": "narration", "pos": "lower_left"},
-      {"t": 5.2, "text": "这个世界少了一位海神，多了几条回来的船。", "style": "line", "pos": "bottom"}
+      {"t": 5.2, "text": "世上少了一尊水部尚书，海上多了几条归船。", "style": "line", "pos": "bottom"}
      ]
     }
    ]
@@ -496,7 +496,7 @@
       {"t": 0.6, "text": "一百多年后・福州台江", "style": "era", "pos": "right_vertical"},
       {"t": 1.2, "text": "江边没有庙。渔船只拜妈祖。", "style": "narration", "pos": "lower_left"},
       {"t": 2.8, "text": "二号封舟，空着。", "style": "narration", "pos": "lower_left"},
-      {"t": 4.4, "text": "这个世界少了一位海神，多了几条回来的船。", "style": "line", "pos": "bottom"}
+      {"t": 4.4, "text": "世上少了一尊水部尚书，海上多了几条归船。", "style": "line", "pos": "bottom"}
      ]
     }
    ]
@@ -545,7 +545,7 @@
      "shake": 0.0,
      "captions": [
       {"t": 0.7, "text": "你看水色。北礁可泊。", "style": "narration", "pos": "lower_left"},
-      {"t": 2.7, "text": "二十二年前，一个舵手教过你。", "style": "narration", "pos": "lower_left"},
+      {"t": 2.7, "text": "二十二年前，一个舵工教过你。", "style": "narration", "pos": "lower_left"},
       {"t": 4.6, "text": "船在旧避风澳泊了六天，避了一场风。", "style": "narration", "pos": "lower_left"}
      ]
     },
@@ -577,7 +577,7 @@
       {"t": 0.6, "text": "一百多年后・福州台江", "style": "era", "pos": "right_vertical"},
       {"t": 1.2, "text": "江边没有庙。渔船只拜妈祖。", "style": "narration", "pos": "lower_left"},
       {"t": 2.6, "text": "二号封舟，空着。", "style": "narration", "pos": "lower_left"},
-      {"t": 4.0, "text": "这个世界少了一位海神，多了几条回来的船。", "style": "line", "pos": "bottom"}
+      {"t": 4.0, "text": "世上少了一尊水部尚书，海上多了几条归船。", "style": "line", "pos": "bottom"}
      ]
     }
    ]
@@ -626,8 +626,8 @@
      "shake": 0.0,
      "captions": [
       {"t": 0.8, "text": "货引上写的，是你的名字。", "style": "narration", "pos": "lower_left"},
-      {"t": 3.4, "text": "史册怎么写你，还没有落笔。", "style": "narration", "pos": "lower_left"},
-      {"t": 5.8, "text": "——海路却先替你记了一笔。", "style": "line", "pos": "bottom"}
+      {"t": 3.4, "text": "官修的史册，未曾为你著墨。", "style": "narration", "pos": "lower_left"},
+      {"t": 5.8, "text": "往来的海船，却已认得这条水道。", "style": "line", "pos": "bottom"}
      ]
     },
     {
@@ -703,7 +703,7 @@
      "shake": 0.0,
      "captions": [
       {"t": 0.8, "text": "门还开着。", "style": "narration", "pos": "lower_left"},
-      {"t": 3.2, "text": "有些门从此只对货开，不对人开。", "style": "line", "pos": "bottom"}
+      {"t": 3.2, "text": "自此往来各港，只认货单，不叙私交。", "style": "line", "pos": "bottom"}
      ]
     }
    ]
