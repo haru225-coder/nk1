@@ -169,7 +169,7 @@ static func close_save_sheet(main: Control) -> void:
 
 static func on_save_slot(main: Control, slot: int) -> void:
 	if not SaveLoad.can_save(slot) or not SaveLoad.save_game(slot, main.current_scene_id):
-		main.log_msg("第%s卷誊写未成，笔墨未落定。" % main._cn_num(slot))
+		main.log_msg("第%s卷誊写未成，墨未落纸。" % main._cn_num(slot))
 		return
 	main._close_save_sheet()
 	main.log_msg("已记入航海日志第%s卷。" % main._cn_num(slot))
@@ -185,7 +185,7 @@ static func on_load_slot(main: Control, slot: int) -> void:
 		for b in (host as Node).find_children("Read*", "Button", true, false):
 			var armed: bool = String(b.name) == "Read%d" % slot
 			(b as Button).text = "确认翻阅" if armed else "翻阅"
-			(b as Button).tooltip_text = "翻回这一卷，眼下没记下的进度不留。再按一下才翻。" if armed else ""
+			(b as Button).tooltip_text = "翻回这一卷，眼下未记入卷的日子便不留。再按一下才翻。" if armed else ""
 		return
 	var scene_id := SaveLoad.saved_scene(slot)
 	var from_bak := SaveLoad.slot_source(slot) == "bak"

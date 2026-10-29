@@ -54,7 +54,7 @@ static func setup_title_mode(main: Control, scene_data: Dictionary) -> void:
 	var choices = scene_data.get("choices", [])
 	var next_scene = "prologue_tabletop"
 	if choices.size() > 0:
-		main.start_button.text = choices[0].get("label", "开始旅程")
+		main.start_button.text = choices[0].get("label", "启程")
 		next_scene = choices[0].get("next", "prologue_tabletop")
 
 	main.start_button.pressed.connect(main._on_start_game_pressed.bind(next_scene))

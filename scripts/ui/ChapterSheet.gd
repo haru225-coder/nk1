@@ -23,9 +23,9 @@ static func era_summary_lines(main: Control, years: int) -> Array:
 		else:
 			lines.append("这%s，你的船跑了%s趟。" % [span, main._cn_num(trips, true)])
 	if GameState.merchant_credit >= 20:
-		lines.append("牙行里提起你的名字，不必再加「泉州那个姓陈的」。")
+		lines.append("牙行里提起你的名字，不必再称「泉州那个姓陈的」。")
 	elif GameState.merchant_credit <= -10:
-		lines.append("有几家牙行不再接你的单子，理由都说得很客气。")
+		lines.append("有几家牙行不肯再与你来往，回绝的话仍说得很客气。")
 	if not Crew.hired.is_empty():
 		var names := []
 		for c in Crew.roster():

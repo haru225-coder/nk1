@@ -19,7 +19,7 @@ static func setup_residence(main: Control, port_id: String) -> void:
 		main._setup_residence_chen(port_id)
 		return
 	main.scene_title.text = "%s・住处" % GameManager.get_port_name(port_id)
-	main.body_text.text = "租来的下处。比旅店便宜，听不见风信。"
+	main.body_text.text = "赁来的下处，比旅店省些；风信却打探不到。"
 	main._begin_benches()
 
 	var book: VBoxContainer = main._slip_body()
@@ -57,8 +57,8 @@ static func setup_temple(main: Control, port_id: String) -> void:
 	var near: Array = GameManager.discoveries_near(port_id)
 	if near.is_empty():
 		var empty: VBoxContainer = main._slip_body()
-		main._slip_title(empty, "近侧旧迹", "没有可勘的")
-		main._slip_note(empty, "海上撞见的，回市舶司呈报即可。")
+		main._slip_title(empty, "近侧旧迹", "近侧无可勘者")
+		main._slip_note(empty, "海上所见，回市舶司呈报即可。")
 	else:
 		for d in near:
 			var did := str(d.get("id", ""))
@@ -119,7 +119,7 @@ static func on_temple_rub(main: Control, did: String, name: String, hook: String
 		return
 	GameManager.advance_days(main.TEMPLE_RUB_DAYS)
 	if main._has_temple_rub(name):
-		main.log_msg("纸上墨迹未干，「%s」已经拓过了。" % name)
+		main.log_msg("边记里已有「%s」的拓本，不必再拓。" % name)
 	else:
 		GameState.add_ledger_note(main._temple_rub_note(name, hook))
 		main.log_msg("【拓碑】在寺观廊下拓了 %d 日，把「%s」写入边记。回住处可翻。如今是 %s。" % [
@@ -146,7 +146,7 @@ static func setup_residence_chen(main: Control, port_id: String) -> void:
 				return
 			GameState.hometown_tendency += 3
 			GameManager.advance_days(6)
-			main.log_msg("修祠堂的木料、外姓那桩田讼、三房的婚事——都不是你的事，可族里只找得到你。")
+			main.log_msg("修祠堂的木料、外姓那桩田讼、三房的婚事，都不是你的事，可族里只找得到你。")
 			main.load_scene(main.current_scene_id)
 		)
 		main.choices_container.add_child(errand)
@@ -166,11 +166,11 @@ static func setup_residence_chen(main: Control, port_id: String) -> void:
 				GameState.hometown_tendency += 5
 				GameState.set_flag("chen_zan_stake")
 				GameState.add_ledger_note("陈瓒船股一分")
-				main.log_msg("陈瓒把三千钱推过案来，没数。「要多少、走哪条水、几时回——这三句先说清，钱就是你的。」")
+				main.log_msg("陈瓒把三千钱推过案来，没数。「要多少、走哪条水、几时回，这三句先说清，钱就是你的。」")
 				main.load_scene(main.current_scene_id)
 			)
 		else:
-			b.text = "族叔陈瓒——「名声不到 %d，钱不能给你」" % main.CHEN_ZAN_MIN_FAME
+			b.text = "族叔陈瓒：「名声不及 %d，钱不能给你」" % main.CHEN_ZAN_MIN_FAME
 			b.disabled = true
 		main.choices_container.add_child(b)
 
