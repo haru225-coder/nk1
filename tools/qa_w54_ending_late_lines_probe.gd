@@ -147,7 +147,7 @@ func _a_chapter3() -> void:
 		_expect(_lin_gone(), "%d 年开章落在 %d 年：人物志判林阿舶已不在世" % [y, int(_cal.year)])
 		_expect(body.find(PORCH) < 0 and body.find(GONE) >= 0 and body.find("林家账房的人在廊下等你") >= 0,
 			"%d 年开章：幕正文不写「%s」，写他已经不在了、林家账房的人在廊下等你" % [y, PORCH])
-		_expect(body.find("「纲首」二字") >= 0, "%d 年开章：幕正文其余照旧（「纲首」二字那句在）" % y)
+		_expect(body.find("添了「纲首」两个字") >= 0, "%d 年开章：幕正文其余照旧（「纲首」两个字那句在）" % y)
 
 
 # ── B 第一章开第二章跨过卒年 ─────────────────────────────
@@ -159,7 +159,7 @@ func _b_chapter2() -> void:
 	_expect(int(_gs.chapter) == 2 and int(_cal.year) == 1274, "1272 年开第二章跳两年落在 %d 年（第%d章）" % [int(_cal.year), int(_gs.chapter)])
 	_expect(text.find(PARCEL) < 0 and text.find(GONE) >= 0 and text.find("林家账房的人把一只油布包推过案来") >= 0,
 		"跳年落在卒年：册页不写「%s」，写他已经不在了、林家账房的人推过油布包" % PARCEL)
-	_expect(text.find("「唐房那边的旧账，总要有人去对。」") >= 0 and text.find("【两年后・") >= 0,
+	_expect(text.find("「博多唐房那边的陈年旧账，总得有个姓陈的人亲自去对。」") >= 0 and text.find("【两年后・") >= 0,
 		"册页其余照旧（唐房旧账那句、「两年后」那一截都在）")
 	# 德祐元年开章：跳年封顶不跳，册页正文按当年判
 	await _ready_to_advance(1, 1275, "ryukyu", CH1_PORTS, 6000)
