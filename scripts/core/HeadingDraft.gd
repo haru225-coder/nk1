@@ -32,7 +32,7 @@ static func pool(origin: String) -> Array:
 
 ## 港已封的封因（待拍板 20b）：closed 封港、banned 对己封港（GameState.port_bans）、besieged 围城；
 ## 没封、开关 port_blockade 关着、或剧情放行（story_pass）返回 ""。
-## 封港与对己封港照 Economy.is_port_reachable（写了一直没人调的那一个），围城另判（它不把围城算不可达）。
+## 封港与对己封港照 Economy.is_port_reachable，围城另判（它不把围城算不可达）。
 ## 封不封按此刻定，只拦开航：船在海上时那港才封的，照旧抵港。
 static func seal_of(pid: String) -> String:
 	if pid == "" or not _Switches.on("port_blockade"):
