@@ -1,39 +1,40 @@
 class_name PortBeats
 extends RefCounted
-## 港口节拍（拍板清单 E-10 / G1014，lane w20-c2）：data/port_beats.json 接回运行时。
-## 是一笔演出账：一港各拍按 order 排成链，链上第一针没记名且 requires 全够的拍 = 抵达时该演（due）；
-## Main._on_enter_port 抵达时演那一幕、记名（GameState.beats_seen 入存档），一次抵达只演一拍；
-## 节拍幕从别的路演到（上一幕的选项、序章一路点下来）也记名（is_beat_scene，lane w53-6），演过的不再重演；
-## stop_before 是链上的下一拍，留给玩家照戏往下点（requires.seen 就是照着上一拍的戏点出那一幕）。
-## decompose_to：开场拍没有条件、它的戏在别一幕里演过了的，记名按那一幕认、不重复演出。
-## 现数据里的三处：流求 ryukyu_bay（琉球巡礼在那一幕里）与博多 hakata_ledger（博多旧账）。
-## 关断开关 nk1/port_beats_runtime（ProjectSettings，默认开）：关掉即回旧行为——节拍一步不动、不记名，
-## GameManager 也不读 port_beats.json（账口空表，老档老行为）。
-## 本件在解析期不写 autoload 名（class_name 登记早于 autoload）：数据由调用方把 GameManager 的
-## port_beats_data.get("beats") 喂进来（init），判定不回头读 GameManager。
+## 港口节拍（拍板清单 E-10 / G1014，lane w20-c2）：把 data/port_beats.json 接回运行时。
+## 同一港的拍按 order 排成链。due 找第一个没记名、requires 又都满足的拍，抵达时演它。
+## Main._on_enter_port 负责演出并记名，写入 GameState.beats_seen 后入存档；一次抵达只演一拍。
+## 玩家也可能从上一幕的选项或序章直接点进节拍幕。这种走法同样记名
+## （is_beat_scene，lane w53-6），以后不重演。stop_before 给出链上的下一拍，
+## 玩家可从上一幕接着点，requires.seen 用来接上前面那一拍。
+## 有的开场拍不单独演，内容已经放在另一幕里。decompose_to 记下那一幕，记名时认它，不再演一遍。
+## 目前有两个缺省对应：流求 ryukyu_bay（琉球巡礼也在那一幕）和博多 hakata_ledger（博多旧账）。
+## nk1/port_beats_runtime 是 ProjectSettings 里的开关，默认开。关掉后不演也不记名，
+## GameManager 不读 port_beats.json，这里拿到空表，老档仍按老办法走。
+## 解析期不能在这里写 autoload 名，class_name 登记得更早。调用方在 init 时传入
+## GameManager 的 port_beats_data.get("beats")，这里不再回头读取 GameManager。
 
 ## 关断开关的项目设置键（ProjectSettings.get_setting 读，缺省 true=接回）
 const SETTING := "nk1/port_beats_runtime"
 ## 开场戏分解位缺省（数据可覆写 decompose_to）
 const DECOMPOSE := {"ryukyu": "ryukyu_bay", "hakata": "hakata_ledger"}
-## 节拍链的入口针（requires 全空、玩家头一回踏上这港就上演的那拍）：与 GameState.last_port 缺省（开局港）
-## 互补任一港的入口针（现数据：quanzhou_monk 开局港泉州的第一针 / ryukyu_bay 流求开场戏那一幕代拍）。
-## tools/data_family.json 的 families 根按这份常量锚可达性（改名须两处同步）。序章那场书斋戏（start）= 开
-## 局就会演的旧戏，拍账上 seed 记着（杏化链只有它一针，见 DEFAULT_SEED）。
+## 入口拍的 requires 为空，玩家第一次到港就能演。它和 GameState.last_port 的开局港缺省配合，
+## 保证任一港都有入口。目前是 quanzhou_monk（泉州开局第一拍）和 ryukyu_bay（流求开场戏代拍）。
+## tools/data_family.json 的 families 根靠它检查可达性，改名要同步。序章书斋戏 start 开局已经演过，
+## seed 里先记上；兴化链只有这一条，见 DEFAULT_SEED。
 const START_ENTRIES := ["quanzhou_monk", "ryukyu_bay"]
-## 入港接演的港：泉州主链与章二后的三条委托线（庆元、博多、占城）。
-## 流求 / 兴化等不接——航路首抵要进港页记 visited_ports，剧情幕不冒充港口。
+## 抵达后接演的港：泉州主链，以及章二后的庆元、博多、占城三条委托线。
+## 流求、兴化不接。首次到港仍要在港页记 visited_ports，不能因为演了剧情幕就算到港。
 const QUEST_PORTS := ["quanzhou", "mingzhou", "hakata", "champa"]
-## 章二后三条委托线的尾针（硫黄 / 博多短札 / 占城沉香）：头针带章序、旧账旗、短札或记港数条件，
-## 运行时按条件路由接演；一条链的尾针沿 requires.seen 回溯到链头。data_family 的根按这份常量锚可达性。
+## 三条委托线的尾拍：硫黄、博多短札、占城沉香。首拍可带章序、旧账旗、短札或记港数条件，
+## 运行时据此接演。从尾拍沿 requires.seen 能回到链头，data_family 也靠它检查可达性。
 const QUEST_TAIL_ENTRIES := ["quest_sulfur_return", "quest_hakata_return", "quest_champa_return"]
-## 拍账 seed：新档从这份起照（序章沿途已演的戏，Xinghua 链 start 一针记账；开关关掉不 seed = 留档老档老行为）
+## 新档先记下序章沿途已经演过的戏。兴化链只记 start；开关关闭时不 seed，老档照旧。
 const DEFAULT_SEED := ["start"]
 
 var _beats: Array = []
 
 
-## 数据喂进来（GameManager 把 port_beats_data.get("beats") 整表交出）。空表 = 节奏全停。
+## GameManager 传入 port_beats_data.get("beats")；传空表就不处理任何节拍。
 func init(raw: Array) -> void:
 	_beats = []
 	for b in raw:
@@ -44,8 +45,8 @@ func init(raw: Array) -> void:
 		if entry == "" or port == "":
 			continue
 		var beat: Dictionary = b.duplicate(true)
-		# 开场拍（requires 全空）在这港的开场戏里就有（数据里没有 decompose_to 时按港名缺省认；有就照数据）；
-		# 现数据三处：流求 ryukyu_bay、博多 hakata_ledger
+		# 开场戏已经包含 requires 为空的开场拍。数据没写 decompose_to 时按 DECOMPOSE 补，
+		# 写了就保留。目前用于流求 ryukyu_bay 和博多 hakata_ledger。
 		var req0 = beat.get("requires", {})
 		if not beat.has("decompose_to") and DECOMPOSE.has(port) and (typeof(req0) != TYPE_DICTIONARY or (req0 as Dictionary).is_empty()):
 			beat["decompose_to"] = str(DECOMPOSE[port])
@@ -56,24 +57,27 @@ func init(raw: Array) -> void:
 static func enabled() -> bool:
 	return bool(ProjectSettings.get_setting(SETTING, true))
 
-
-## 该港按 order 排好的链（同 order 保登记序）
+## 取一港的拍，按 order 排序；order 相同时保持登记顺序。
 func chain(port_id: String) -> Array:
 	var out: Array = []
 	for b in _beats:
-		if str(b.get("port", "")) == port_id:
-			out.append(b)
-	out.sort_custom(func(a, b): return int(a.get("order", 0)) < int(b.get("order", 0)))
+		if str(b.get("port", "")) != port_id:
+			continue
+		var at := out.size()
+		for i in range(out.size()):
+			if int(b.get("order", 0)) < int(out[i].get("order", 0)):
+				at = i
+				break
+		out.insert(at, b)
 	return out
 
-
-## 抵达时该演的拍：链上第一针没记名（entry / 分解位都不在 seen）且 requires 全够的；
-## 第一针没记名但 requires 不够 = 链停在这针等条件（{}）；每一拍都记了名也 {}。seen / flags / visited
-## 是字符串表，chapter 是当前章序。visited 由调用方在记港之后交出，visited_at_least 便以「含本港」计：
-## 首次记港为 1，候到下一次记港（再记一港）才够 2。关断开关关掉恒 {}。
-## ended 终局守卫（wave22 待定项② 已准「终局后港口节拍一律不再演」，lane w26-k7）：为真恒 {}。
-## 守卫本在调用方（w25-j2 顶在 Main._on_enter_port），下沉进本口使「终局后不演」成函数自身性质；
-## is_ended 必传实参——调用方传当前会话 GameState.is_ended()，探针直面传真 / 假演四例。
+## 返回抵达时该演的一拍。已记名的跳过；遇到第一个没记名的，requires 满足就返回它，
+## 不满足就返回 {}，不能越过它找后面的拍。全部记名时也返回 {}。
+## seen、flags、visited 是字符串表，chapter 是当前章序。调用方先记本港再传 visited，
+## 所以 visited_at_least 包含本港：第一次记港算 1，再记一港才算 2。开关关闭时恒返回 {}。
+## is_ended 为真也恒返回 {}，依据是 wave22 待定项② 已准的「终局后港口节拍一律不再演」，
+## 见 lane w26-k7。原先由 Main._on_enter_port 检查（w25-j2），现在放在这里，免得别的调用路径漏掉。
+## 调用方传当前会话的 GameState.is_ended()；探针可直接传 true / false，覆盖四种情况。
 func due(port_id: String, seen: Array, flags: Array, visited: Array, chapter: int, is_ended: bool) -> Dictionary:
 	if is_ended or not enabled():
 		return {}
