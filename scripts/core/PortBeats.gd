@@ -21,7 +21,7 @@ const DECOMPOSE := {"ryukyu": "ryukyu_bay", "hakata": "hakata_ledger"}
 ## 保证任一港都有入口。目前是 quanzhou_monk（泉州开局第一拍）和 ryukyu_bay（流求开场戏代拍）。
 ## tools/data_family.json 的 families 根靠它检查可达性，改名要同步。序章书斋戏 start 开局已经演过，
 ## seed 里先记上；兴化链只有这一条，见 DEFAULT_SEED。
-const START_ENTRIES := ["quanzhou_monk", "ryukyu_bay"]
+const START_ENTRIES := ["monk", "ryukyu_bay"]
 ## 抵达后接演的港：泉州主链，以及章二后的庆元、博多、占城三条委托线。
 ## 流求、兴化不接。首次到港仍要在港页记 visited_ports，不能因为演了剧情幕就算到港。
 const QUEST_PORTS := ["quanzhou", "mingzhou", "hakata", "champa"]

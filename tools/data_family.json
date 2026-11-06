@@ -417,7 +417,6 @@
       "known_orphans": [
         {
           "ids": [
-            "monk",
             "merchant",
             "dock",
             "prepare"
