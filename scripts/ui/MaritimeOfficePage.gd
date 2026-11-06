@@ -56,11 +56,15 @@ static func setup_reporting(main: Control) -> void:
 		var slip: VBoxContainer = main._slip_body()
 		main._slip_title(slip, str(d.get("name", did)), "赏钱 %d　名声 %d" % [value, maxi(1, value / 10)])
 		var chip: Button = main._slip_chip(main._slip_row(slip), "呈报", main._on_report_discovery.bind(str(did)), true)
-		var tip := str(d.get("location", ""))
-		var hook := str(d.get("historical_hook", "")).strip_edges()
-		if hook != "":
-			tip += "\n" + hook
-		chip.tooltip_text = tip + "\n呈报入案，赏钱名声同领。"
+		var tip_parts: Array = []
+		var tip_loc := str(d.get("location", "")).strip_edges()
+		var tip_hook := str(d.get("historical_hook", "")).strip_edges()
+		if tip_loc != "":
+			tip_parts.append(tip_loc)
+		if tip_hook != "":
+			tip_parts.append(tip_hook)
+		tip_parts.append("呈报入案，赏钱名声同领。")
+		chip.tooltip_text = "\n".join(PackedStringArray(tip_parts))
 
 	var codex: VBoxContainer = main._slip_body()
 	main._slip_title(codex, "宝物图鉴", "藏 %d / 共 %d" % [GameState.treasure_collected_count(), GameManager.treasures_total()])

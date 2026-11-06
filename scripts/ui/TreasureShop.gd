@@ -43,7 +43,7 @@ static func setup(main: Control, port_id: String) -> void:
 		main._slip_note(body2, "请人看过，才知真名与品第。")
 		var chip2: Button = main._slip_chip(main._slip_row(body2, true), "鉴定　%d" % fee,
 			main._on_appraise_treasure.bind(str(tid)), true)
-		chip2.tooltip_text = "鉴定后可在市舶司献纳名声宝物"
+		chip2.tooltip_text = "看真之后，方知真名品第；名声宝物可献纳。"
 	main._slip_host = old_host
 	if shelf.get_child_count() > 0:
 		main._attach_quiet(main.choices_container, shelf)

@@ -259,7 +259,11 @@ func buy_treasure(tid: String, port_id: String) -> Dictionary:
 	if price <= 0 or not spend_money(price):
 		return {"ok": false, "msg": "钱不够。"}
 	add_treasure(tid)
-	return {"ok": true, "name": t.get("name", tid), "price": price}
+	# 待鉴物（有 unidentified_name）上屏用旧名，避免买入日志泄露真名
+	var shown := str(t.get("name", tid))
+	if t.has("unidentified_name"):
+		shown = str(t.get("unidentified_name", shown))
+	return {"ok": true, "name": shown, "price": price}
 
 
 ## 鉴定待鉴宝物，费用为标价十分之一
