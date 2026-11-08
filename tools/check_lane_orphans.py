@@ -79,7 +79,12 @@ if "NK1_COORD" not in os.environ and not os.path.isfile(COORD):
     _gd = subprocess.run(["git", "-C", ROOT, "rev-parse", "--git-common-dir"],
                          capture_output=True, text=True)
     if _gd.returncode == 0:
-        _main_root = os.path.dirname(os.path.abspath(_gd.stdout.strip()))
+        # git 在 Windows 上常回相对路径 `.git`，而且是相对仓库根、不是相对进程当前目录。
+        # 直接 abspath 会按 cwd 解析，从别的目录跑就指到错误的主仓旁。
+        _common = _gd.stdout.strip()
+        if not os.path.isabs(_common):
+            _common = os.path.join(ROOT, _common)
+        _main_root = os.path.dirname(os.path.abspath(_common))
         _alt = os.path.abspath(os.path.join(_main_root, "..", "nk1-agent-briefs", "COORDINATION.md"))
         if os.path.isfile(_alt):
             COORD = _alt

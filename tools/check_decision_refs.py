@@ -1010,7 +1010,8 @@ def since(o, repo, refs, lines, rev=None, new_rev=None, label=None, toks=None):
     （lane w50-k4 清零判竿需要 ⚠ 改指未验的格值，since() 把它存成属性 since.last_rewritten——返回值口径不变。）"""
     rev = rev or o.since
     label = label or f"--since {rev}"
-    rel = os.path.relpath(os.path.abspath(o.doc), ROOT)
+    # git 的 pathspec 只认正斜杠。Windows relpath 是反斜杠时，HEAD:docs\… 会报「盘上有、提交里没有」，改号自证被跳过。
+    rel = os.path.relpath(os.path.abspath(o.doc), ROOT).replace(os.sep, "/")
     old_text = git("show", f"{rev}:{rel}")
     old_anchor = old_text and anchor_of(old_text)
     if not old_anchor:
@@ -1205,7 +1206,7 @@ def rod_assert(n, mismatch, rewritten, run, quiet=False):
 def prev_rev(doc):
     """改号自证的比对基准：工作树里的清单和 HEAD 版不同 → HEAD；相同 → 最近一次改清单那个提交的父版。
     返回 (rev | None, 说明)；None = 没有可比的上一版（清单首版 / 还没提交 / 浅克隆取不到父版）。"""
-    rel = os.path.relpath(os.path.abspath(doc), ROOT)
+    rel = os.path.relpath(os.path.abspath(doc), ROOT).replace(os.sep, "/")
     head_text = git("show", f"HEAD:{rel}")
     if head_text is None:
         return None, "清单还没提交过"

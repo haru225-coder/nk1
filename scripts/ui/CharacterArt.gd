@@ -533,9 +533,8 @@ static func codex_personality(ch: Dictionary) -> String:
 
 ## 此刻该挂哪张立绘。characters.json 可选 portrait_before {"YYYY-MM": 路径}：日历早于那个月时挂那一张，
 ## 几个键取最早一个还没到的；没有这个字段、或终局已了结（人物志全露，画也不再藏）就挂 portrait 正图。
-## 例：林华 {"1276-10": ".../lin_hua_ink.png"}——景炎元年十月辞船投军之前，他是泉州码头的水手，酒馆卡、在船卡、
-## 船籍簿小头像、人物志都不挂城头铁甲像（那张图既不合身份，也把从军一事提前说破），先挂剪影墨卡。
-## 以后补了水手版，把值换成 age_lin_hua_sailor.png 那一行即可，别处不用动。
+## 例：林华 {"1276-10": ".../lin_hua_early.png"}——景炎元年十月辞船投军之前，他是泉州码头的水手，酒馆卡、在船卡、
+## 船籍簿小头像、人物志都不挂城头铁甲像（那张图既不合身份，也把从军一事提前说破），挂水手油画。
 static func portrait_path(ch: Dictionary) -> String:
 	var path := str(ch.get("portrait", ""))
 	var before = ch.get("portrait_before")

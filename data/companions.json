@@ -177,7 +177,7 @@
    "verify": "待核",
    "portrait": "res://assets/portraits/lin_hua.png",
    "portrait_status": "painted",
-   "portrait_note": "沿用现有披甲部将版；另出 1260 年代水手版 lin_hua_early.png（水手短褐赤足，未接线）",
+   "portrait_note": "披甲部将版 lin_hua.png；1260 年代水手版 lin_hua_early.png 已接到 characters.json 的 portrait_before（1276-10 以前）",
    "attrs": {
     "hang": 62,
     "shang": 18,

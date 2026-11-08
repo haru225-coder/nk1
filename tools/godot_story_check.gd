@@ -1118,7 +1118,7 @@ func _hooks_bg_check(main: Node) -> void:
 	var fallen_file := "bg_quanzhou_fallen.jpg"
 	var fallen_want: String = fallen_file if FileAccess.file_exists("res://assets/" + fallen_file) else main.FALLBACK_BG
 	main._port_bg_probe = {fallen_file: true}
-	GS.from_dict({})
+	GS.from_dict({}); GS.loaded_with_beats = true; ["monk", "merchant", "dock", "prepare", "return_quanzhou"].map(func(m): GS.beat_mark(m))  # 空档进泉州会先进 monk 剧情页，先记满拍账再量港页底图
 	Cal.from_dict({"year": 1277, "month": 1, "day": 5})
 	GS.last_port = "quanzhou"
 	main.load_scene("quanzhou")
@@ -2225,7 +2225,7 @@ func _v0928_visual_check(_main: Node) -> void:
 	var lin_01: String = Art.codex_bio(lin)
 	_check(lin_08.find("降") < 0 and lin_08.find("元兵") < 0 and lin_title_08.find("部将") < 0 and lin_01.find("降") >= 0,
 		"林华 1276-08 小传 / 简介 / 其言不含「降」「元兵」，称谓「%s」不是部将；1277-01 起写降" % lin_title_08)
-	# 林华立绘按日期换：辞船（1276-10）之前挂剪影墨卡，之后与了结后挂甲胄正图
+	# 林华立绘按日期换：辞船（1276-10）之前挂水手油画 lin_hua_early.png，之后与了结后挂甲胄正图
 	Cal.from_dict({"year": 1276, "month": 8, "day": 5})
 	var lin_pic_08: String = Art.portrait_path(lin)
 	Cal.from_dict({"year": 1276, "month": 10, "day": 5})
@@ -2234,8 +2234,8 @@ func _v0928_visual_check(_main: Node) -> void:
 			and lin_pic_10 == str(lin.get("portrait", "")),
 		"林华立绘 1276-08 挂 %s（在库）、1276-10 起挂正图 %s" % [lin_pic_08.get_file(), lin_pic_10.get_file()])
 	Cal.from_dict({"year": 1276, "month": 8, "day": 5})
-	_check(Art.portrait_is_card(lin) and Art.thumb(lin, Vector2i(34, 34), true) != null,
-		"林华 1276-08 立绘面板记作剪影卡，缩略图取得到")
+	_check(not Art.portrait_is_card(lin) and Art.thumb(lin, Vector2i(34, 34), true) != null,
+		"林华 1276-08 挂水手油画，不记作剪影卡，缩略图取得到")
 	# lane w53-14（g12 主角仕履一批，照《宋史·瀛国公纪·二王附》景炎元年八月「兴化石手军乱」、九月「复以陈文龙知兴化军」；
 	# 「议者以其不足用罢之，石手军亦叛」见《宋史·陈文龙传》）：原段键一律 1276-07，早了一到两个月。1276-08 起露石手军叛，
 	# 九月起主角称谓才带「知兴化军」，小传、木兰陂收编段、关系签「收编之官」同月露

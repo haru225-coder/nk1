@@ -73,7 +73,8 @@
             "title": "str",
             "body": "str",
             "investigations": "list<@investigation>",
-            "choices": "list<@choice>"
+            "choices": "list<@choice>",
+            "bg?": "str"
           }
         },
         {
@@ -99,6 +100,7 @@
             "body": "str",
             "choices": "list<@choice>",
             "cg?": "str",
+            "bg?": "str",
             "objective?": "str",
             "speaker?": "str",
             "require_any?": "list<str>",

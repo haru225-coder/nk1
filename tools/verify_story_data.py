@@ -772,7 +772,7 @@ check(_eng_hit is None, f"characters.json 原稿仍含工程词「{_eng_hit.grou
 # UI 读取入口锁：凡拿人物字典直读的 .get("键")，键只许是「上屏 / 结构」两类；文本层 layer(ch).get 只许 CODEX_ONSCREEN
 L1_UI_FILES = ["scripts/ui/CharacterArt.gd", "scripts/ui/CharacterCodex.gd", "scripts/ui/VisionStage.gd", "scripts/Main.gd",
                "scripts/ui/NpcPage.gd", "scripts/companions/CompanionPreview.gd"] + sorted(
-    os.path.relpath(str(p), ROOT) for p in pathlib.Path(ROOT, "scripts", "chars").glob("*.gd"))
+    os.path.relpath(str(p), ROOT).replace(os.sep, "/") for p in pathlib.Path(ROOT, "scripts", "chars").glob("*.gd"))
 _ui_raw_keys = 0
 for rel in L1_UI_FILES:
     p = os.path.join(ROOT, rel)

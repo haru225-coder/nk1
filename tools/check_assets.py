@@ -35,9 +35,14 @@ def load(n):
 
 sources = {}
 for sub in ("scripts", "scenes", "tools"):
-    for p in (ROOT / sub).rglob("*"):
-        if p.suffix in (".gd", ".tscn") and "legacy" not in p.parts and p.name != "godot_smoke.gd":  # 云端 smoke 故意引用已拆除的死生态位图以断言其不存在
-            sources[p] = p.read_text(encoding="utf-8")
+    # 不走 rglob：它会跟进点目录里的坏链接（本机 tools/.venv-taiko5/lib64）然后整道崩溃。
+    # 点目录与 legacy 与编辑器、侧车门禁同一口径，不扫。
+    for dirpath, dirnames, filenames in os.walk(ROOT / sub):
+        dirnames[:] = [d for d in dirnames if d != "legacy" and not d.startswith(".")]
+        for fn in filenames:
+            p = pathlib.Path(dirpath) / fn
+            if p.suffix in (".gd", ".tscn") and p.name != "godot_smoke.gd":  # 云端 smoke 故意引用已拆除的死生态位图以断言其不存在
+                sources[p] = p.read_text(encoding="utf-8")
 
 # ── 1. 完整路径字面量 ───────────────────────────────────
 FULL = re.compile(r'res://assets/([A-Za-z0-9_./-]+\.[A-Za-z0-9]+)')

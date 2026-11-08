@@ -67,7 +67,8 @@ class Ctx:
         for pat in ("scripts/**/*.gd", "scenes/**/*.tscn"):
             for p in sorted(glob.glob(os.path.join(root, pat), recursive=True)):
                 with open(p, encoding="utf-8") as f:
-                    self.src[os.path.relpath(p, root)] = f.read()
+                    # 清单路径是正斜杠。Windows 的 relpath 带反斜杠，对不上就把入口常量读成空。
+                    self.src[os.path.relpath(p, root).replace(os.sep, "/")] = f.read()
 
     def load(self, rel):
         if rel not in self.files:

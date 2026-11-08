@@ -1331,9 +1331,9 @@ static func paper_card(slip: Control) -> void:
 	if not IS_JUANBEN:
 		return
 	slip.set_meta(&"nk1_paper", true)
+	var ref: WeakRef = weakref(slip)
 	var inked := func() -> void:
-		if is_instance_valid(slip):
-			_ink_on_paper(slip)
+		if ref.get_ref() != null: _ink_on_paper(ref.get_ref())
 	if slip is Container:
 		(slip as Container).sort_children.connect(inked)
 	inked.call_deferred()

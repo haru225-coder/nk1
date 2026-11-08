@@ -60,8 +60,10 @@ var _notice_when: Array = []
 var _page_footer: HBoxContainer
 ## 内页滚动区（_split_page_footer 摘出来的 Scroll）
 var _page_scroll: ScrollContainer
-## 当前是序章对白条（cg_ 酒棚各页）：点画面任意处续读
+## 当前是对白条（画留在上头，文案只占底下一条）：点画面任意处只在全是翻页时续读
 var _cg_dialogue := false
+## 画上的可点物事。挂在中栏，不进文稿，鼠标只吃到钮上
+var _stage_spots: Control
 ## 见面册页上的话。原 RichTextLabel 在这栏里排不出行，改用能折行的 Label。
 var _npc_speech: RichTextLabel
 ## 航海日志册页。系统对话框会把三卷撑出 1280 宽的窗口。
@@ -576,13 +578,13 @@ func _fill_npc_profile(ch: Dictionary) -> void:
 
 
 ## 调查页平时铺满中栏；卷首 cg_ 收成居中的册页，顶栏让开。
-## dialogue=true（序章酒棚各页）：收成画面下三分之一的对白条，高度随内容往上长，正文 20px，名牌写说话人。
+## dialogue=true：收成画面底下一条。正文限高，多出来的在条里滚；决断钉在条底，不跟正文滚走。画留在上头。
 func _frame_sheet(floating: bool, dialogue := false) -> void:
 	_show_strip(not floating)
 	var sheet_margin: MarginContainer = investigation_mode.get_node("MarginContainer")
 	_cg_dialogue = floating and dialogue
 	if _page_scroll != null:
-		# 对白条不滚动：滚动区关掉竖向滚动后按内容给最小高，面板随之长高
+		# 对白条先按不滚排，_fit_dialogue 再按正文是否超出四行决定开不开滚
 		_page_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED if _cg_dialogue else ScrollContainer.SCROLL_MODE_AUTO
 	body_text.add_theme_font_size_override("normal_font_size", 20 if _cg_dialogue else UiTheme.SIZE_BODY)
 	if _cg_dialogue:
@@ -630,7 +632,10 @@ func _frame_sheet(floating: bool, dialogue := false) -> void:
 	scene_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if floating else HORIZONTAL_ALIGNMENT_LEFT
 
 
-## 对白条的高度随内容：滚动区外包的渐隐层是普通 Control，不往上报最小高，这里按内页 VBox 的最小高直接定面板上沿。
+## 对白条的高度：正文最多留约四行，决断在条底另算。再高就把画盖住，又变回整页文字。
+const DIALOGUE_BODY_CAP := 112.0
+
+
 func _fit_dialogue() -> void:
 	if not _cg_dialogue or _page_scroll == null:
 		return
@@ -639,8 +644,17 @@ func _fit_dialogue() -> void:
 		return
 	if not inner.minimum_size_changed.is_connected(_fit_dialogue):
 		inner.minimum_size_changed.connect(_fit_dialogue)
-	var h := inner.get_combined_minimum_size().y + 20.0 + 16.0 + 8.0 + 6.0
-	h = clampf(h, 150.0, get_viewport_rect().size.y - 80.0 if is_inside_tree() else 560.0)
+	var footer_h := 0.0
+	if _page_footer != null:
+		if not _page_footer.minimum_size_changed.is_connected(_fit_dialogue):
+			_page_footer.minimum_size_changed.connect(_fit_dialogue)
+		footer_h = _page_footer.get_combined_minimum_size().y
+	var inner_h := inner.get_combined_minimum_size().y
+	var scroll_h := minf(inner_h, DIALOGUE_BODY_CAP)
+	_page_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO if inner_h > scroll_h + 4.0 else ScrollContainer.SCROLL_MODE_DISABLED
+	var h := scroll_h + footer_h + 20.0 + 16.0 + 8.0 + 6.0
+	var cap := get_viewport_rect().size.y * 0.42 if is_inside_tree() else 300.0
+	h = clampf(h, 132.0, cap)
 	investigation_mode.offset_top = -12.0 - h
 
 
@@ -867,6 +881,7 @@ func _load_scene_inner(scene_id: String) -> void:
 	if current_scene_id != "" and current_scene_id != scene_id:
 		previous_scene_id = current_scene_id
 	current_scene_id = scene_id
+	_clear_stage_spots()
 
 	# 设施场景由代码动态生成，不走 scenes.json。
 	# city_* 是序章共用 id，不能按后缀收成 _setup_*(「city」)。
@@ -903,9 +918,11 @@ func _load_scene_inner(scene_id: String) -> void:
 
 	var type = scene_data.get("type", "scene")
 	var loc = scene_data.get("location", "")
+	var own_bg := str(scene_data.get("bg", ""))
 	if str(scene_id).begins_with("cg_"):
 		# 卷首题名压标题主视觉；没登记专属图的 title 页（四方沙盘里还缺的）也回落它。
-		# 其余 cg_ 序章页缺专属图时压兴化海口酒棚并调夜色（雨夜、惊雷）。
+		# 其余 cg_ 序章页缺专属图时压兴化海口酒棚。底图按油画原色，不再压夜色：
+		# 夜色把饱和度砍到 0.58、再偏蓝，和厚涂油画不是一路。
 		# H4：PROLOGUE_PAGE_BG 里登记了、文件也在的页换专属底图；缺图照旧回落这两张，不走 _set_background_file 的海路图兜底
 		var page_bg := _prologue_page_bg(scene_id)
 		if page_bg != "":
@@ -914,8 +931,9 @@ func _load_scene_inner(scene_id: String) -> void:
 			_set_background_file("bg_world_map.jpg")
 		else:
 			_set_background_file(PROLOGUE_BG)
-		if type != "title":
-			_CS_BACKDROP.set_grade(background, "night")
+		# 序章页不再压 night。_set_background_file 已按结局/其余分开调色。
+	elif own_bg != "":
+		_set_background_file(own_bg)
 	else:
 		_apply_background(type, loc)
 
@@ -989,7 +1007,7 @@ const FALLBACK_BG := "bg_sea_route.jpg"
 ## 序章酒棚（cg_narrate / veteran / wine_shed / ana / servant / decision / choice 各页）
 const PROLOGUE_BG := "bg_xinghua_wine_shed.jpg"
 ## H4 序章分页底图：页 id → assets/ 下的文件（可带子目录，_set_background_file 前面拼 res://assets/）。
-## 不在表里的页照旧：title 型压 bg_world_map.jpg，其余压 PROLOGUE_BG 并调夜色；在表里而文件缺，也回落这两张（不回落海路图）。
+## 不在表里的页照旧：title 型压 bg_world_map.jpg，其余压 PROLOGUE_BG（油画原色，不压夜色）；在表里而文件缺，也回落这两张（不回落海路图）。
 ## check_assets 查表值与键，所以一页一行、跟着一张图进，不写指向不存在文件的行。cg_title 不进表：godot_story_check 断言标题屏用 bg_world_map.jpg。
 const PROLOGUE_PAGE_BG := {
 	# 四方沙盘（title 型，不吃夜色）：北、南、西借开场过场；东是博多湾专属图
@@ -997,19 +1015,165 @@ const PROLOGUE_PAGE_BG := {
 	"cg_world_south": "cutscene/cs_south_champa.jpg",
 	"cg_world_west": "cutscene/cs_west_caravan.jpg",
 	"cg_world_east": "bg_prologue_world_east.jpg",
-	# 阿那、家丁、抉择：非 title，换底后仍调夜色
-	"cg_ana_enter": "bg_prologue_ana.jpg",
-	"cg_ana_speak": "bg_prologue_ana.jpg",
-	"cg_ana_speak_2": "bg_prologue_ana.jpg",
-	"cg_ana_speak_3": "bg_prologue_ana.jpg",
-	"cg_servant_enter": "bg_prologue_servant.jpg",
-	"cg_servant_speak": "bg_prologue_servant.jpg",
-	"cg_decision": "bg_prologue_decision.jpg",
-	# 以下图没进库之前不写：
-	#   桌上三物 cg_narrate_table_2 至 _5、cg_wine_shed_2 至 _4（7 页）← bg_prologue_table.jpg
-	#   老兵 cg_veteran、cg_veteran_2、_3、_3a、_4、_5、_6（7 页）← bg_prologue_veteran.jpg（空袖必须入画，现成图做不到就不挂）
-	#   收束 cg_choice_sea ← bg_prologue_choice_sea.jpg；cg_choice_land ← bg_prologue_choice_land.jpg
-	#   cg_narrate_table 首页、cg_wine_shed、cg_wine_shed_5 仍压 PROLOGUE_BG
+	# 酒棚一幕：油画原色，灰雨，不打夜色，不用闪电暗黑稿
+	"cg_narrate_table": "bg_prologue_shed_oil.jpg",
+	"cg_narrate_table_2": "bg_prologue_table_oil.jpg",
+	"cg_narrate_table_3": "bg_prologue_table_oil.jpg",
+	"cg_narrate_table_4": "bg_prologue_table_oil.jpg",
+	"cg_narrate_table_5": "bg_prologue_table_oil.jpg",
+	"cg_veteran": "bg_prologue_veteran_oil.jpg",
+	"cg_veteran_2": "bg_prologue_veteran_oil.jpg",
+	"cg_veteran_3": "bg_prologue_veteran_oil.jpg",
+	"cg_veteran_3a": "bg_prologue_veteran_oil.jpg",
+	"cg_veteran_4": "bg_prologue_veteran_oil.jpg",
+	"cg_veteran_5": "bg_prologue_veteran_oil.jpg",
+	"cg_veteran_6": "bg_prologue_veteran_oil.jpg",
+	"cg_wine_shed": "bg_prologue_rain_oil.jpg",
+	"cg_wine_shed_2": "bg_prologue_rain_oil.jpg",
+	"cg_wine_shed_3": "bg_prologue_shed_oil.jpg",
+	"cg_wine_shed_4": "bg_prologue_shed_oil.jpg",
+	"cg_wine_shed_5": "bg_prologue_rain_oil.jpg",
+	"cg_ana_enter": "bg_prologue_ana_oil.jpg",
+	"cg_ana_speak": "bg_prologue_ana_oil.jpg",
+	"cg_ana_speak_2": "bg_prologue_ana_oil.jpg",
+	"cg_ana_speak_3": "bg_prologue_ana_oil.jpg",
+	"cg_servant_enter": "bg_prologue_servant_oil.jpg",
+	"cg_servant_speak": "bg_prologue_servant_oil.jpg",
+	"cg_decision": "bg_prologue_land_oil.jpg",
+	"cg_choice_sea": "bg_prologue_sea_oil.jpg",
+	"cg_choice_land": "bg_prologue_land_oil.jpg",
+}
+
+## 画上可点的物事。键是底图文件名。点了只换对白条里的一句，不离这一页。
+const STAGE_SPOTS := {
+	"bg_prologue_shed_oil.jpg": [
+		{"label": "草帘", "verb": "掀开", "x": 0.08, "y": 0.18, "text": "帘子是芦席编的。缝里漏进灰白天光，外头是港，不是黑夜。", "result": "你把草帘掀开一条缝。灰光和潮气一起进来，雨星打在手上。"},
+		{"label": "酒瓮", "verb": "摇一摇", "x": 0.40, "y": 0.40, "text": "瓮口结着一层薄灰。酒气混着潮气，棚里没有第二个人。", "result": "你摇了摇酒瓮。里头轻轻响了一下，还剩一点，你没喝。"},
+		{"label": "门外", "verb": "探头", "x": 0.62, "y": 0.22, "text": "门外泥滩上泊着船。雨是白的，没有闪电。", "result": "你探出门外。泥滩、船、白雨，没有人叫你。"},
+	],
+	"bg_prologue_table_oil.jpg": [
+		{"label": "白绫短札", "verb": "展开", "x": 0.10, "y": 0.20, "text": "母亲的字折得齐整，催你秋分前赶到福州。", "result": "你把短札展开，又折好，塞回袖里。字还是那几行。"},
+		{"label": "货引", "verb": "按平", "x": 0.42, "y": 0.36, "text": "泉州货引揉皱了，黑墨押字还在，比短札沉。", "result": "你把揉皱的货引按平。押字糊了一点，还能认。"},
+		{"label": "汤碗", "verb": "端起", "x": 0.64, "y": 0.42, "text": "碗沿有一道缺口。汤已经凉了，没人再劝你喝。", "result": "你端起碗。汤是凉的，你又放下了。"},
+	],
+	"bg_prologue_veteran_oil.jpg": [
+		{"label": "空袖", "verb": "看袖口", "x": 0.18, "y": 0.28, "text": "他左袖空着，掖进腰带。右手按在粗陶碗上。", "result": "你看清袖口塞进腰带，里头没有手臂。你把眼睛移开。"},
+		{"label": "旧疤", "verb": "别过脸", "x": 0.48, "y": 0.16, "text": "眉骨上那道疤是旧的。他说话时也不遮。", "result": "你别过脸，没有盯着那道疤。"},
+		{"label": "陶碗", "verb": "推回去", "x": 0.62, "y": 0.42, "text": "碗是粗陶，酒只剩一层。他没让你碰。", "result": "你把碗往他那边推了推。他按住了，还是没让你碰。"},
+	],
+	"bg_prologue_rain_oil.jpg": [
+		{"label": "泥滩", "verb": "踩一脚", "x": 0.16, "y": 0.44, "text": "退了潮的泥滩陷脚，船底全是黑泥。", "result": "你踩下去。黑泥没过鞋帮。"},
+		{"label": "茅棚", "verb": "扶檐", "x": 0.40, "y": 0.16, "text": "棚是茅草和芦席。雨从檐口成线往下滴。", "result": "你扶住檐口。雨水顺着腕子往下淌。"},
+		{"label": "海船", "verb": "拉缆", "x": 0.64, "y": 0.30, "text": "船还在，缆没解，等人把话说完。", "result": "你拉了拉缆。船动了一下，人还在棚里。"},
+	],
+	"bg_prologue_ana_oil.jpg": [
+		{"label": "红巾", "verb": "别问", "x": 0.36, "y": 0.14, "text": "头上那块红布被雨打湿了，贴着额。", "result": "你没问那块红布。他自己扯了扯，雨水顺着额角下去。"},
+		{"label": "刀", "verb": "只看柄", "x": 0.58, "y": 0.32, "text": "刀插在腰侧，柄磨得发亮，不是摆设。", "result": "你只看了眼刀柄。他的手没离开。"},
+		{"label": "赤脚", "verb": "让开", "x": 0.14, "y": 0.44, "text": "他赤着脚站在湿板上，并不躲雨。", "result": "你往边上让了让。湿板很滑。"},
+	],
+	"bg_prologue_servant_oil.jpg": [
+		{"label": "油纸伞", "verb": "接伞", "x": 0.22, "y": 0.14, "text": "伞是油纸，裂了一道缝。雨还是打在他肩上。", "result": "你伸手去接伞。他摇头，伞还举在你头顶外。"},
+		{"label": "家书", "verb": "接信", "x": 0.46, "y": 0.36, "text": "他跪着把信递上来。信封是家里的。", "result": "你接过信。信封是家里的，你还没拆。"},
+		{"label": "马", "verb": "抚马颈", "x": 0.66, "y": 0.24, "text": "马在身后喷着白气。官道那头还看得见城门。", "result": "你抚了抚马颈。马把气喷在你手上。城门还开着。"},
+	],
+	"bg_prologue_sea_oil.jpg": [
+		{"label": "跳板", "verb": "踏上", "x": 0.30, "y": 0.40, "text": "跳板又窄又滑，一头搭在船舷上。", "result": "你踏上跳板。板子一沉，船舷在另一头。"},
+		{"label": "舱灯", "verb": "望舱", "x": 0.58, "y": 0.22, "text": "船舱点着灯。子时的潮已经在退。", "result": "你往舱里看。灯还亮着。潮在退，还没人叫你下去。"},
+	],
+	"bg_prologue_land_oil.jpg": [
+		{"label": "石板路", "verb": "走两步", "x": 0.18, "y": 0.42, "text": "石板被雨浇黑，一路通向城门。", "result": "你在石板上走了两步。鞋底打滑，你又停住。"},
+		{"label": "蓑衣", "verb": "抖水", "x": 0.42, "y": 0.24, "text": "蓑衣还在滴水，是从海口穿回来的。", "result": "你抖了抖蓑衣。水珠砸在石板上。"},
+		{"label": "城门", "verb": "望门内", "x": 0.64, "y": 0.16, "text": "城门开着。里头是灯，是母亲，是没写完的策问。", "result": "你望向门里的灯。人还站在门外。"},
+	],
+	"bg_ch1_study.jpg": [
+		{"label": "策问", "verb": "按下笔", "x": 0.34, "y": 0.34, "text": "策问写了一半。写到边防，笔尖就停住。", "result": "你把笔按在「边防」旁边，没写下去。"},
+		{"label": "短札", "verb": "塞回案角", "x": 0.58, "y": 0.22, "text": "族老催你去临安补试的短札压在案角，边角已经软了。", "result": "你把短札塞回案角。边角更软了。"},
+		{"label": "窗", "verb": "推窗", "x": 0.10, "y": 0.16, "text": "窗缝里往屋里钻咸风。雨还没有停。", "result": "你推开一条窗缝。咸风灌进来，雨点打在案上。"},
+	],
+	"bg_ch1_kaiyuan.jpg": [
+		{"label": "经卷", "verb": "压住", "x": 0.16, "y": 0.28, "text": "竹匾上的经卷叫海风吹得打卷，墨还没干透。", "result": "你按住被风吹卷的纸角。墨还没干。"},
+		{"label": "镇纸", "verb": "挪开", "x": 0.44, "y": 0.38, "text": "镇纸底下压着半张黄麻纸，细笔勾着断断续续的岸线。", "result": "你挪开镇纸。底下那张黄麻纸露出来。"},
+		{"label": "拓包", "verb": "收进袖", "x": 0.64, "y": 0.20, "text": "拓包、薄宣纸、半截墨。净海说石头不骗人。", "result": "你把拓包、宣纸和半截墨收进袖里。"},
+	],
+	"bg_ch1_fanfang.jpg": [
+		{"label": "藤篮", "verb": "侧身过", "x": 0.12, "y": 0.40, "text": "门槛外堆着藤篮和铅封的瓷箱，进出都得侧身。", "result": "你侧着身子从藤篮和瓷箱中间挤过去。"},
+		{"label": "算盘", "verb": "别出声", "x": 0.48, "y": 0.30, "text": "柜里算盘珠子响个不停。这一页账还没算完。", "result": "你没打断。算盘珠子还在响。"},
+		{"label": "油布", "verb": "拧一把", "x": 0.66, "y": 0.16, "text": "几领刚淋过雨的油布摊在竹竿上，还在滴水。", "result": "你拧了拧油布角。水滴在门槛上。"},
+	],
+	"bg_ch1_deck.jpg": [
+		{"label": "缆绳", "verb": "勒紧", "x": 0.14, "y": 0.36, "text": "缆绳是湿的，勒在掌心里发白。", "result": "你把湿缆又勒紧一圈。掌心发白。"},
+		{"label": "帆", "verb": "看看风", "x": 0.46, "y": 0.14, "text": "帆还没全张开。风已经从船尾过来了。", "result": "帆还没满。风从船尾来，你没喊升帆。"},
+		{"label": "舱口", "verb": "按住席", "x": 0.60, "y": 0.40, "text": "舱口盖着席。货不能潮，这句话你记得。", "result": "你按住舱口的席。底下的货不能见潮。"},
+	],
+	"bg_ch1_cove.jpg": [
+		{"label": "礁", "verb": "对照", "x": 0.62, "y": 0.28, "text": "北口外头那道礁，官图上没有，船家管它叫旧避风澳。", "result": "你对着那道礁看了一眼。官图上确实没有。"},
+		{"label": "锚", "verb": "踢一脚", "x": 0.28, "y": 0.42, "text": "锚吃进沙里。今晚这湾是你的。", "result": "你踢了踢锚索。锚吃得很死。"},
+		{"label": "岸线", "verb": "比对", "x": 0.10, "y": 0.20, "text": "岸线断断续续，和净海那张黄麻纸对得上。", "result": "你在心里把这道岸线和黄麻纸对上了。"},
+	],
+	"bg_ch1_hakata.jpg": [
+		{"label": "唐房", "verb": "敲门", "x": 0.58, "y": 0.22, "text": "唐房的门关着。寄物要亲手交，不能撂在阶上。", "result": "你敲了两下。门没开，里头应了一声。"},
+		{"label": "码头", "verb": "站定", "x": 0.18, "y": 0.40, "text": "码头上的人看你的船，不看你的脸。", "result": "你在码头上站定。看过来的是船，不是脸。"},
+	],
+	"bg_ch2_letter.jpg": [
+		{"label": "信", "verb": "展开", "x": 0.36, "y": 0.30, "text": "信没落款。纸是开元寺里那种薄宣，折过很多次。", "result": "你把信展开。没有落款，折痕很深。"},
+		{"label": "火漆", "verb": "捏碎", "x": 0.60, "y": 0.18, "text": "火漆已经裂了。你拆开之前，它就不是密信了。", "result": "你把裂开的火漆捏成红渣。"},
+	],
+	"bg_ch2_alley.jpg": [
+		{"label": "巷口", "verb": "侧身", "x": 0.22, "y": 0.36, "text": "巷子窄，两个人侧身才能过。墙根是潮的。", "result": "你侧过身。墙根的潮气沾上衣襟。"},
+		{"label": "屋檐", "verb": "避水", "x": 0.58, "y": 0.14, "text": "檐水滴在青石上，一声一声，盖过脚步。", "result": "你靠进檐下。水还是滴到肩上。"},
+	],
+	"bg_ch2_temple.jpg": [
+		{"label": "香", "verb": "站一会儿", "x": 0.40, "y": 0.40, "text": "香燃到一半。灰落在石阶上，没人扫。", "result": "你在香前站了一会儿。灰自己往下掉。"},
+		{"label": "匾", "verb": "抬头", "x": 0.36, "y": 0.12, "text": "匾上的字你认得。这不是泉州那一座。", "result": "你抬头看匾。字认得，寺不是泉州那座。"},
+	],
+	"bg_ch2_sulfur.jpg": [
+		{"label": "麻袋", "verb": "勒一勒", "x": 0.30, "y": 0.38, "text": "麻袋口用绳勒死。硫黄的气味隔着布也冲。", "result": "你又勒紧了袋口。硫黄味更冲。"},
+		{"label": "账", "verb": "合上", "x": 0.56, "y": 0.22, "text": "旧账上这一笔写得很轻，像不想让第二个人看见。", "result": "你把那一页合上。这笔不想让第二个人看见。"},
+	],
+	"bg_ch2_hakata_temple.jpg": [
+		{"label": "寺社", "verb": "推门", "x": 0.48, "y": 0.20, "text": "寺社的门开一条缝。里头有人，不出来迎。", "result": "你把那条缝又推开一点。里头的人还是不出来。"},
+		{"label": "短札", "verb": "掏出来", "x": 0.18, "y": 0.40, "text": "净海的短札还在袖里。到了这里才拿得出来。", "result": "你从袖里掏出净海的短札。"},
+	],
+	"bg_ch2_champa.jpg": [
+		{"label": "港", "verb": "扶住船舷", "x": 0.20, "y": 0.38, "text": "港水是温的。船身轻轻撞着堤，不像兴化的冬潮。", "result": "你扶住船舷。港水是温的，船轻轻撞着堤。"},
+		{"label": "香料", "verb": "闻一闻", "x": 0.58, "y": 0.22, "text": "岸上有香料的气味，混在潮腥里，分得开。", "result": "你吸了一口气。香料和潮腥分得开。"},
+	],
+	"bg_ch3_register.jpg": [
+		{"label": "名册", "verb": "按住", "x": 0.40, "y": 0.34, "text": "名册翻到你这一页。名字后头新添的两个字，墨还没干。", "result": "你按住那两个还没干的字。墨沾了一点在指上。"},
+		{"label": "廊下", "verb": "回头", "x": 0.14, "y": 0.22, "text": "廊下有人等你。不是来道喜的。", "result": "你往廊下看了一眼。等你的人没有道喜。"},
+	],
+	"bg_ch4_banquet.jpg": [
+		{"label": "漆案", "verb": "点一下", "x": 0.42, "y": 0.38, "text": "漆案上的酒画到一半就断了。再往南，谁也没去过。", "result": "你用指头在断掉的那截酒线上点了一下。再往南是空的。"},
+		{"label": "酒", "verb": "放下杯", "x": 0.62, "y": 0.22, "text": "酒还温着。席散得很慢，笑声发虚。", "result": "你把杯放下。酒还温，席还没散。"},
+	],
+	"bg_ch4_yashan.jpg": [
+		{"label": "晚潮", "verb": "退开", "x": 0.16, "y": 0.42, "text": "晚潮漫上青石阶，水是温的，带一股腥。", "result": "潮漫上石阶。你往上退了半步。"},
+		{"label": "焦痕", "verb": "摩一摩", "x": 0.48, "y": 0.30, "text": "舱板上有一道被火星烫焦的旧痕。你用手摩过。", "result": "你又摩过那道焦痕。火星是旧的。"},
+	],
+	"bg_ch4_register.jpg": [
+		{"label": "火漆", "verb": "拨开", "x": 0.46, "y": 0.34, "text": "火漆印是你亲手捏碎的。红渣还在案上。", "result": "你把案上的红渣拨到一边。印是你捏碎的。"},
+		{"label": "号旗", "verb": "按住箱盖", "x": 0.18, "y": 0.40, "text": "旧号旗叠进樟木箱底，不必再挂出来。", "result": "你按住樟木箱盖。号旗不必再拿出来。"},
+	],
+	"bg_ch4_refugees.jpg": [
+		{"label": "灯", "verb": "拨灯芯", "x": 0.55, "y": 0.24, "text": "蕃坊的灯一盏一盏灭了。港里只剩潮声。", "result": "你拨了拨灯芯。外面的灯仍一盏盏灭。"},
+		{"label": "册子", "verb": "合上", "x": 0.28, "y": 0.40, "text": "册子边角磨花了。你合上它，又拨了拨灯芯。", "result": "你把册子合上。边角磨手。"},
+	],
+	"bg_ch4_ledger.jpg": [
+		{"label": "算盘", "verb": "拨回去", "x": 0.42, "y": 0.36, "text": "黄杨木算盘还在原处。最后一颗算珠拨回去，声音很轻。", "result": "你把最后一颗算珠拨回梁下。声音很轻。"},
+		{"label": "风灯", "verb": "没再点", "x": 0.16, "y": 0.20, "text": "廊下的风灯熄了大半。对账的人已经散了。", "result": "你看了看熄掉的风灯，没有再点。"},
+	],
+	"bg_ch4_chart.jpg": [
+		{"label": "海图", "verb": "吹一吹", "x": 0.36, "y": 0.38, "text": "私家边记摊在膝上。刚添的一行小字，墨还没干。", "result": "你对着没干的墨吹了吹。字还在。"},
+		{"label": "北面", "verb": "望北", "x": 0.14, "y": 0.16, "text": "北面海天是黑的。兴化书斋那盏灯，你还记得。", "result": "你望向北面。海天是黑的。书斋那盏灯只在记性里。"},
+	],
+	"bg_quanzhou_harbor.jpg": [
+		{"label": "大船", "x": 0.10, "y": 0.28, "text": "左边那条大船帆还张着。", "result": "你看了看左边的大船。帆还张着，人在甲板上，你没上去。"},
+		{"label": "货摊", "x": 0.66, "y": 0.34, "text": "石阶右边摆着摊，筐和瓮堆在路边。", "result": "你在摊边停了一停。筐和瓮让开一条路，人从中间过。"},
+	],
+	"bg_xinghua_harbor.jpg": [
+		{"label": "渔船", "x": 0.36, "y": 0.36, "text": "近处一条渔船半搁在泥滩上。", "result": "你看了看那条渔船。潮还没把它托起来。"},
+		{"label": "鱼筐", "x": 0.08, "y": 0.40, "text": "石板上的鱼筐还在滴水。", "result": "你看了一眼鱼筐。水还在滴，没人催你。"},
+	],
 }
 
 
@@ -1107,6 +1271,7 @@ func _drop_children(box: Node) -> void:
 
 func _enter_panel_mode() -> void:
 	_dismiss_banner()
+	_clear_stage_spots()
 	_frame_sheet(false)
 	title_mode.visible = false
 	port_mode.visible = false
@@ -3199,12 +3364,10 @@ func _on_facility_pressed(fac: Dictionary) -> void:
 func _setup_investigation_mode(scene_data: Dictionary) -> void:
 	_enter_panel_mode()
 	var cinematic := str(scene_data.get("id", "")).begins_with("cg_")
-	if cinematic:
-		# 序章酒棚各页：下三分之一对白条（type=title 的卷首四页走 _setup_title_mode，不到这里）
-		_frame_sheet(true, true)
-		scene_title.add_theme_font_size_override("font_size", 24)
-	else:
-		scene_title.add_theme_font_size_override("font_size", UiTheme.SIZE_HEAD)
+	# 剧情页一律收成对白条：画留在上头，决断和可看的物事摆在画上。铺满中栏时，有图也只剩一篇文字。
+	# type=title 的卷首四页走 _setup_title_mode，不到这里。设施页不走这个函数。
+	_frame_sheet(true, true)
+	scene_title.add_theme_font_size_override("font_size", 24)
 
 	var shown_title := str(scene_data.get("title", "")).strip_edges()
 	if shown_title == "":
@@ -3229,19 +3392,16 @@ func _setup_investigation_mode(scene_data: Dictionary) -> void:
 	body_text.text = _unescape_scene_text(_late_text(shown_body))
 
 	var investigations = scene_data.get("investigations", [])
-	_show_investigation_chrome(investigations.size() > 0)
-	for inv in investigations:
-		var btn = Button.new()
-		btn.text = str(inv.get("label", "互动"))
-		btn.pressed.connect(_on_investigate_pressed.bind(inv, btn))
-		interactive_container.add_child(btn)
-		UiTheme.style_choice_button(btn)
+	# 可调查的物事摆到画上，不收进文稿里那一排字钮
+	_show_investigation_chrome(false)
+	_mount_stage_spots(_bg_file, investigations)
 
 	var choices = scene_data.get("choices", [])
 	show_choices(choices)
 
 	if investigations.size() == 0 and choices.size() == 0:
 		_add_fallback_return_button()
+	_fit_dialogue.call_deferred()
 
 
 func _add_fallback_return_button() -> void:
@@ -3253,9 +3413,10 @@ func _add_fallback_return_button() -> void:
 	var btn = Button.new()
 	btn.text = "返回上一处"
 	btn.pressed.connect(func(): load_scene(target))
-	choices_container.add_child(btn)
+	_choice_host().add_child(btn)
 	UiTheme.style_leave_button(btn)
-	choices_label.visible = true
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	choices_label.visible = false
 
 
 func _add_leave_button(port_id: String) -> void:
@@ -3281,13 +3442,15 @@ func _on_investigate_pressed(inv_data: Dictionary, btn: Button) -> void:
 		load_scene(next_sc)
 	else:
 		btn.disabled = true
+		if _cg_dialogue:
+			_fit_dialogue()
 
 
 func show_choices(choices: Array) -> void:
 	if choices.is_empty():
 		return
-	choices_label.visible = true
-	var cinematic := str(current_scene_id).begins_with("cg_")
+	var host := _choice_host()
+	choices_label.visible = false
 	var shown := 0
 	var page_turns := 0
 	for choice in choices:
@@ -3297,32 +3460,148 @@ func show_choices(choices: Array) -> void:
 		var btn = Button.new()
 		btn.text = label
 		btn.pressed.connect(_on_choice_pressed.bind(choice)); _fork_no_enter(btn, choices)
-		choices_container.add_child(btn)
+		host.add_child(btn)
 		UiTheme.style_choice_button(btn)
-		# 卷首翻页只有一串省略号，收成居中朱印，不再铺成整条。
-		# 真正的岔路（货引 / 策问）留挑签。
-		if cinematic and _is_page_turn(label):
-			if _cg_dialogue:
-				# 对白条：翻页只是一枚靠右的小「续 ▼」墨钮（点画面任意处也续读）；路由照旧取这条 choice。
-				# ▾（U+25BE）文楷子集里没有，用 ▼
-				btn.text = "续 ▼"
-				btn.set_meta(&"page_turn", true)
-				UiTheme.style_button(btn, false)
-				btn.add_theme_font_size_override("font_size", 16)
-				btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
-				btn.custom_minimum_size = Vector2(88, 34)
-				btn.size_flags_horizontal = Control.SIZE_SHRINK_END
-			else:
-				UiTheme.style_button(btn, true)
-				btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
-				btn.custom_minimum_size = Vector2(168, 40)
-				btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		if not _is_page_turn(label):
+			btn.custom_minimum_size = Vector2(0, 42)
+		# 翻页只有一串省略号，收成靠右的小「续 ▼」（点画面任意处也续读）。真正的岔路留挑签。
+		# ▾（U+25BE）文楷子集里没有，用 ▼
+		if _cg_dialogue and _is_page_turn(label):
+			btn.text = "续 ▼"
+			btn.set_meta(&"page_turn", true)
+			UiTheme.style_button(btn, false)
+			btn.add_theme_font_size_override("font_size", 16)
+			btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+			btn.custom_minimum_size = Vector2(88, 34)
+			btn.size_flags_horizontal = Control.SIZE_SHRINK_END
 			page_turns += 1
 		shown += 1
-	if cinematic and shown > 0 and page_turns == shown:
+	if shown > 0 and page_turns == shown:
 		choices_label.visible = false
 	if shown == 0:
 		_add_fallback_return_button()
+
+
+## 对白条的决断钉在滚动区底下。设施页和其他铺满的页仍用文稿里的 choices_container。
+func _choice_host() -> Node:
+	if not _cg_dialogue or _page_footer == null:
+		return choices_container
+	var box := _page_footer.get_node_or_null("StageChoices") as VBoxContainer
+	if box == null:
+		box = VBoxContainer.new()
+		box.name = "StageChoices"
+		box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		box.add_theme_constant_override("separation", 6)
+		_page_footer.add_child(box)
+	return box
+
+
+func _dialogue_choice_buttons() -> Array:
+	var host: Node = choices_container
+	if _cg_dialogue and _page_footer != null:
+		var box := _page_footer.get_node_or_null("StageChoices")
+		if box != null:
+			host = box
+	var out: Array = []
+	for c in host.get_children():
+		if c is Button:
+			out.append(c)
+	return out
+
+
+func _ensure_stage_spots() -> Control:
+	if _stage_spots != null and is_instance_valid(_stage_spots):
+		return _stage_spots
+	var layer := Control.new()
+	layer.name = "StageSpots"
+	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.anchor_right = 1.0
+	layer.anchor_bottom = 1.0
+	layer.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	layer.grow_vertical = Control.GROW_DIRECTION_BOTH
+	($HBoxContainer/CenterArea as Control).add_child(layer)
+	_stage_spots = layer
+	return layer
+
+
+func _clear_stage_spots() -> void:
+	if _stage_spots == null or not is_instance_valid(_stage_spots):
+		return
+	for c in _stage_spots.get_children():
+		_stage_spots.remove_child(c)
+		c.queue_free()
+	_stage_spots.visible = false
+
+
+## 物事散在画上。点一下，底下换一句你碰到了什么，这颗钮就收了。
+## 这一页自己有调查项时，不再叠一套跟画走的泛看，免得同一张桌上出现两个「策问」。
+const _SPOT_ANCHOR: Array[Vector2] = [Vector2(0.07, 0.16), Vector2(0.56, 0.22), Vector2(0.28, 0.42)]
+
+
+func _mount_stage_spots(file: String, investigations: Array) -> void:
+	var layer := _ensure_stage_spots()
+	_clear_stage_spots()
+	var n := 0
+	for inv in investigations:
+		if typeof(inv) != TYPE_DICTIONARY:
+			continue
+		var btn := _stage_spot_button(str((inv as Dictionary).get("label", "看一眼")))
+		_place_stage_spot(btn, n, inv)
+		btn.pressed.connect(_on_investigate_pressed.bind(inv, btn))
+		layer.add_child(btn)
+		n += 1
+	if n > 0:
+		layer.visible = true
+		layer.move_to_front()
+		return
+	for spot in STAGE_SPOTS.get(file, []):
+		if typeof(spot) != TYPE_DICTIONARY:
+			continue
+		var btn := _stage_spot_button(str((spot as Dictionary).get("label", "看")))
+		_place_stage_spot(btn, n, spot)
+		btn.pressed.connect(_on_stage_look.bind(spot, btn))
+		layer.add_child(btn)
+		n += 1
+	layer.visible = n > 0
+	if n > 0:
+		layer.move_to_front()
+
+
+func _place_stage_spot(btn: Button, index: int, spot: Dictionary) -> void:
+	var fallback: Vector2 = _SPOT_ANCHOR[index % _SPOT_ANCHOR.size()]
+	var x := float(spot.get("x", fallback.x))
+	var y := float(spot.get("y", fallback.y))
+	btn.anchor_left = x
+	btn.anchor_top = y
+	btn.anchor_right = x
+	btn.anchor_bottom = y
+	btn.offset_left = 0.0
+	btn.offset_top = 0.0
+	btn.offset_right = 156.0
+	btn.offset_bottom = 36.0
+	btn.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	btn.grow_vertical = Control.GROW_DIRECTION_BEGIN
+
+
+func _stage_spot_button(label: String) -> Button:
+	var btn := Button.new()
+	btn.text = label
+	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	btn.custom_minimum_size = Vector2(168, 36)
+	btn.add_theme_font_size_override("font_size", 16)
+	UiTheme.style_button(btn, false)
+	return btn
+
+
+func _on_stage_look(spot: Dictionary, btn: Button) -> void:
+	var line := str(spot.get("result", ""))
+	if line == "":
+		line = str(spot.get("text", ""))
+	if line != "":
+		body_text.text = line
+	btn.disabled = true
+	_fit_dialogue()
 
 
 ## 「…………」这类翻页，不是要玩家做决断。
@@ -3426,7 +3705,7 @@ func _discovery_id_for(token: String) -> String:
 	return ""
 
 
-## 序章对白条：点画面任意处续读（只在这一页全是翻页、没有真岔路时；浮层开着时点不到这里）
+## 对白条：点画面空白处续读（只在这一页全是翻页、没有真岔路时；浮层开着时点不到这里）
 func _on_stage_click(event: InputEvent) -> void:
 	if not _cg_dialogue or not investigation_mode.visible:
 		return
@@ -3436,13 +3715,12 @@ func _on_stage_click(event: InputEvent) -> void:
 	if not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
 		return
 	var first: Button = null
-	for c in choices_container.get_children():
-		if not (c is Button):
-			continue
-		if not (c as Button).has_meta(&"page_turn"):
+	for c in _dialogue_choice_buttons():
+		var b := c as Button
+		if not b.has_meta(&"page_turn"):
 			return
-		if first == null and not (c as Button).disabled:
-			first = c
+		if first == null and not b.disabled:
+			first = b
 	if first != null:
 		accept_event()
 		first.pressed.emit()
@@ -3484,10 +3762,17 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _activate_first_choice() -> bool:
-	for child in choices_container.get_children():
-		if child is Button and not (child as Button).disabled and not child.has_meta("no_enter") and (child as Control).is_visible_in_tree():  # no_enter：花钱花日子 / 立旗的钮要点，回车不替人按；is_visible_in_tree：收起的页（海战 / 过场一层铺在上面时整页收起、钮还挂着）上的门按不得
-			(child as Button).pressed.emit()
-			return true
+	var hosts: Array = []
+	if _cg_dialogue and _page_footer != null:
+		var box := _page_footer.get_node_or_null("StageChoices")
+		if box != null:
+			hosts.append(box)
+	hosts.append(choices_container)
+	for host in hosts:
+		for child in host.get_children():
+			if child is Button and not (child as Button).disabled and not child.has_meta("no_enter") and (child as Control).is_visible_in_tree():  # no_enter：花钱花日子 / 立旗的钮要点，回车不替人按；is_visible_in_tree：收起的页（海战 / 过场一层铺在上面时整页收起、钮还挂着）上的门按不得
+				(child as Button).pressed.emit()
+				return true
 	if title_mode.visible and start_button.visible and not start_button.disabled:
 		start_button.pressed.emit()
 		return true

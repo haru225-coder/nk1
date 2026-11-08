@@ -42,7 +42,8 @@ def main():
 
     all_rows = []  # (source, district)
     for path in files:
-        rel = os.path.relpath(path, ROOT)
+        # pending 判定比的是正斜杠前缀；Windows relpath 带反斜杠时，pending 文件会被当成已开放城区。
+        rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
         try:
             data = load_json(path)
         except Exception as e:

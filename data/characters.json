@@ -709,11 +709,11 @@
       "look": "近四十，黝黑精悍，薄唇少言；乌黑铁札甲外罩战袍，黑巾裹头，手执长枪，腕上留着旧缆绳磨出的疤。",
       "portrait": "res://assets/portraits/lin_hua.png",
       "portrait_before": {
-        "1276-10": "res://assets/portraits/lin_hua_ink.png"
+        "1276-10": "res://assets/portraits/lin_hua_early.png"
       },
       "portrait_src": "codex:portrait_patrol_soldier.png",
       "portrait_status": "painted",
-      "portrait_note": "甲胄像只挂景炎元年十月辞船投军以后（portrait_before）；此前挂剪影墨卡 lin_hua_ink.png（与王直库同一种占位）。【待出水手版 age_lin_hua_sailor：短褐赤足、肩上盘缆，二十上下，出图后把 portrait_before 的值换过去】"
+      "portrait_note": "甲胄像只挂景炎元年十月辞船投军以后（portrait_before）；此前挂水手油画 lin_hua_early.png（短褐、肩上盘缆，二十上下）。"
     },
     {
       "id": "huang_quan",
@@ -953,11 +953,11 @@
           "rel": "酒棚常客"
         }
       ],
-      "look": "六十上下，花白长发草挽成髻，面有刀刻深纹；左袖空荡掖进腰带，破麻坎肩罩旧靛青交领衫，独手擦粗陶酒碗。",
+      "look": "北人骨相，眉骨高，刀疤从左眉到颧，髻在脑侧；左袖空着掖进腰带，只有右手按在柜上的粗陶碗。",
       "portrait": "res://assets/portraits/veteran.png",
-      "portrait_src": "none",
-      "portrait_status": "ink_card",
-      "portrait_note": "旧图 main:sprite_veteran.png 画成双手俱全、捧青花碗，与「断臂」设定正面冲突，弃用；现为独臂剪影的逆光剪影占位卡。【P1 待出油画】2026-10-26 多张油画仍是双手；有一张只看见一只手，空袖没有入画。再补时结袖落到旁人、竹帘或第二只胳膊上，未覆盖。"
+      "portrait_src": "gen:cursor:cast_veteran.jpg",
+      "portrait_status": "painted",
+      "portrait_note": "2026-11-08 重绘。左袖空着掖进腰带，画面里没有左前臂，右手按碗。无字。"
     },
     {
       "id": "veteran_son",
@@ -1010,11 +1010,11 @@
           "rel": "酒棚常客"
         }
       ],
-      "look": "三十出头，眉眼活泛，笑时露齿；青丝挽髻系靛布带，粗麻交领衫外罩褐色短坎肩，腰束布带，端着酒碗比画。",
+      "look": "继承父亲的眉骨，圆眼，笑就露齿；红绳束发，褐坎肩，一手酒碗，一手木拐。两臂都在。",
       "portrait": "res://assets/portraits/veteran_son.png",
-      "portrait_src": "codex:portrait_tavern_guest.png",
+      "portrait_src": "gen:cursor:cast_veteran_son_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": ""
+      "portrait_note": "2026-11-08 重绘。跟断臂老兵同一副眉骨，两臂都在，红绳和木拐分开父子的衣服。"
     },
     {
       "id": "chen_servant",
@@ -1274,11 +1274,11 @@
           "rel": "老东家故人"
         }
       ],
-      "look": "四十余岁，瘦长脸，目光沉静；皂纱软幞头，褐色圆领窄袖衫，袖口挽起，指下一架黑漆算盘，案上朱笔账簿。",
+      "look": "瘦长脸，手指极长；皂色软巾，褐色窄袖，腕上皮护腕，双手捧一筒算筹，不拿算盘。",
       "portrait": "res://assets/portraits/lin_heir.png",
-      "portrait_src": "gen:cursor:lin_heir_v1.png",
+      "portrait_src": "gen:cursor:cast_lin_heir.jpg",
       "portrait_status": "painted",
-      "portrait_note": "油画原稿：四十余岁泉州账房，瘦长脸，皂色软裹头垂脚，褐色交领宽袖袍、白衬袖口，右手按长方框算盘，案上敞口陶油盏和合上的素面纸皮账册，背后账架平放册子、直棂纸窗；袍为交领（设定原写圆领），油盏火苗偏高。"
+      "portrait_note": "2026-11-08 重绘。算筹筒，算盘只留给黄账房。"
     },
     {
       "id": "kaiyuan_novice",
@@ -1590,11 +1590,11 @@
         "鸟往西飞，底下有岛；浪头发白而短，前头有礁。"
       ],
       "relations": [],
-      "look": "五十余岁，花白长发高挽成髻，灰须如戟，右眉一道旧疤；靛青旧交领袍外斜挎麻绳，海风里衣襟翻卷。",
+      "look": "长脸，发披在肩后，只束一道细绳；庆元靛青宽袍，衣襟翻开，斜挎一根麻绳。",
       "portrait": "res://assets/portraits/cai_qixing.png",
-      "portrait_src": "codex:portrait_broken_eyebrow.png",
+      "portrait_src": "gen:cursor:cast_cai_qixing.jpg",
       "portrait_status": "painted",
-      "portrait_note": ""
+      "portrait_note": "2026-11-08 重绘。披发和翻开的宽袍，不再挽髻缠头。右眉旧疤这一版没有画上。"
     },
     {
       "id": "liang_wangdou",
@@ -1638,11 +1638,11 @@
         "潮头闷，风在后头。先收帆，再论别的。"
       ],
       "relations": [],
-      "look": "三十上下，赤褐布缠头，粗麻交领短褐，腰间系绳；一手挽测深绳与铅锤，一手指着舱板上的针路，就着油灯细看，身后是成排陶瓮。",
-      "portrait": "res://assets/portraits/zheng_zhen.png",
-      "portrait_src": "reuse:zheng_zhen.png",
+      "look": "三十上下，单眼皮，唇厚；赤褐布缠头，粗麻短褐，双手挽着测深绳和铅锤。",
+      "portrait": "res://assets/portraits/liang_wangdou.png",
+      "portrait_src": "gen:cursor:cast_liang_wangdou.jpg",
       "portrait_status": "painted",
-      "portrait_note": "复用现成立绘：舱内就灯看针路的舟师，与本人身份相合。"
+      "portrait_note": "自有油画，不再复用 zheng_zhen.png。赤褐缠头只给他。"
     },
     {
       "id": "ana_tongxiang",
@@ -1697,9 +1697,9 @@
       ],
       "look": "五十上下，魁梧赤膊，古铜皮肤布满旧疤，络腮胡，槟榔红牙；靛蓝布缠头，颈挂贝珠串，手持粗陶碗。",
       "portrait": "res://assets/portraits/ana_tongxiang.png",
-      "portrait_src": "codex:portrait_ryukyu_pilot.png",
+      "portrait_src": "gen:cursor:cast_ana_tongxiang.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Codex「琉球舵手」油画，形貌逐项对得上。原背景是饱和的正午碧海蓝天：只把青蓝海天与白云映射到暮色赭金并压暗（缠头、飘带、贝珠、布裙保护不动），再做轻度厚涂化压掉 CG 光滑感。"
+      "portrait_note": "2026-11-08 重绘。近黑肤色、络腮、槟榔红牙、贝珠、赤膊，和汉人水手分开。"
     },
     {
       "id": "lin_awu",
@@ -1749,11 +1749,11 @@
           "rel": "同乡公子"
         }
       ],
-      "look": "二十出头，黑壮敦实，浓眉憨笑；青布包头，赤膊外罩粗麻短褂，裤腿卷到膝，手掌粗大起茧。",
+      "look": "圆脸，浓眉，门牙有缝；头顶一方粗麻打结，赤膊罩粗麻短褂，裤卷到膝，两手有茧。",
       "portrait": "res://assets/portraits/lin_awu.png",
-      "portrait_src": "gen:cursor:lin_awu_v1.png",
+      "portrait_src": "gen:cursor:cast_lin_awu.jpg",
       "portrait_status": "painted",
-      "portrait_note": "油画原稿：黑壮的林阿五扎青布包头、穿无袖粗麻短褂，露齿憨笑，双手握渡船舵杆，背景是暮色潮沟、芦苇和小篷船；远处船桅的细索略像西式桅索。"
+      "portrait_note": "2026-11-08 重绘。圆脸、门牙缝、头顶方布结，和青布包头的旧稿分开。"
     },
     {
       "id": "chen_laodao",
@@ -1799,11 +1799,11 @@
         "姓陈的？五百年前是一家。来，这盏我敬公子。"
       ],
       "relations": [],
-      "look": "六十余岁，满头白发挽髻，长须，面容慈和而风霜；灰青旧交领袍，手捧一只粗陶酒盏，背后港口夕照。",
+      "look": "六十余岁，白发披肩，不挽髻；灰青宽袖袍，双手捧粗陶酒盏，身后是雾港。",
       "portrait": "res://assets/portraits/chen_laodao.png",
-      "portrait_src": "codex:portrait_jiaozhi_old_merchant.png",
+      "portrait_src": "gen:cursor:cast_chen_laodao.jpg",
       "portrait_status": "painted",
-      "portrait_note": "衣襟是清式立领盘扣，与 look「灰青旧交领袍」不符。【P2 可选重绘】"
+      "portrait_note": "2026-11-08 重绘。白发披肩，不再是挽髻，也去掉了旧稿的立领盘扣。"
     },
     {
       "id": "he_wenzhou",
@@ -1849,11 +1849,11 @@
         "船主不敢用我第二回。你敢不敢？"
       ],
       "relations": [],
-      "look": "三十五六，黝黑精悍，满脸胡茬，笑时豁牙；破布缠头，敞怀麻衫，颈挂兽牙，左手缺两指，抱一坛酒。",
+      "look": "笑时豁牙，左手缺两指；油布头巾，敞怀麻衫，颈挂兽牙，怀里抱一坛酒。",
       "portrait": "res://assets/portraits/he_wenzhou.png",
-      "portrait_src": "codex:portrait_one_finger_sailor.png",
+      "portrait_src": "gen:cursor:cast_he_wenzhou.jpg",
       "portrait_status": "painted",
-      "portrait_note": ""
+      "portrait_note": "2026-11-08 重绘。豁牙、缺指、兽牙和酒坛都在。"
     },
     {
       "id": "gu_sanjiang",
@@ -1898,11 +1898,11 @@
         "官船渔船都一样，风不认船上的旗。"
       ],
       "relations": [],
-      "look": "四十上下，虬髯浓黑，赤褐布缠头，粗麻交领短褐，双臂抱胸，腰前横一柄短刀，身后帆影与夜海。",
-      "portrait": "res://assets/portraits/zhang_xuan.png",
-      "portrait_src": "reuse:zhang_xuan.png",
+      "look": "光顶只留一圈短发，只留上唇须，左颊一块烧疤；黑油布短衫用布带系住，腰前一把短刀。",
+      "portrait": "res://assets/portraits/gu_sanjiang.png",
+      "portrait_src": "gen:cursor:cast_gu_sanjiang_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": "复用现成立绘：虬髯、赤褐缠头、腰横短刀的舟人，与舵工身份相合。"
+      "portrait_note": "自有油画，不再复用 zhang_xuan.png。没有虬髯，也没有盘扣。"
     },
     {
       "id": "zhang_tiemao",
@@ -1948,11 +1948,11 @@
         "手上有茧，缆才不咬人。"
       ],
       "relations": [],
-      "look": "二十七八，肩背厚实，赤膊外披破麻短褂，腰缠粗布，背一只竹笠；一手按船舷，一手提满盛石块的竹篮，篮边插一柄铁凿。",
-      "portrait": "res://assets/portraits/he_sanhao.png",
-      "portrait_src": "reuse:he_sanhao.png",
+      "look": "短颈，塌鼻，肩极厚，头发剪得很短；赤膊，麻布围腰，竹笠背在背上，一手铁凿，一手石篮。",
+      "portrait": "res://assets/portraits/zhang_tiemao.png",
+      "portrait_src": "gen:cursor:cast_zhang_tiemao_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": "复用现成立绘：赤膊厚背、手提石篮与铁凿的船工，与碇手身份相合。"
+      "portrait_note": "自有油画，不再复用 he_sanhao.png。不戴笠，笠在背上。"
     },
     {
       "id": "wang_zhiku",
@@ -1997,11 +1997,11 @@
         "折耗那栏，今年我给你少写几个字。"
       ],
       "relations": [],
-      "look": "四十上下，微胖，眼小而细；褐色短褐外系油布围裙，头裹旧巾，腰挂一串库房铜钥，指缝里总有稻草屑。",
+      "look": "微胖，笑时眼成一条缝；旧软帽，褐色短褐，油布围裙，一手库钥，一手捏着稻草。",
       "portrait": "res://assets/portraits/wang_zhiku.png",
-      "portrait_src": "gen:grok:wang_zhiku.png",
+      "portrait_src": "gen:cursor:cast_wang_zhiku.jpg",
       "portrait_status": "painted",
-      "portrait_note": "2026-10-26 重出。青白碗、稻草、布带围裙。腰间三根扁铜条，没有挂锁。铜条和木箱上有淡痕。"
+      "portrait_note": "2026-11-08 重绘。围裙、库钥、稻草。帽子偏软帽。"
     },
     {
       "id": "shi_naowei",
@@ -2150,11 +2150,11 @@
         "算盘旧不妨事，珠子齐就行。"
       ],
       "relations": [],
-      "look": "五十上下，清瘦，疏须；褪色青灰交领长衫，发以木簪束起，坐于案后，指间拈着货样，案头一杆小秤与成捆账簿。",
-      "portrait": "res://assets/portraits/zeng_gan.png",
-      "portrait_src": "reuse:zeng_gan.png",
+      "look": "额上大块白癜；青灰长衫，木簪；右手持小秤，左手托一块货样。",
+      "portrait": "res://assets/portraits/chen_dayou.png",
+      "portrait_src": "gen:cursor:cast_chen_dayou_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": "复用现成立绘：案后拈货样、案头有小秤与账簿的年长账房，与身份相合。"
+      "portrait_note": "自有油画，不再复用 zeng_gan.png。额上白癜和小秤在。左手小指这一版没有画缺。"
     },
     {
       "id": "huang_zhangfang",
@@ -2517,11 +2517,11 @@
         "我只翻话，不替谁拿主意。"
       ],
       "relations": [],
-      "look": "三十上下，面容清瘦，眼角带笑；青蓝布缠头，深青交领长衫，腰束赭褐布带，带上系一枚木牌。",
-      "portrait": "res://assets/portraits/wang_tongshi.png",
-      "portrait_src": "reuse:wang_tongshi.png",
+      "look": "左眼略斜，耳大；竹篾小帽，深青长衫，朱红窄腰带，带上挂一枚木牌。",
+      "portrait": "res://assets/portraits/wang_xin.png",
+      "portrait_src": "gen:cursor:cast_wang_xin.jpg",
       "portrait_status": "painted",
-      "portrait_note": "复用现成立绘：青蓝缠头、腰系木牌的通事，与本人身份相合。"
+      "portrait_note": "自有油画，不再复用 wang_tongshi.png。"
     },
     {
       "id": "monk_puji",
