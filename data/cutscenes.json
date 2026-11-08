@@ -6,10 +6,10 @@
    "letterbox": true,
    "shots": [
     {
-     "bg": "res://assets/cutscene/cs_world_map_gold.jpg",
+     "bg": "res://assets/cutscene/cs_open_aerial.jpg",
      "duration": 9.0,
-     "cam_from": [0.5, 0.5, 1.0],
-     "cam_to": [0.39, 0.56, 1.3],
+     "cam_from": [0.55, 0.42, 1.0],
+     "cam_to": [0.4, 0.52, 1.28],
      "grade": "neutral",
      "fx": ["dust"],
      "transition_in": "ink",
@@ -37,10 +37,10 @@
      ]
     },
     {
-     "bg": "res://assets/bg_linan.jpg",
+     "bg": "res://assets/cutscene/cs_open_lake.jpg",
      "duration": 9.0,
-     "cam_from": [0.46, 0.54, 1.1],
-     "cam_to": [0.6, 0.42, 1.35],
+     "cam_from": [0.55, 0.48, 1.0],
+     "cam_to": [0.34, 0.58, 1.32],
      "grade": "neutral",
      "fx": ["rain", "mist"],
      "transition_in": "fade",
@@ -52,10 +52,10 @@
      ]
     },
     {
-     "bg": "res://assets/bg_hakata.jpg",
+     "bg": "res://assets/cutscene/cs_open_hakata.jpg",
      "duration": 8.0,
-     "cam_from": [0.5, 0.5, 1.0],
-     "cam_to": [0.61, 0.56, 1.3],
+     "cam_from": [0.38, 0.46, 1.02],
+     "cam_to": [0.62, 0.55, 1.26],
      "grade": "neutral",
      "fx": ["lantern_glow"],
      "transition_in": "fade",
@@ -100,10 +100,10 @@
      ]
     },
     {
-     "bg": "res://assets/bg_quanzhou_harbor.jpg",
+     "bg": "res://assets/cutscene/cs_open_quanzhou.jpg",
      "duration": 9.0,
-     "cam_from": [0.39, 0.39, 1.3],
-     "cam_to": [0.43, 0.43, 1.18],
+     "cam_from": [0.32, 0.62, 1.04],
+     "cam_to": [0.55, 0.4, 1.24],
      "grade": "dawn",
      "fx": ["mist"],
      "transition_in": "ink",
@@ -115,10 +115,10 @@
      ]
     },
     {
-     "bg": "res://assets/cutscene/cs_ziling_portrait.jpg",
+     "bg": "res://assets/cutscene/cs_open_study.jpg",
      "duration": 11.0,
-     "cam_from": [0.5, 0.74, 1.02],
-     "cam_to": [0.52, 0.3, 1.1],
+     "cam_from": [0.55, 0.48, 1.0],
+     "cam_to": [0.4, 0.58, 1.18],
      "grade": "neutral",
      "fx": ["lantern_glow"],
      "transition_in": "fade",
@@ -131,13 +131,13 @@
      ]
     },
     {
-     "bg": "res://assets/bg_xinghua_harbor.jpg",
+     "bg": "res://assets/cutscene/cs_open_xinghua.jpg",
      "duration": 13.0,
-     "cam_from": [0.5, 0.5, 1.0],
-     "cam_to": [0.36, 0.62, 1.45],
+     "cam_from": [0.5, 0.46, 1.0],
+     "cam_to": [0.42, 0.54, 1.16],
      "grade": "neutral",
      "fx": ["mist"],
-     "transition_in": "flash",
+     "transition_in": "ink",
      "shake": 0.0,
      "captions": [
       {"t": 0.6, "text": "兴化海口・三月", "style": "era", "pos": "right_vertical", "hold": 6.0},

@@ -29,8 +29,9 @@ const LINE_T := 0.55
 const OVERLAP := 0.8
 const BTN_FADE := 0.55
 const BTN_STAGGER := 0.24
-## 可用区：TitleMode 下 VBox 的设计尺寸（Main.tscn 960×600）
+## 可用区：TitleMode 下 VBox 的设计尺寸（Main.tscn 960×600）。四方页改成底栏，画留在上半。
 const BOX_H := 600.0
+const FILM_H := 380.0
 const LEAD_W := 860.0
 const PLAIN_W := 880.0
 const LINE_SPACING := 5
@@ -140,12 +141,67 @@ func _setup(host: Control, main_title: Label, sub_title: Label, buttons: Array, 
 			_logo = lg
 	_build_lines(sub_title)
 	_build_head(main_title)
+	_place_chrome()
 	_want_seal = with_seal and _logo != null
 	_buttons.clear()
 	for b in buttons:
 		if b is Control and (b as Control).visible:
 			_buttons.append(b)
 	_restart()
+
+
+## 四方页（「北方：…」这类抬头）才是底栏。卷首题名仍用 Main.tscn 里居中的那一盒。
+func _is_film_page() -> bool:
+	if _title == null:
+		return false
+	var txt := _title.text.strip_edges()
+	var i := txt.find("：")
+	if i < 0 or not DIR_SEALS.has(txt.substr(0, i)):
+		return false
+	return true
+
+
+func _place_chrome() -> void:
+	if _vbox == null:
+		return
+	var film := _is_film_page()
+	_vbox.anchor_left = 0.5
+	_vbox.anchor_right = 0.5
+	_vbox.offset_left = -480.0
+	_vbox.offset_right = 480.0
+	if film:
+		_vbox.anchor_top = 1.0
+		_vbox.anchor_bottom = 1.0
+		_vbox.offset_top = -392.0
+		_vbox.offset_bottom = -16.0
+		_vbox.alignment = BoxContainer.ALIGNMENT_END
+	else:
+		_vbox.anchor_top = 0.5
+		_vbox.anchor_bottom = 0.5
+		_vbox.offset_top = -300.0
+		_vbox.offset_bottom = 300.0
+		_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	var scrim := _host.get_node_or_null("TitleFilmScrim") as ColorRect
+	if not film:
+		if scrim != null:
+			scrim.visible = false
+		return
+	if scrim == null:
+		scrim = ColorRect.new()
+		scrim.name = "TitleFilmScrim"
+		scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		scrim.color = Color(0.05, 0.04, 0.03, 0.78)
+		_host.add_child(scrim)
+	_host.move_child(scrim, 0)
+	scrim.visible = true
+	scrim.anchor_left = 0.0
+	scrim.anchor_right = 1.0
+	scrim.anchor_top = 1.0
+	scrim.anchor_bottom = 1.0
+	scrim.offset_left = 0.0
+	scrim.offset_right = 0.0
+	scrim.offset_top = -420.0
+	scrim.offset_bottom = 0.0
 
 
 func _restart() -> void:
@@ -231,7 +287,7 @@ func _build_lines(sub_title: Label) -> void:
 			leads += 1
 	var lead_mode := leads * 2 >= paras.size()
 	var width := LEAD_W if lead_mode else PLAIN_W
-	var fs := _fit_size(paras, lead_mode, width)
+	var fs := _fit_size(paras, lead_mode, width, FILM_H if _is_film_page() else BOX_H)
 	box.add_theme_constant_override("separation", 14 if lead_mode else 10)
 	var t := (T_LOGO + 0.9) if _logo != null else 0.45
 	if _logo != null:
@@ -288,11 +344,11 @@ static func _line_estimate(f: Font, txt: String, width: float, fs: int) -> float
 	return maxf(1.0, roundf(sz.y / maxf(f.get_height(fs), 1.0)))
 
 
-## 从 21 往下试，取放得下的最大字号：可用高 = 600 − 题名 − 按钮 − 间距（按 Font.get_multiline_string_size 实测行数）
-func _fit_size(paras: Array, lead_mode: bool, width: float) -> int:
+## 从 21 往下试，取放得下的最大字号：可用高 = 盒高 − 题名 − 按钮 − 间距（按 Font.get_multiline_string_size 实测行数）
+func _fit_size(paras: Array, lead_mode: bool, width: float, box_h: float = BOX_H) -> int:
 	var head_h := 174.0 if _logo != null else 74.0
 	var fixed := head_h + 60.0 + 20.0 * 3.0 + (58.0 if _logo != null else 0.0)
-	var budget := BOX_H - fixed - 24.0
+	var budget := box_h - fixed - 24.0
 	var body := UiTheme.font()
 	var head := UiTheme.title_font()
 	for fs in [21, 20, 19, 18, 17, 16]:

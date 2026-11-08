@@ -5,7 +5,7 @@
 
 检查三类引用：
   1. 脚本/场景里的 `res://assets/<完整文件名>` 字面量
-  2. Main.gd 的 PORT_BG / FACILITY_BG / ENDING_BG / PROLOGUE_PAGE_BG 表值（纯文件名，运行时再拼 res://assets/）；
+  2. Main.gd 的 PORT_BG / FACILITY_BG / TAVERN_BG / INN_BG / ROOM_BG / ENDING_BG / PROLOGUE_PAGE_BG 表值（纯文件名，运行时再拼 res://assets/）；
      scripts/ 里 `_set_background_file("…")` 直接写的文件名与常量；H2 港页变体 bg_<港 id>_<后缀>.jpg 的后缀拼写
   3. 前缀拼接（`res://assets/sprite_` + id、`icon_` + 设施名）：按数据表逐个展开；牙行货图 assets/goods/good_<id>.png 的 id
 """
@@ -60,7 +60,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import main_stitch
 main_src = main_stitch.read_main_src()
 port_bg_keys = set()
-for tbl in ("PORT_BG", "FACILITY_BG", "ENDING_BG", "PROLOGUE_PAGE_BG"):
+for tbl in ("PORT_BG", "FACILITY_BG", "TAVERN_BG", "INN_BG", "ROOM_BG", "ENDING_BG", "PROLOGUE_PAGE_BG"):
     m = re.search(r'const %s := \{(.*?)\n\}' % tbl, main_src, re.S)
     check(m is not None, f"Main.gd 缺 {tbl}")
     if not m:
@@ -330,7 +330,7 @@ if FAIL:
         print("FAIL:", f)
     print(f"结果：{len(FAIL)} 项失败")
     sys.exit(1)
-print(f"资产引用 {len(seen)} 个完整路径 + PORT_BG/FACILITY_BG/ENDING_BG/PROLOGUE_PAGE_BG 表 + _set_background_file 直写 {sbf_n} 处"
+print(f"资产引用 {len(seen)} 个完整路径 + PORT_BG/FACILITY_BG/TAVERN_BG/INN_BG/ROOM_BG/ENDING_BG/PROLOGUE_PAGE_BG 表 + _set_background_file 直写 {sbf_n} 处"
       f" + 港页变体 {variant_n} 张 + 前缀拼接展开 + 货图 {good_icon_n} 张 + 人物立绘 {portrait_checked} 张"
       f" + 英文批次 {_en_batch_n} 张 SoR 守护，全部存在")
 print("结果：全部通过")

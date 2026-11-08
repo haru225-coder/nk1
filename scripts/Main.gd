@@ -991,14 +991,69 @@ const PORT_STATUS_BG_SIEGE_ONLY := {"xinghua": "besieged"}
 ## 设施后缀 → 背景图
 const FACILITY_BG := {
 	"_market": "bg_yahang.jpg",
-	"_shipyard": "bg_shipyard.jpg",
+	"_shipyard": "cutscene/cs_yard_inside.jpg",
 	"_yamen": "bg_customs_room.jpg",
 	"_tavern": "bg_xinghua_wine_shed.jpg",
 	"_inn": "bg_relay_post.jpg",
-	"_guild": "bg_quanzhou_ledger.jpg",
+	"_guild": "cutscene/cs_guild_hall.jpg",
 	"_exam": "bg_academy.jpg",
 	"_residence": "bg_xinghua_study.jpg",
 	"_temple": "bg_temple_library.jpg",
+}
+
+## 酒馆内景按港换。邻港共用一间：闽南、浙闽雨棚、岛石屋、九州湾口、占城、广州各一张。
+## 没登记的港仍用上面的酒棚。check_assets 查这张表的文件在不在。
+const TAVERN_BG := {
+	"xinghua": "cutscene/cs_kurosawa_shed.jpg",
+	"xinghua_harbor": "cutscene/cs_kurosawa_shed.jpg",
+	"quanzhou": "cutscene/cs_tavern_quanzhou.jpg",
+	"zhangzhou": "cutscene/cs_tavern_quanzhou.jpg",
+	"fuzhou": "cutscene/cs_tavern_fuzhou.jpg",
+	"mingzhou": "cutscene/cs_tavern_fuzhou.jpg",
+	"wenzhou": "cutscene/cs_tavern_fuzhou.jpg",
+	"penghu": "cutscene/cs_tavern_penghu.jpg",
+	"ryukyu": "cutscene/cs_tavern_penghu.jpg",
+	"jeju": "cutscene/cs_tavern_penghu.jpg",
+	"hakata": "cutscene/cs_tavern_hakata.jpg",
+	"kagoshima": "cutscene/cs_tavern_hakata.jpg",
+	"champa": "cutscene/cs_tavern_champa.jpg",
+	"guangzhou": "cutscene/cs_tavern_guangzhou.jpg",
+}
+
+## 旅店内景。沿海小店、蕃坊客舍、岛上火塘、占城纱帐各一张。没登记的港用上面的驿铺。
+const INN_BG := {
+	"xinghua": "cutscene/cs_inn_xinghua.jpg",
+	"xinghua_harbor": "cutscene/cs_inn_xinghua.jpg",
+	"fuzhou": "cutscene/cs_inn_xinghua.jpg",
+	"mingzhou": "cutscene/cs_inn_xinghua.jpg",
+	"wenzhou": "cutscene/cs_inn_xinghua.jpg",
+	"hakata": "cutscene/cs_inn_xinghua.jpg",
+	"kagoshima": "cutscene/cs_inn_xinghua.jpg",
+	"quanzhou": "cutscene/cs_inn_quanzhou.jpg",
+	"zhangzhou": "cutscene/cs_inn_quanzhou.jpg",
+	"guangzhou": "cutscene/cs_inn_quanzhou.jpg",
+	"penghu": "cutscene/cs_inn_penghu.jpg",
+	"ryukyu": "cutscene/cs_inn_penghu.jpg",
+	"jeju": "cutscene/cs_inn_penghu.jpg",
+	"champa": "cutscene/cs_inn_champa.jpg",
+}
+
+## 住处内景。书案、蚵壳巷、石屋、占城小院各一张。没登记的港用上面的书房。
+const ROOM_BG := {
+	"xinghua": "cutscene/cs_room_xinghua.jpg",
+	"xinghua_harbor": "cutscene/cs_room_xinghua.jpg",
+	"fuzhou": "cutscene/cs_room_xinghua.jpg",
+	"mingzhou": "cutscene/cs_room_xinghua.jpg",
+	"wenzhou": "cutscene/cs_room_xinghua.jpg",
+	"hakata": "cutscene/cs_room_xinghua.jpg",
+	"kagoshima": "cutscene/cs_room_xinghua.jpg",
+	"quanzhou": "cutscene/cs_room_quanzhou.jpg",
+	"zhangzhou": "cutscene/cs_room_quanzhou.jpg",
+	"guangzhou": "cutscene/cs_room_quanzhou.jpg",
+	"penghu": "cutscene/cs_room_penghu.jpg",
+	"ryukyu": "cutscene/cs_room_penghu.jpg",
+	"jeju": "cutscene/cs_room_penghu.jpg",
+	"champa": "cutscene/cs_room_champa.jpg",
 }
 
 
@@ -1010,42 +1065,102 @@ const PROLOGUE_BG := "bg_xinghua_wine_shed.jpg"
 ## 不在表里的页照旧：title 型压 bg_world_map.jpg，其余压 PROLOGUE_BG（油画原色，不压夜色）；在表里而文件缺，也回落这两张（不回落海路图）。
 ## check_assets 查表值与键，所以一页一行、跟着一张图进，不写指向不存在文件的行。cg_title 不进表：godot_story_check 断言标题屏用 bg_world_map.jpg。
 const PROLOGUE_PAGE_BG := {
-	# 四方沙盘（title 型，不吃夜色）：北、南、西借开场过场；东是博多湾专属图
-	"cg_world_north": "cutscene/cs_north_mongol.jpg",
-	"cg_world_south": "cutscene/cs_south_champa.jpg",
-	"cg_world_west": "cutscene/cs_west_caravan.jpg",
-	"cg_world_east": "bg_prologue_world_east.jpg",
+	# 四方沙盘：每方一张新的定格，不复用开场过场那一镜。字在底栏，画留在上半。
+	"cg_world_north": "cutscene/cs_card_north.jpg",
+	"cg_world_south": "cutscene/cs_card_south.jpg",
+	"cg_world_west": "cutscene/cs_card_west.jpg",
+	"cg_world_east": "cutscene/cs_card_east.jpg",
 	# 酒棚一幕：油画原色，灰雨，不打夜色，不用闪电暗黑稿
-	"cg_narrate_table": "bg_prologue_shed_oil.jpg",
-	"cg_narrate_table_2": "bg_prologue_table_oil.jpg",
-	"cg_narrate_table_3": "bg_prologue_table_oil.jpg",
-	"cg_narrate_table_4": "bg_prologue_table_oil.jpg",
-	"cg_narrate_table_5": "bg_prologue_table_oil.jpg",
-	"cg_veteran": "bg_prologue_veteran_oil.jpg",
-	"cg_veteran_2": "bg_prologue_veteran_oil.jpg",
-	"cg_veteran_3": "bg_prologue_veteran_oil.jpg",
-	"cg_veteran_3a": "bg_prologue_veteran_oil.jpg",
-	"cg_veteran_4": "bg_prologue_veteran_oil.jpg",
-	"cg_veteran_5": "bg_prologue_veteran_oil.jpg",
-	"cg_veteran_6": "bg_prologue_veteran_oil.jpg",
-	"cg_wine_shed": "bg_prologue_rain_oil.jpg",
-	"cg_wine_shed_2": "bg_prologue_rain_oil.jpg",
-	"cg_wine_shed_3": "bg_prologue_shed_oil.jpg",
-	"cg_wine_shed_4": "bg_prologue_shed_oil.jpg",
-	"cg_wine_shed_5": "bg_prologue_rain_oil.jpg",
+	"cg_narrate_table": "cutscene/cs_kurosawa_shed.jpg",
+	"cg_narrate_table_2": "cutscene/cs_after_sit.jpg",
+	"cg_narrate_table_3": "cutscene/cs_open_insert.jpg",
+	"cg_narrate_table_4": "cutscene/cs_open_insert.jpg",
+	"cg_narrate_table_5": "cutscene/cs_open_insert.jpg",
+	"cg_veteran": "cutscene/cs_after_veteran.jpg",
+	"cg_veteran_2": "cutscene/cs_after_veteran.jpg",
+	"cg_veteran_3": "cutscene/cs_after_veteran.jpg",
+	"cg_veteran_3a": "cutscene/cs_after_veteran.jpg",
+	"cg_veteran_4": "cutscene/cs_after_bowl.jpg",
+	"cg_veteran_5": "cutscene/cs_after_bowl.jpg",
+	"cg_veteran_6": "cutscene/cs_after_back.jpg",
+	"cg_wine_shed": "cutscene/cs_after_quiet.jpg",
+	"cg_wine_shed_2": "cutscene/cs_after_hands.jpg",
+	"cg_wine_shed_3": "cutscene/cs_after_sit.jpg",
+	"cg_wine_shed_4": "cutscene/cs_after_sit.jpg",
+	"cg_wine_shed_5": "cutscene/cs_after_tide.jpg",
 	"cg_ana_enter": "bg_prologue_ana_oil.jpg",
 	"cg_ana_speak": "bg_prologue_ana_oil.jpg",
-	"cg_ana_speak_2": "bg_prologue_ana_oil.jpg",
-	"cg_ana_speak_3": "bg_prologue_ana_oil.jpg",
-	"cg_servant_enter": "bg_prologue_servant_oil.jpg",
-	"cg_servant_speak": "bg_prologue_servant_oil.jpg",
-	"cg_decision": "bg_prologue_land_oil.jpg",
-	"cg_choice_sea": "bg_prologue_sea_oil.jpg",
+	"cg_ana_speak_2": "cutscene/cs_after_ana.jpg",
+	"cg_ana_speak_3": "cutscene/cs_after_ana.jpg",
+	"cg_servant_enter": "cutscene/cs_after_servant.jpg",
+	"cg_servant_speak": "cutscene/cs_after_servant.jpg",
+	"cg_decision": "cutscene/cs_kurosawa_fork.jpg",
+	"cg_choice_sea": "cutscene/cs_kurosawa_sea.jpg",
 	"cg_choice_land": "bg_prologue_land_oil.jpg",
 }
 
 ## 画上可点的物事。键是底图文件名。点了只换对白条里的一句，不离这一页。
 const STAGE_SPOTS := {
+	"cutscene/cs_kurosawa_shed.jpg": [
+		{"label": "草帘", "x": 0.30, "y": 0.28, "text": "帘被风吹着。灯在这边，天在那边。", "result": "你掀开一条缝。雨星打在手上，船还在外头。"},
+		{"label": "灯", "x": 0.48, "y": 0.42, "text": "灯只有一盏。", "result": "你看了看那盏灯。棚里亮着，天是宽的。"},
+	],
+	"cutscene/cs_kurosawa_fork.jpg": [
+		{"label": "官道", "x": 0.32, "y": 0.36, "text": "左边那条路往城门去。", "result": "你看了看左边。路是湿的，门还开着。"},
+		{"label": "海船", "x": 0.74, "y": 0.40, "text": "右边海里泊着一条船。", "result": "你看了看右边。船在风里，人还在棚里。"},
+	],
+	"cutscene/cs_kurosawa_sea.jpg": [
+		{"label": "栈桥", "x": 0.42, "y": 0.42, "text": "桥是一条线，通向那条船。", "result": "你顺着桥走。风从侧面来。"},
+		{"label": "灯", "x": 0.64, "y": 0.32, "text": "船上只有一盏灯。", "result": "你看着那盏灯。天还很宽。"},
+	],
+	"cutscene/cs_open_insert.jpg": [
+		{"label": "镇纸", "x": 0.20, "y": 0.40, "text": "镇纸压着一叠空白的纸。", "result": "你按了按镇纸。纸还是空白的。"},
+		{"label": "朱印", "x": 0.68, "y": 0.46, "text": "红印是圆的，上面没有字。", "result": "你看过那枚印。红的，没有字。"},
+	],
+	"cutscene/cs_open_fork.jpg": [
+		{"label": "官道", "x": 0.30, "y": 0.34, "text": "左边那条路往城门去。", "result": "你看了看左边。路是湿的，门还开着。"},
+		{"label": "海船", "x": 0.72, "y": 0.38, "text": "右边泥滩上泊着船。", "result": "你看了看右边。船在泥上，潮还没来。"},
+	],
+	"cutscene/cs_after_sit.jpg": [
+		{"label": "灯", "x": 0.50, "y": 0.40, "text": "灯在桌边，纸在灯下。", "result": "你看了看那盏灯。三样东西都亮着。"},
+		{"label": "窗外", "x": 0.76, "y": 0.30, "text": "门外是雨，桅杆还在。", "result": "你看向门外。船没有走。"},
+	],
+	"cutscene/cs_after_veteran.jpg": [
+		{"label": "陶碗", "x": 0.56, "y": 0.42, "text": "粗陶碗在他手下。", "result": "你看了看那只碗。他没让你碰。"},
+		{"label": "檐雨", "x": 0.78, "y": 0.20, "text": "檐口的雨是一条线。", "result": "你看了看檐雨。棚外比棚里亮。"},
+	],
+	"cutscene/cs_after_bowl.jpg": [
+		{"label": "空袖", "x": 0.16, "y": 0.42, "text": "袖子是空的，叠在柜上。", "result": "你看了一眼那截袖子，把眼睛移开。"},
+		{"label": "陶碗", "x": 0.58, "y": 0.34, "text": "碗扣在木头上。", "result": "你听见碗碰木头。他没再说话。"},
+	],
+	"cutscene/cs_after_back.jpg": [
+		{"label": "檐雨", "x": 0.18, "y": 0.16, "text": "雨还在檐上。", "result": "你听着雨。他没有抬头。"},
+		{"label": "陶碗", "x": 0.30, "y": 0.40, "text": "碗还在柜上。", "result": "你没去动那只碗。"},
+	],
+	"cutscene/cs_after_quiet.jpg": [
+		{"label": "酒瓮", "x": 0.52, "y": 0.40, "text": "瓮上冒着气。棚里没有第二个人出声。", "result": "你看了看那只瓮。气还在冒，你没喝。"},
+		{"label": "草帘", "x": 0.28, "y": 0.26, "text": "帘子后面是灯。", "result": "你掀开一条缝。雨和潮气进来。"},
+	],
+	"cutscene/cs_after_hands.jpg": [
+		{"label": "短札", "x": 0.52, "y": 0.42, "text": "纸被按平了，还是空白的。", "result": "你按了按。纸是凉的。"},
+		{"label": "灯", "x": 0.08, "y": 0.28, "text": "灯在手边。", "result": "你看了看灯。光只够照见这叠纸。"},
+	],
+	"cutscene/cs_after_tide.jpg": [
+		{"label": "搁浅", "x": 0.18, "y": 0.42, "text": "船搁在泥上。", "result": "你看了看那条船。潮还没把它托起来。"},
+		{"label": "城门", "x": 0.70, "y": 0.30, "text": "右边的路通往城门。", "result": "你看了看城门。门还开着。"},
+	],
+	"cutscene/cs_after_ana.jpg": [
+		{"label": "红巾", "x": 0.28, "y": 0.16, "text": "红布被雨打湿了。", "result": "你没问那块红布。"},
+		{"label": "刀", "x": 0.36, "y": 0.42, "text": "刀在腰上。", "result": "你只看了眼刀柄。他的手没离开。"},
+	],
+	"cutscene/cs_after_servant.jpg": [
+		{"label": "油伞", "x": 0.22, "y": 0.20, "text": "伞还举着，人已经跪下来了。", "result": "你没接那把伞。雨还在打伞面。"},
+		{"label": "马", "x": 0.78, "y": 0.38, "text": "马在门外的雨里。", "result": "你看了看那匹马。城门那头还开着。"},
+	],
+	"cutscene/cs_after_sea.jpg": [
+		{"label": "栈桥", "x": 0.40, "y": 0.42, "text": "桥是湿的，通向那条船。", "result": "你踩上栈桥。灯在船头。"},
+		{"label": "灯", "x": 0.62, "y": 0.34, "text": "船上只有一盏灯。", "result": "你看着那盏灯。人还没叫你。"},
+	],
 	"bg_prologue_shed_oil.jpg": [
 		{"label": "草帘", "verb": "掀开", "x": 0.08, "y": 0.18, "text": "帘子是芦席编的。缝里漏进灰白天光，外头是港，不是黑夜。", "result": "你把草帘掀开一条缝。灰光和潮气一起进来，雨星打在手上。"},
 		{"label": "酒瓮", "verb": "摇一摇", "x": 0.40, "y": 0.40, "text": "瓮口结着一层薄灰。酒气混着潮气，棚里没有第二个人。", "result": "你摇了摇酒瓮。里头轻轻响了一下，还剩一点，你没喝。"},
@@ -1173,6 +1288,30 @@ const STAGE_SPOTS := {
 	"bg_xinghua_harbor.jpg": [
 		{"label": "渔船", "x": 0.36, "y": 0.36, "text": "近处一条渔船半搁在泥滩上。", "result": "你看了看那条渔船。潮还没把它托起来。"},
 		{"label": "鱼筐", "x": 0.08, "y": 0.40, "text": "石板上的鱼筐还在滴水。", "result": "你看了一眼鱼筐。水还在滴，没人催你。"},
+	],
+	"bg_glory_depart.jpg": [
+		{"label": "红旗", "x": 0.70, "y": 0.16, "text": "桅上那面旗是素的，没有字。", "result": "风把旗拉开。船在金光里，你还站在石上。"},
+		{"label": "缆", "x": 0.38, "y": 0.42, "text": "缆是湿的，从桩上牵到船头。", "result": "你握住湿缆。船在外头等着。"},
+	],
+	"bg_glory_eve.jpg": [
+		{"label": "灯笼", "x": 0.10, "y": 0.28, "text": "灯笼顺着岸排成一串。", "result": "光是暖的。这一船已经装满了。"},
+		{"label": "船舷", "x": 0.52, "y": 0.40, "text": "水瓮和米袋都上了船。", "result": "你按住船舷。这一船是你的。"},
+	],
+	"bg_glory_return.jpg": [
+		{"label": "招手", "x": 0.30, "y": 0.40, "text": "岸上有人抬起手。", "result": "不是送行。是认你回来了。"},
+		{"label": "货箱", "x": 0.10, "y": 0.34, "text": "油布下的箱子还是齐的。", "result": "你看过封口。货还在。"},
+	],
+	"bg_glory_gangshou.jpg": [
+		{"label": "名册", "x": 0.40, "y": 0.46, "text": "册子摊开，新墨还亮。", "result": "你的手按在册边上。名字已经写下了。"},
+		{"label": "庭中", "x": 0.12, "y": 0.30, "text": "庭里有光，人站着等。", "result": "没有人下跪。光从院子里进来。"},
+	],
+	"bg_glory_south.jpg": [
+		{"label": "空杯", "x": 0.16, "y": 0.42, "text": "案上只剩一只空杯。", "result": "南边的路在河上，不在杯里。"},
+		{"label": "大船", "x": 0.62, "y": 0.32, "text": "船泊在宽河里，帆收着。", "result": "天是金的。船还在，路还往南。"},
+	],
+	"bg_glory_fleet.jpg": [
+		{"label": "主帆", "x": 0.20, "y": 0.30, "text": "主帆吃满了风。", "result": "这一纲是齐的。浪头上有光。"},
+		{"label": "后船", "x": 0.62, "y": 0.34, "text": "后面两条船跟着。", "result": "你没有落下它们。"},
 	],
 }
 
@@ -1346,7 +1485,13 @@ func _setup_missing_scene(scene_id: String) -> void:
 func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
 	_enter_panel_mode()
 	var base_loc := scene_id.trim_suffix(suffix)
-	if FACILITY_BG.has(suffix):
+	if suffix == "_tavern":
+		_set_background_file(str(TAVERN_BG.get(base_loc, FACILITY_BG["_tavern"])))
+	elif suffix == "_inn":
+		_set_background_file(str(INN_BG.get(base_loc, FACILITY_BG["_inn"])))
+	elif suffix == "_residence":
+		_set_background_file(str(ROOM_BG.get(base_loc, FACILITY_BG["_residence"])))
+	elif FACILITY_BG.has(suffix):
 		_set_background_file(FACILITY_BG[suffix])
 
 	match suffix:
