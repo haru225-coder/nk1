@@ -73,6 +73,13 @@ static func setup_title_mode(main: Control, scene_data: Dictionary) -> void:
 	main._resume_button.visible = is_start and has_save
 	main._rewatch_button.get_parent().visible = main._rewatch_button.visible or main._codex_title_button.visible or main._resume_button.visible
 	main._TITLE_STAGE.present(main.title_mode, main.main_title, main.sub_title, [main.start_button, main._resume_button, main._rewatch_button, main._codex_title_button], is_start)
+	var explorer: Control = main.title_mode.get_node_or_null("TitleMapExplorer") as Control
+	if explorer == null:
+		explorer = preload("res://scripts/ui/TitleMapExplorer.gd").new()
+		explorer.name = "TitleMapExplorer"
+		main.title_mode.add_child(explorer)
+		main.title_mode.visibility_changed.connect(Callable(explorer, "leave"))
+	explorer.call("setup", main.title_mode, main.main_title, main.sub_title, main.start_button, main.background)
 
 
 static func on_start_game_pressed(main: Control, next_scene: String) -> void:

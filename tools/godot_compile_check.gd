@@ -80,6 +80,8 @@ const SCRIPTS := [
 	"res://scripts/ui/ShipyardPage.gd",
 	# Lane main11 Main.gd 第十一刀拆出的标题页 / 开场
 	"res://scripts/ui/TitlePage.gd",
+	# 首页底图注记探索组件
+	"res://scripts/ui/TitleMapExplorer.gd",
 	# Lane main12 Main.gd 第十二刀拆出的调试钩子（F11 跳港 / F12 预览了结）
 	"res://scripts/ui/DebugHooks.gd",
 	# Lane w21-d20 Main.gd 第十四刀拆出的浮页（人物志 / 名册 / 伙伴草案预览 / 市舶纪事）
