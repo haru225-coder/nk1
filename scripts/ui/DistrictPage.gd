@@ -4,6 +4,7 @@ extends RefCounted
 
 const Book := preload("res://scripts/core/Districts.gd")
 const _NOTES := preload("res://scripts/ui/CombatNotes.gd")
+const HotspotView := preload("res://scripts/ui/DistrictHotspotView.gd")
 
 
 static func open_index(main, port_id: String) -> void:
@@ -46,7 +47,7 @@ static func open_index(main, port_id: String) -> void:
 	_leave(main, _to_port.bind(main, port_id))
 
 
-static func open_district(main, port_id: String, dist_id: String, flash := "") -> void:
+static func open_district(main, port_id: String, dist_id: String, flash := "", cards_only := false) -> void:
 	var row := Book.district(dist_id)
 	if row.is_empty() or str(row.get("port", "")) != port_id:
 		open_index(main, port_id)
@@ -61,7 +62,7 @@ static func open_district(main, port_id: String, dist_id: String, flash := "") -
 	if flash != "":
 		body += "\n\n" + flash
 	main.body_text.text = body
-	# 按事类分组。
+
 	var ixs: Array = []
 	for ix in row.get("interactions", []):
 		if typeof(ix) != TYPE_DICTIONARY:
@@ -69,6 +70,28 @@ static func open_district(main, port_id: String, dist_id: String, flash := "") -
 		if Book.hidden(ix):
 			continue
 		ixs.append(ix)
+	var hotspot_data := _hotspot_data(port_id, ixs, row.get("hotspots", []))
+	if not cards_only and not hotspot_data.is_empty():
+		var scene := HotspotView.new()
+		scene.name = "DistrictHotspotView"
+		scene.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		scene.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		main.choices_container.add_child(scene)
+		scene.setup(
+			port_id,
+			dist_id,
+			str(row.get("bg", "")),
+			hotspot_data["hotspots"],
+			hotspot_data["interactions_view"]
+		)
+		scene.hotspot_selected.connect(_select_hotspot.bind(scene))
+		scene.confirmation_requested.connect(_confirm_hotspot.bind(main, port_id, dist_id))
+		scene.brief_dismissed.connect(scene.clear_selection)
+		scene.show_idle()
+		_mode_toggle(main, "工席名单", open_district.bind(main, port_id, dist_id, flash, true))
+		_leave(main, _back.bind(main, port_id))
+		return
+
 	var groups: Dictionary = {}
 	var order: Array = []
 	for ix in ixs:
@@ -87,7 +110,102 @@ static func open_district(main, port_id: String, dist_id: String, flash := "") -
 		for ix in (groups[cat] as Array):
 			_paint(main, port_id, dist_id, ix)
 		main._end_benches()
+	if not hotspot_data.is_empty():
+		_mode_toggle(main, "场景", open_district.bind(main, port_id, dist_id, flash, false))
 	_leave(main, _back.bind(main, port_id))
+
+
+static func _hotspot_data(port_id: String, ixs: Array, raw_hotspots) -> Dictionary:
+	if typeof(raw_hotspots) != TYPE_ARRAY or raw_hotspots.is_empty():
+		return {}
+	var interactions_view: Dictionary = {}
+	var visible_ids: Dictionary = {}
+	for ix in ixs:
+		var id := str(ix.get("id", ""))
+		if id == "" or visible_ids.has(id):
+			return {}
+		var view: Dictionary = Book.view(port_id, ix)
+		if bool(view.get("hidden", false)):
+			continue
+		visible_ids[id] = true
+		interactions_view[id] = view
+	if visible_ids.is_empty():
+		return {}
+	var seen: Dictionary = {}
+	for hotspot in raw_hotspots:
+		if typeof(hotspot) != TYPE_DICTIONARY:
+			return {}
+		var id := str(hotspot.get("id", ""))
+		if id == "" or not visible_ids.has(id) or seen.has(id):
+			return {}
+		if not _hotspot_position_ok(hotspot):
+			return {}
+		seen[id] = true
+	for id in visible_ids:
+		if not seen.has(id):
+			return {}
+	return {
+		"hotspots": raw_hotspots,
+		"interactions_view": interactions_view,
+	}
+
+
+static func _hotspot_position_ok(hotspot: Dictionary) -> bool:
+	if hotspot.has("x") and hotspot.has("y"):
+		return _is_number(hotspot["x"]) and _is_number(hotspot["y"])
+	for key in ["position", "pos", "center", "coords"]:
+		if not hotspot.has(key):
+			continue
+		var value = hotspot[key]
+		if typeof(value) == TYPE_VECTOR2:
+			return true
+		if typeof(value) == TYPE_ARRAY and value.size() >= 2:
+			return _is_number(value[0]) and _is_number(value[1])
+		if typeof(value) == TYPE_DICTIONARY and value.has("x") and value.has("y"):
+			return _is_number(value["x"]) and _is_number(value["y"])
+	return false
+
+
+static func _is_number(value) -> bool:
+	return typeof(value) == TYPE_INT or typeof(value) == TYPE_FLOAT
+
+
+static func _select_hotspot(view, id) -> void:
+	var interaction: Dictionary = Book.interaction(id)
+	var interaction_type := str(interaction.get("type", ""))
+	if interaction_type in ["buy", "sell", "work", "shift"]:
+		view.show_confirmation(id)
+
+
+static func _confirm_hotspot(main, port_id: String, dist_id: String, id) -> void:
+	var ix_id := str(id)
+	var ix := Book.interaction(ix_id)
+	if ix.is_empty():
+		return
+	var mode := str(Book.view(port_id, ix).get("mode", "stamp"))
+	if mode == "dismiss":
+		_dismiss(main, port_id, dist_id, ix_id)
+		return
+	var option_id := ""
+	if mode == "choice":
+		for option in ix.get("options", []):
+			if typeof(option) != TYPE_DICTIONARY:
+				continue
+			var option_view: Dictionary = Book.view_option(port_id, ix, option)
+			if bool(option_view.get("open", false)):
+				option_id = str(option.get("id", ""))
+				break
+		if option_id == "":
+			return
+	_press(main, port_id, dist_id, ix_id, option_id)
+
+
+static func _toggle_cards(main, port_id: String, dist_id: String) -> void:
+	open_district(main, port_id, dist_id, "", true)
+
+
+static func _toggle_scene(main, port_id: String, dist_id: String) -> void:
+	open_district(main, port_id, dist_id, "")
 
 
 static func _ix_group(ix: Dictionary) -> String:
@@ -223,6 +341,17 @@ static func _back(main, port_id: String) -> void:
 
 static func _to_port(main, port_id: String) -> void:
 	main.load_scene(port_id)
+
+
+static func _mode_toggle(main, text: String, cb: Callable) -> void:
+	var btn := Button.new()
+	btn.text = text
+	btn.custom_minimum_size = Vector2(160, 42)
+	btn.pressed.connect(cb)
+	var host: Node = main._page_footer if main._page_footer != null else main.choices_container
+	host.add_child(btn)
+	UiTheme.style_leave_button(btn)
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 
 static func _leave(main, cb: Callable) -> void:
