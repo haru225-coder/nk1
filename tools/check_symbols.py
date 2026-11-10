@@ -3403,7 +3403,7 @@ else:
     print("  ✓ 章晋升册页：摘要/代价分区 + 翻页题签印「晋」；skip_years 末行历法纪实；数值未改")
 if all(s in main_src for s in (
     '"_guild"', '"_exam"', '"_residence"', '"_temple"',
-    "bg_quanzhou_ledger.jpg", "bg_academy.jpg", "bg_xinghua_study.jpg",
+    "cutscene/cs_guild_hall.jpg", "bg_academy.jpg", "bg_xinghua_study.jpg",
     "bg_temple_library.jpg",
 )):
     print("  ✓ 行会/贡院/住宅/寺观有设施背景")
