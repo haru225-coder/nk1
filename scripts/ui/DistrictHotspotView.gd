@@ -5,392 +5,445 @@ signal hotspot_selected(id)
 signal confirmation_requested(id)
 signal brief_dismissed
 
-const UiTheme = preload("res://scripts/core/UiTheme.gd")
-const IDLE_BRIEF := "后渚是泉州出洋的码头。"
+const INITIAL_BRIEF := "后渚是泉州出洋的码头。"
 
-var _port_id := ""
-var _district_id := ""
+var _port_id: String = ""
+var _dist_id: String = ""
+var _bg_path: String = ""
 var _hotspots: Array = []
-var _interactions_view: Variant = null
+var _hotspots_by_id: Dictionary = {}
+var _interactions_view: Dictionary = {}
+var _bg: Texture2D = null
+var _bg_rect: Rect2 = Rect2()
 
-var _background_layer: Control
-var _hotspot_layer: Control
-var _brief_layer: Control
-var _background: TextureRect
-var _brief: PanelContainer
+var _built: bool = false
+var _brief_panel: PanelContainer
+var _brief_box: VBoxContainer
 var _brief_title: Label
 var _brief_body: Label
-var _actions: HBoxContainer
+var _brief_actions: HBoxContainer
 var _confirm_button: Button
-var _cancel_button: Button
 var _close_button: Button
 
-var _marks: Dictionary = {}
+var _brief_id: String = ""
+var _brief_closed: bool = false
+var _mode: String = "idle"
+var _selected_id: String = ""
+var _hover_id: String = ""
+var _focus_id: String = ""
+var _pressed_id: String = ""
 var _visited: Dictionary = {}
-var _selected_id := ""
-var _background_rect := Rect2()
-var _ready_built := false
-
-class InkDotButton:
-	extends Button
-
-	var visited := false
-	var selected := false
-	var ink := Color("292722")
-	var muted := Color("777064")
-	var cinnabar := Color("a34832")
-	var focus_ink := Color("386b68")
-
-	func _ready() -> void:
-		flat = true
-		focus_mode = Control.FOCUS_ALL
-		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		mouse_entered.connect(queue_redraw)
-		mouse_exited.connect(queue_redraw)
-		focus_entered.connect(queue_redraw)
-		focus_exited.connect(queue_redraw)
-		button_down.connect(queue_redraw)
-		button_up.connect(queue_redraw)
-
-	func _draw() -> void:
-		var point := Vector2(18.0, size.y * 0.5)
-		var state := _state()
-		var color := _state_color(state)
-		var radius := 5.0
-		if state == "hover":
-			radius = 6.5
-		elif state == "pressed":
-			radius = 4.0
-			point.y += 1.0
-		elif state == "selected":
-			radius = 7.0
-		elif state == "visited":
-			radius = 4.5
-		if state == "visited":
-			draw_arc(point, radius, 0.0, TAU, 24, color, 1.4, true)
-		else:
-			draw_circle(point, radius, color)
-		if state == "hover" or state == "focus" or state == "selected":
-			draw_arc(point, radius + 4.0, 0.0, TAU, 40, color, 1.2, true)
-		if state == "focus":
-			draw_arc(point, radius + 7.0, 0.0, TAU, 32, focus_ink, 1.2)
-
-	func _state() -> String:
-		if is_pressed():
-			return "pressed"
-		if selected:
-			return "selected"
-		if has_focus():
-			return "focus"
-		if is_hovered():
-			return "hover"
-		if visited:
-			return "visited"
-		return "normal"
-
-	func _state_color(state: String) -> Color:
-		match state:
-			"hover":
-				return Color("9a4f37")
-			"focus":
-				return focus_ink
-			"pressed":
-				return Color("171512")
-			"visited":
-				return Color("746d60")
-			"selected":
-				return cinnabar
-		return Color("302d28")
+var _mark_points: Dictionary = {}
+var _mark_radius: float = 16.0
 
 func _ready() -> void:
-	_build()
-	_ready_built = true
-	_apply_setup()
-
-func setup(port_id: String, dist_id: String, bg_path: String, hotspots: Array, interactions_view) -> void:
-	_port_id = port_id
-	_district_id = dist_id
-	_bg_path = bg_path
-	_hotspots = hotspots.duplicate(true)
-	_interactions_view = interactions_view
-	if _ready_built:
-		_apply_setup()
-
-func show_idle(text: String = IDLE_BRIEF) -> void:
-	_selected_id = ""
-	_refresh_marks()
-	_show_brief("后渚码头", [text], "", "", "")
-
-func show_brief(id: String, title: String, lines: Array) -> void:
-	var clean: Array = []
-	for line in lines.slice(0, 2):
-		var text := str(line).strip_edges()
-		if not text.is_empty():
-			clean.append(text)
-	_selected_id = id
-	_refresh_marks()
-	_show_brief(title, clean, "", "", "")
-
-func show_confirmation(id: String, title: String, note: String, confirm_text: String, cancel_text: String = "取消") -> void:
-	_selected_id = id
-	_refresh_marks()
-	_show_brief(title, [note] if not note.is_empty() else [], confirm_text, cancel_text, "")
-
-func show_result(text: String) -> void:
-	_show_brief(_brief_title.text, [_first_sentence(text)], "", "", "")
-
-func clear_selection() -> void:
-	_selected_id = ""
-	show_idle()
-
-func focus_hotspot(id: String) -> void:
-	var button: Button = _marks.get(id)
-	if is_instance_valid(button):
-		button.grab_focus()
-
-func _build() -> void:
-	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	_background_layer = Control.new()
-	_background_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_background_layer)
-	_background_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-
-	_background = TextureRect.new()
-	_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_background_layer.add_child(_background)
-
-	_hotspot_layer = Control.new()
-	_hotspot_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_hotspot_layer)
-	_hotspot_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-
-	_brief_layer = Control.new()
-	_brief_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_brief_layer)
-	_brief_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_build_brief()
-
-func _build_brief() -> void:
-	_brief_panel = PanelContainer.new()
-	_brief_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	_brief_layer.add_child(_brief_panel)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("f2ead9")
-	style.border_color = Color("9b8d75")
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(2)
-	style.content_margin_left = 16.0
-	style.content_margin_right = 16.0
-	style.content_margin_top = 14.0
-	style.content_margin_bottom = 14.0
-	_brief_panel.add_theme_stylebox_override("panel", style)
-
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 10)
-	_brief_panel.add_child(box)
-
-	_brief_title = Label.new()
-	_brief_title.add_theme_font_override("font", _font(20))
-	box.add_child(_brief_title)
-
-	_brief_body = Label.new()
-	_brief_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_brief_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_brief_body.add_theme_font_size_override("font_size", 16)
-	_brief_body.add_theme_color_override("font_color", Color("332f29"))
-	box.add_child(_brief_body)
-
-	_actions = HBoxContainer.new()
-	_actions.add_theme_constant_override("separation", 8)
-	box.add_child(_actions)
-
-	_confirm_button = Button.new()
-	_confirm_button.pressed.connect(_on_confirm_pressed)
-	_actions.add_child(_confirm_button)
-
-	_cancel_button = Button.new()
-	_cancel_button.pressed.connect(func(): show_idle())
-	_actions.add_child(_cancel_button)
-
-	_close_button = Button.new()
-	_close_button.text = "合上"
-	_close_button.pressed.connect(func(): brief_closed.emit())
-	_actions.add_child(_close_button)
-
-func _apply_setup() -> void:
-	if not is_instance_valid(_background):
-		return
-	_background.texture = null
-	if not _bg_path.is_empty() and ResourceLoader.exists(_bg_path):
-		var resource := load(_bg_path)
-		if resource is Texture2D:
-			_background.texture = resource
-	_rebuild_marks()
+	focus_mode = Control.FOCUS_ALL
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	clip_contents = true
+	_build_brief_panel()
+	_built = true
+	resized.connect(_layout)
+	mouse_exited.connect(_on_mouse_exited)
 	_layout()
 	show_idle()
 
-func _build_marks() -> void:
-	_marks.clear()
-	for child in _hotspot_layer.get_children():
-		child.queue_free()
-	for hotspot in _hotspots:
-		var id := str(hotspot.get("id", ""))
-		var button := InkDotButton.new()
-		button.text = ""
-		button.tooltip_text = str(hotspot.get("label", id))
-		button.focus_mode = Control.FOCUS_ALL
-		button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		button.add_theme_stylebox_override("normal", _transparent_style())
-		button.add_theme_style_override("hover", _transparent_style())
-		button.add_theme_style_override("pressed", _transparent_style())
-		button.add_theme_style_override("focus", _transparent_style())
-		button.pressed.connect(_on_hotspot_pressed.bind(id))
-		_hotspot_layer.add_child(button)
-		var name_label := Label.new()
-		name_label.text = str(hotspot.get("label", id))
-		name_label.position = Vector2(32, 8)
-		name_label.size = Vector2(144, 28)
-		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		name_label.add_theme_font_override("font", _font(16))
-		name_label.add_theme_color_override("font_color", Color("f4eddc"))
-		name_label.add_theme_color_override("font_shadow_color", Color("2b2822"))
-		name_label.add_theme_constant_override("shadow_offset_x", 1)
-		name_label.add_theme_constant_override("shadow_offset_y", 1)
-		button.add_child(name_label)
-		_marks[id] = button
-	_layout_marks()
+func setup(port_id: String, dist_id: String, bg_path: String, hotspots: Array, interactions_view) -> void:
+	_port_id = port_id
+	_dist_id = dist_id
+	_bg_path = bg_path
+	_hotspots = hotspots.duplicate(true)
+	if interactions_view is Dictionary:
+		_interactions_view = interactions_view.duplicate(true)
+	else:
+		_interactions_view = {}
+	_visited.clear()
+	_selected_id = ""
+	_focus_id = ""
+	_hover_id = ""
+	_pressed_id = ""
+	_bg = null
+	if not _bg_path.is_empty() and ResourceLoader.exists(_bg_path):
+		var resource = ResourceLoader.load(_bg_path)
+		if resource is Texture2D:
+			_bg = resource
+	_rebuild_marks()
+	if _built:
+		_layout()
+		show_idle()
+	queue_redraw()
 
-func _on_hotspot_pressed(id: String) -> void:
-	_selected_id = id
-	_visited[id] = true
-	for mark_id in _marks:
-		var mark: Button = _marks[mark_id]
-		mark.selected = mark_id == id
-		mark.queue_redraw()
-	_update_brief_for(id)
-	hotspot_selected.emit(id)
-
-func _update_brief(id: String) -> void:
-	var info := _view_info(id)
-	if info.is_empty():
-		_show_lines(id, [id, "此处可以问一声。"])
-		return
-	var title := str(info.get("title", info.get("label", id)))
-	var lines: Array = info.get("lines", [])
-	if lines.is_empty():
-		var text := str(info.get("text", ""))
-		lines = [_first_sentence(text)] if not text.is_empty() else ["此处可以问一声。"]
-	_show_brief(title, lines, str(info.get("confirm_text", "")), str(info.get("cancel_text", "")))
-
-func _show_brief(title: String, lines: Array, confirm_text: String, cancel_text: String) -> void:
-	_brief_title.text = title
-	_brief_body.text = "\n".join(lines.slice(0, 2))
-	_confirm_button.text = confirm_text
-	_cancel_button.text = cancel_text
-	_actions.visible = not confirm_text.is_empty()
-	_brief_panel.visible = true
-	_layout_brief()
-
-func _on_confirm_pressed() -> void:
-	if not _brief_id.is_empty():
-		confirmation_requested.emit(_selected_id)
-
-func _on_brief_closed() -> void:
-	brief_closed.emit()
+func _build_brief_panel() -> void:
+	_brief_panel = PanelContainer.new()
+	_brief_panel.name = "BriefPanel"
+	_brief_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_brief_panel)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_top", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_bottom", 14)
+	_brief_panel.add_child(margin)
+	_brief_box = VBoxContainer.new()
+	_brief_box.add_theme_constant_override("separation", 12)
+	margin.add_child(_brief_box)
+	_brief_title = Label.new()
+	_brief_title.add_theme_color_override("font_color", UiTheme.TEXT)
+	_brief_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_brief_box.add_child(_brief_title)
+	_brief_body = Label.new()
+	_brief_body.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
+	_brief_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_brief_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_brief_box.add_child(_brief_body)
+	_brief_actions = HBoxContainer.new()
+	_brief_actions.add_theme_constant_override("separation", 8)
+	_brief_box.add_child(_brief_actions)
+	_close_button = Button.new()
+	_close_button.text = "关闭"
+	_close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_close_button.pressed.connect(_on_close_pressed)
+	_brief_actions.add_child(_close_button)
+	_confirm_button = Button.new()
+	_confirm_button.text = "确认"
+	_confirm_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_confirm_button.pressed.connect(_on_confirmation_pressed)
+	_brief_actions.add_child(_confirm_button)
+	_confirm_button.hide()
+	_brief_panel.hide()
 
 func _layout() -> void:
-	if not _built:
+	if size.x <= 0.0 or size.y <= 0.0:
 		return
-	var texture := _background.texture
-	if texture == null or size.x <= 0.0 or size.y <= 0.0:
-		_background_rect = Rect2(Vector2.ZERO, size)
+	var available := Rect2(Vector2.ZERO, size)
+	if _bg == null:
+		_bg_rect = available
 	else:
-		var texture_size := texture.get_size()
-		var scale_factor := minf(size.x / texture_size.x, size.y / texture_size.y)
-		var shown := texture_size * scale_factor
-		_background_rect = Rect2((size - shown) * 0.5, shown)
-	_background.position = _background_rect.position
-	_background.size = _background_rect.size
-	for id in _marks:
-		var mark := _marks[id]
-		var data: Dictionary = _hotspots_by_id.get(id, {})
-		var point := Vector2(float(data.get("x", 0.0)), float(data.get("y", data.get("x", 0.0))))
-		mark.position = _background_rect.position + point * _background_rect.size - Vector2(18, 22)
-		mark.custom_minimum_size = Vector2(190, 44)
-		mark.size = Vector2(190, 44)
-	_layout_brief()
+		var texture_size := _bg.get_size()
+		if texture_size.x > 0.0 and texture_size.y > 0.0:
+			var scale_factor := minf(size.x / texture_size.x, size.y / texture_size.y)
+			var draw_size := texture_size * scale_factor
+			_bg_rect = Rect2((size - draw_size) * 0.5, draw_size)
+		else:
+			_bg_rect = available
+	if is_instance_valid(_brief_panel):
+		var wide := size.x >= 760.0
+		if wide:
+			var panel_width := clampf(size.x * 0.30, 260.0, 360.0)
+			_brief_panel.custom_minimum_size = Vector2(panel_width, 0.0)
+			_brief_panel.position = Vector2(size.x - panel_width - 16.0, 16.0)
+			_brief_panel.size = Vector2(panel_width, maxf(size.y - 32.0, 160.0))
+		else:
+			_brief_panel.custom_minimum_size = Vector2(maxf(size.x - 32.0, 0.0), 0.0)
+			_brief_panel.position = Vector2(16.0, size.y * 0.60)
+			_brief_panel.size = Vector2(maxf(size.x - 32.0, 0.0), maxf(size.y * 0.36, 120.0))
+	_layout_marks()
+	queue_redraw()
 
-func _layout_brief() -> void:
-	if _brief_panel == null:
+func _draw() -> void:
+	if _bg != null:
+		draw_texture_rect(_bg, _bg_rect, false)
+	else:
+		draw_rect(_bg_rect, UiTheme.INK_SOFT)
+	for id in _hotspots_by_id:
+		var hotspot: Dictionary = _hotspots_by_id[id]
+		if not _mark_points.has(id):
+			continue
+		var state := _state_for(id)
+		var color := _color_for_state(state)
+		var point: Vector2 = _mark_points[id]
+		draw_circle(point, _mark_radius, color)
+		if state == "selected":
+			draw_arc(point, _mark_radius + 6.0, 0.0, TAU, 40, UiTheme.GOLD_HI, 2.0, true)
+		elif state == "focus" or state == "hover":
+			draw_arc(point, _mark_radius + 4.0, 0.0, TAU, 40, UiTheme.GOLD_HI, 2.0, true)
+
+func _rebuild_marks() -> void:
+	_hotspots_by_id.clear()
+	_mark_points.clear()
+	for raw in _hotspots:
+		if not (raw is Dictionary):
+			continue
+		var entry: Dictionary = raw
+		var id := str(entry.get("id", ""))
+		if id.is_empty():
+			continue
+		_hotspots_by_id[id] = entry
+	_refresh_marks()
+
+func _layout_marks() -> void:
+	_mark_points.clear()
+	if _bg_rect.size.x <= 0.0 or _bg_rect.size.y <= 0.0:
 		return
-	var minimum := _brief.get_combined_minimum_size()
-	var wide := size.x >= 820.0 and size.x > size.y * 1.25
-	var panel_size := Vector2(minf(350.0, size.x * 0.34), minf(maxf(minimum.y, 132.0), size.y - 32.0))
-	var candidates: Array[Vector2] = []
-	if wide:
-		panel_size.x = clampf(size.x * 0.30, 280.0, 360.0)
-		panel_size.y = minf(panel_size.y, size.y - 24.0)
-		candidates.append(Vector2(size.x - panel_size.x - 16.0, (size.y - panel_size.y) * 0.5))
-		candidates.append(Vector2(16.0, (size.y - panel_size.y) * 0.5))
+	_mark_radius = clampf(minf(_bg_rect.size.x, _bg_rect.size.y) * 0.018, 12.0, 20.0)
+	for id in _hotspots_by_id:
+		var hotspot: Dictionary = _hotspots_by_id[id]
+		var x := clampf(float(hotspot.get("x", 0.5)), 0.0, 1.0)
+		var y := clampf(float(hotspot.get("y", 0.5)), 0.0, 1.0)
+		_mark_points[id] = _bg_rect.position + Vector2(x * _bg_rect.size.x, y * _bg_rect.size.y)
+
+func _refresh_marks() -> void:
+	_layout_marks()
+	queue_redraw()
+
+func _state_for(id: String) -> String:
+	if id == _pressed_id:
+		return "pressed"
+	if id == _selected_id:
+		return "selected"
+	if has_focus() and id == _focus_id:
+		return "focus"
+	if id == _hover_id:
+		return "hover"
+	if _visited.has(id):
+		return "visited"
+	return "normal"
+
+func _color_for_state(state: String) -> Color:
+	match state:
+		"hover":
+			return UiTheme.GOLD
+		"focus":
+			return UiTheme.GOLD_HI
+		"pressed":
+			return UiTheme.BTN_HI
+		"visited":
+			return UiTheme.INK_SOFT
+		"selected":
+			return UiTheme.GOLD_HI
+		_:
+			return UiTheme.INK
+
+func _hotspot_at(point: Vector2) -> String:
+	var nearest_id := ""
+	var nearest_distance := 1000000.0
+	for id in _mark_points:
+		var mark_point: Vector2 = _mark_points[id]
+		var distance := point.distance_to(mark_point)
+		if distance <= _mark_radius + 8.0 and distance < nearest_distance:
+			nearest_id = id
+			nearest_distance = distance
+	return nearest_id
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		var next_hover := _hotspot_at(event.position)
+		if next_hover != _hover_id:
+			_hover_id = next_hover
+			_refresh_marks()
+		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			var id := _hotspot_at(event.position)
+			if id.is_empty():
+				return
+			_focus_id = id
+			grab_focus()
+			_pressed_id = id
+		else:
+			var released_id := _pressed_id
+			_pressed_id = ""
+			if not released_id.is_empty() and _hotspot_at(event.position) == released_id:
+				_activate_hotspot(released_id)
+		_refresh_marks()
+		accept_event()
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not (event is InputEventKey):
+		return
+	if not event.pressed or event.echo:
+		return
+	match event.keycode:
+		KEY_ESCAPE:
+			if is_instance_valid(_brief_panel) and _brief_panel.visible:
+				_dismiss_brief()
+				get_viewport().set_input_as_handled()
+		KEY_LEFT, KEY_UP:
+			_move_focus(-1)
+			get_viewport().set_input_as_handled()
+		KEY_RIGHT:
+			_move_focus(1)
+			get_viewport().set_input_as_handled()
+		KEY_DOWN:
+			_move_focus(1)
+			get_viewport().set_input_as_handled()
+		KEY_ENTER, KEY_KP_ENTER, KEY_SPACE:
+			if is_instance_valid(_brief_panel) and _brief_panel.visible:
+				if _mode == "confirmation":
+					_on_confirmation_pressed()
+				else:
+					_dismiss_brief()
+			else:
+				_activate_hotspot(_focus_id)
+			get_viewport().set_input_as_handled()
+
+func _move_focus(step: int) -> void:
+	if _hotspots_by_id.is_empty():
+		return
+	var ids: Array = _hotspots_by_id.keys()
+	var index := ids.find(_focus_id)
+	if index < 0:
+		index = 0 if step >= 0 else ids.size() - 1
 	else:
-		panel_size.x = maxf(0.0, size.x - 24.0)
-		panel_size.y = minf(panel_size.y, maxf(96.0, size.y * 0.42))
-		candidates.append(Vector2(12.0, size.y - panel_size.y - 12.0))
-		candidates.append(Vector2(12.0, 12.0))
-	var chosen := candidates[0]
-	for candidate in candidates:
-		var rect := Rect2(candidate, panel_size)
-		if _selected_id.is_empty() or not rect.grow(10.0).has_point(_mark_point(_selected_id)):
-			chosen = candidate
-			break
-	_brief.position = chosen.max(Vector2(8, 8))
-	_brief.size = panel_size.min(size - _brief.position - Vector2(8, 8))
+		index = posmod(index + step, ids.size())
+	_focus_id = str(ids[index])
+	grab_focus()
+	_refresh_marks()
 
-func _mark_point(id: String) -> Vector2:
-	for hotspot in _hotspots:
-		if str(hotspot.get("id", "")) == id:
-			return _bg_rect.position + Vector2(float(hotspot.get("x", 0.0)), float(hotspot.get("y", 0.0))) * _bg.size
-	return Vector2.ZERO
+func _activate_hotspot(id: String) -> void:
+	if id.is_empty() or not _hotspots_by_id.has(id):
+		return
+	_selected_id = id
+	_focus_id = id
+	_visited[id] = true
+	_brief_closed = false
+	show_brief(id)
+	hotspot_selected.emit(id)
+	_refresh_marks()
 
-func _show_for_interaction(id: String) -> void:
-	var item := _find_interaction(id)
-	var title := str(item.get("label", id))
-	var text := str(item.get("text", ""))
-	if text.is_empty():
-		text = str(item.get("label", id))
-	_show_brief(title, [_first_sentence(text)], "", "")
+func _on_mouse_exited() -> void:
+	_hover_id = ""
+	_pressed_id = ""
+	_refresh_marks()
+
+func _on_close_pressed() -> void:
+	_dismiss_brief()
+
+func _on_confirmation_pressed() -> void:
+	if _brief_id.is_empty():
+		return
+	_mode = "result"
+	_confirm_button.hide()
+	confirmation_requested.emit(_brief_id)
+
+func _dismiss_brief() -> void:
+	if is_instance_valid(_brief_panel):
+		_brief_panel.hide()
+	_brief_closed = true
+	_mode = "closed"
+	_brief_id = ""
+	brief_dismissed.emit()
+
+func show_idle() -> void:
+	_mode = "idle"
+	_brief_id = ""
+	_brief_closed = false
+	_show_brief("", "", INITIAL_BRIEF, false)
+	_confirm_button.hide()
+	_close_button.show()
+
+func show_brief(id: String) -> void:
+	if not _hotspots_by_id.has(id):
+		show_idle()
+		return
+	_selected_id = id
+	_focus_id = id
+	_visited[id] = true
+	_brief_closed = false
+	var info := _view_info(id)
+	var title := str(info.get("title", info.get("name", id)))
+	var body := _interaction_text(info, "后渚的潮水连着外洋。")
+	_show_brief(id, title, body, false)
+	_refresh_marks()
+
+func show_confirmation(id: String) -> void:
+	if not _hotspots_by_id.has(id):
+		return
+	_selected_id = id
+	_focus_id = id
+	_visited[id] = true
+	var info := _view_info(id)
+	var title := str(info.get("title", info.get("name", id)))
+	var body := _interaction_text(info, "要在这里办理这件事吗？")
+	_show_brief(id, title, body, true)
+	_mode = "confirmation"
+	_refresh_marks()
+
+func show_result(id: String, lines: Array = []) -> void:
+	_selected_id = id
+	_focus_id = id
+	if not id.is_empty():
+		_visited[id] = true
+	var title := "短讯"
+	var body := _show_lines(lines)
+	if _hotspots_by_id.has(id):
+		var info := _view_info(id)
+		title = str(info.get("name", info.get("title", title)))
+	if body.is_empty():
+		body = "事情已经有了结果。"
+	_show_brief(id, title, body, false)
+	_mode = "result"
+	_refresh_marks()
+
+func clear_selection() -> void:
+	_selected_id = ""
+	_focus_id = ""
+	_hover_id = ""
+	_pressed_id = ""
+	_brief_id = ""
+	_mode = "idle"
+	_refresh_marks()
+
+func _show_brief(id: String, title: String, body: String, with_confirmation: bool) -> void:
+	_brief_id = id
+	_brief_closed = false
+	_mode = "confirmation" if with_confirmation else "brief"
+	_brief_title.text = title
+	_brief_body.text = body
+	_confirm_button.visible = with_confirmation
+	_close_button.visible = true
+	_brief_actions.show()
+	_brief_panel.show()
+	_layout()
+
+func _view_info(id: String) -> Dictionary:
+	var result: Dictionary = {}
+	if _hotspots_by_id.has(id):
+		result = (_hotspots_by_id[id] as Dictionary).duplicate(true)
+	var interaction := _find_interaction(id)
+	for key in interaction:
+		result[key] = interaction[key]
+	return result
 
 func _find_interaction(id: String) -> Dictionary:
-	if interactions_view is Dictionary:
-		var value: Variant = interactions_view.get(id, {})
-		return value if value is Dictionary else {}
-	if interactions_view is Array:
-		for item in interactions_view:
-			if item is Dictionary and str(item.get("id", "")) == id:
-				return item
+	if not _interactions_view.has(id):
+		return {}
+	var value = _interactions_view[id]
+	if value is Dictionary:
+		return value
 	return {}
 
-func _first_sentence(text: String) -> String:
-	var end := text.length()
-	for mark in ["。", "！", "？", "\n"]:
-		var at := text.find(mark)
-		if at >= 0:
-			end = mini(end, at + 1)
-	return text.substr(0, end).strip_edges()
+func _interaction_text(info: Dictionary, fallback: String) -> String:
+	for field in ["brief", "text", "description", "body", "result"]:
+		if not info.has(field):
+			continue
+		var value = info[field]
+		if value is Array:
+			var lines := _show_lines(value)
+			if not lines.is_empty():
+				return lines
+		elif not str(value).is_empty():
+			return str(value)
+	return fallback
 
-func _apply_font(control: Control, font_size: int) -> void:
-	if UiTheme.has_method("font"):
-		var font: Variant = UiTheme.call("font", font_size)
-		if font is Font:
-			control.add_theme_font_override("font", font)
-			return
-	control.add_theme_font_override("font", ThemeDB.fallback_font)
-	control.add_theme_font_size_override("font_size", font_size)
+func _show_lines(lines: Array) -> String:
+	var parts: PackedStringArray = []
+	for line in lines:
+		var text := str(line).strip_edges()
+		if not text.is_empty():
+			parts.append(text)
+	return "\n".join(parts)
+
+func _update_brief_for(id: String) -> void:
+	show_brief(id)
+
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_RESIZED and _built:
-		_layout()
+	if what == NOTIFICATION_FOCUS_ENTER or what == NOTIFICATION_FOCUS_EXIT:
+		if _built:
+			_refresh_marks()
+
+func _exit_tree() -> void:
+	_hotspots_by_id.clear()
+	_mark_points.clear()
+	_interactions_view.clear()
