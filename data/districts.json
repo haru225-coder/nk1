@@ -143,6 +143,86 @@
           "port": "hakata",
           "good": "song_coin",
           "mul": 1.2
+        },
+        {
+          "id": "qz_shibo_boxes",
+          "type": "look",
+          "label": "香药箱",
+          "text": "箱面写着船号，验讫印红得发暗，箱角叫扁担磨圆了。"
+        },
+        {
+          "id": "qz_shibo_scale",
+          "type": "look",
+          "label": "官秤",
+          "text": "秤杆上的星磨得发亮，过秤得排队，挑夫都站到阶下了。"
+        },
+        {
+          "id": "qz_shibo_notice",
+          "type": "look",
+          "label": "验货条",
+          "text": "条子上写着，今日抽验乳香、犀角、珍珠，其余先放行。"
+        },
+        {
+          "id": "qz_shibo_hall",
+          "type": "look",
+          "label": "正厅门",
+          "text": "货引去正厅请，这里不办。门帘一动，里头有人打算盘。"
+        },
+        {
+          "id": "qz_shibo_huizi",
+          "type": "look",
+          "label": "会子",
+          "text": "这里按会子算，铜钱零头不收，那叠会子又抹平了一遍。"
+        }
+      ],
+      "hotspots": [
+        {
+          "id": "qz_shibo_gift",
+          "x": 0.34,
+          "y": 0.58,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_shibo_fine",
+          "x": 0.46,
+          "y": 0.47,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_shibo_coin",
+          "x": 0.38,
+          "y": 0.52,
+          "kind": "person"
+        },
+        {
+          "id": "qz_shibo_boxes",
+          "x": 0.22,
+          "y": 0.7,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_shibo_scale",
+          "x": 0.56,
+          "y": 0.66,
+          "kind": "place"
+        },
+        {
+          "id": "qz_shibo_notice",
+          "x": 0.26,
+          "y": 0.3,
+          "kind": "place"
+        },
+        {
+          "id": "qz_shibo_hall",
+          "x": 0.62,
+          "y": 0.36,
+          "kind": "place"
+        },
+        {
+          "id": "qz_shibo_huizi",
+          "x": 0.42,
+          "y": 0.64,
+          "kind": "goods"
         }
       ]
     },

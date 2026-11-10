@@ -5,7 +5,7 @@ extends RefCounted
 ## 行情只动「这港牙行本来就有、rates 里已有键」的货，免得 _shift_rate 凭空长出一格。
 
 const PATH := "res://data/districts.json"
-const TYPES := ["buy", "sell", "invest", "hire", "rumor", "favour", "licence", "choice"]
+const TYPES := ["buy", "sell", "invest", "hire", "rumor", "favour", "licence", "choice", "look"]
 const BUCKETS := ["once", "year", "month", "cool", "invest", "hire", "licence", "favour"]
 const EXAM_YEARS := [1256, 1259, 1262, 1265, 1268, 1271, 1274]
 const EXAM_MONTHS := [8, 9, 10]
@@ -206,6 +206,11 @@ static func view(port_id: String, ix: Dictionary) -> Dictionary:
 	if out.hidden:
 		return out
 	var t := str(ix.get("type", ""))
+	if t == "look":
+		out.mode = "look"
+		out.open = true
+		out.affordable = true
+		return out
 	var why := _block_reason(port_id, ix, ix)
 	if t == "hire" and is_hired(str(ix.get("id", ""))):
 		out.mode = "dismiss"

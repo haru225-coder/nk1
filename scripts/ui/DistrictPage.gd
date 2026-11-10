@@ -176,6 +176,9 @@ static func _is_number(value) -> bool:
 static func _select_hotspot(view, port_id: String, id) -> void:
 	var ix: Dictionary = Book.interaction(str(id))
 	var ix_view: Dictionary = Book.view(port_id, ix)
+	if str(ix_view.get("mode", "")) == "look":
+		view.show_result(id, [str(ix.get("text", ""))])
+		return
 	if not bool(ix_view.get("open", true)):
 		view.show_result(id, [str(ix_view.get("reason", ""))])
 		return

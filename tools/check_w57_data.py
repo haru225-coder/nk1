@@ -9,7 +9,7 @@ import json
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ALLOWED_TYPES = {"buy", "sell", "invest", "hire", "rumor", "favour", "licence", "choice"}
+ALLOWED_TYPES = {"buy", "sell", "invest", "hire", "rumor", "favour", "licence", "choice", "look"}
 ALLOWED_UNLOCK = {
     "year_min", "year_max", "years", "months", "chapter_min", "war_in", "war_not",
     "require_flag", "hide_if_flag", "favour_min", "needs_licence", "needs_hire",
@@ -182,6 +182,10 @@ def main():
                 errors.append(f"{ixloc}: label 须为非空字符串")
             if not isinstance(ix.get("text"), str) or not str(ix.get("text", "")).strip():
                 errors.append(f"{ixloc}: text 须为非空字符串")
+            if typ == "look":
+                for key in ("cost", "effects", "options"):
+                    if key in ix:
+                        errors.append(f"{ixloc}: look 条目不许有 {key}")
             if "cost" in ix:
                 if not is_int(ix["cost"]) or ix["cost"] < 0:
                     errors.append(f"{ixloc}: cost 须为非负整数")
