@@ -3336,6 +3336,56 @@
       "kind": "street",
       "bg": "bg_dist_gz_fanfang.jpg",
       "description": "城南蕃坊，石巷窄。蕃商白袍，象牙与香药沿墙码着。巷底光塔砖身光滑，砖缝里长着苔。",
+      "hotspots": [
+        {
+          "id": "gz_fanfang_interpreter",
+          "x": 0.24,
+          "y": 0.58,
+          "kind": "person"
+        },
+        {
+          "id": "gz_fanfang_ivory",
+          "x": 0.10,
+          "y": 0.78,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_fanfang_coin",
+          "x": 0.48,
+          "y": 0.48,
+          "kind": "person"
+        },
+        {
+          "id": "gz_fanfang_rumor",
+          "x": 0.20,
+          "y": 0.48,
+          "kind": "person"
+        },
+        {
+          "id": "gz_fanfang_intro",
+          "x": 0.32,
+          "y": 0.62,
+          "kind": "person"
+        },
+        {
+          "id": "gz_fanfang_ivory2",
+          "x": 0.13,
+          "y": 0.64,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_fanfang_pagoda",
+          "x": 0.42,
+          "y": 0.24,
+          "kind": "place"
+        },
+        {
+          "id": "gz_fanfang_well",
+          "x": 0.50,
+          "y": 0.72,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "gz_fanfang_interpreter",
@@ -3408,6 +3458,18 @@
           },
           "hire_bonus": "gz_fanfang_interpreter",
           "hire_mul": 0.9
+        },
+        {
+          "id": "gz_fanfang_pagoda",
+          "type": "look",
+          "label": "砖缝里的苔",
+          "text": "日头照在光塔下段，砖面发白，背阴那侧砖缝里长着苔。塔根磕掉一小块，碴口颜色浅些。"
+        },
+        {
+          "id": "gz_fanfang_well",
+          "type": "look",
+          "label": "井栏的绳痕",
+          "text": "井栏里侧磨出一排绳槽，湿绳盘在井边，椰壳瓢扣在石上。天热了，通事也来舀一口。"
         }
       ]
     },
