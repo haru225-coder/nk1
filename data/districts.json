@@ -2405,6 +2405,56 @@
       "kind": "office",
       "bg": "bg_dist_xh_yamen.jpg",
       "description": "兴化军衙的仪门。盐的公凭在这里领，货引不在这里。小吏还按会子算。",
+      "hotspots": [
+        {
+          "id": "xh_yamen_salt",
+          "x": 0.4,
+          "y": 0.56,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_yamen_clerk",
+          "x": 0.36,
+          "y": 0.5,
+          "kind": "person"
+        },
+        {
+          "id": "xh_yamen_fallen",
+          "x": 0.52,
+          "y": 0.28,
+          "kind": "place"
+        },
+        {
+          "id": "xh_yamen_drum",
+          "x": 0.48,
+          "y": 0.62,
+          "kind": "place"
+        },
+        {
+          "id": "xh_yamen_threshold",
+          "x": 0.46,
+          "y": 0.74,
+          "kind": "place"
+        },
+        {
+          "id": "xh_yamen_notice",
+          "x": 0.24,
+          "y": 0.38,
+          "kind": "place"
+        },
+        {
+          "id": "xh_yamen_huizi",
+          "x": 0.34,
+          "y": 0.6,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_yamen_empty",
+          "x": 0.54,
+          "y": 0.52,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "xh_yamen_salt",
@@ -2478,6 +2528,36 @@
               }
             }
           ]
+        },
+        {
+          "id": "xh_yamen_drum",
+          "type": "look",
+          "label": "庭中的鼓",
+          "text": "鼓还架在那儿，鼓面一层灰，就中间常敲的那块干净。"
+        },
+        {
+          "id": "xh_yamen_threshold",
+          "type": "look",
+          "label": "被磨低的门槛",
+          "text": "门槛中间凹下去一截，木头踩成了灰白色，两头还高着。"
+        },
+        {
+          "id": "xh_yamen_notice",
+          "type": "look",
+          "label": "墙上的告示",
+          "text": "告示叫雨泡皱了，边角翘着，字早糊成一团，就红印还清楚。"
+        },
+        {
+          "id": "xh_yamen_huizi",
+          "type": "look",
+          "label": "案上的会子",
+          "text": "案上一叠会子拿砚台压着，纸边起毛，最上面那张叫指甲掐了个月牙印。"
+        },
+        {
+          "id": "xh_yamen_empty",
+          "type": "look",
+          "label": "庭心空地",
+          "text": "庭心空着，砖缝里钻出几根草。货引不在这儿办，掏文书也没人接。"
         }
       ]
     },
