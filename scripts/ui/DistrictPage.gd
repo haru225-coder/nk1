@@ -39,7 +39,7 @@ static func open_index(main, port_id: String) -> void:
 			var aside := Book.kind_label(str(row.get("kind", "")))
 			var spots = row.get("hotspots", [])
 			if typeof(spots) == TYPE_ARRAY and not spots.is_empty():
-				aside += " · 场景"
+				aside += " ・ 场景"
 			main._slip_title(card, str(row.get("name", "")), aside)
 			main._slip_note(card, str(row.get("description", "")))
 			var line: HFlowContainer = main._slip_row(card)
