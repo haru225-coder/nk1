@@ -5562,6 +5562,50 @@
       "kind": "dock",
       "bg": "bg_dist_wz_shuomen.jpg",
       "description": "朔门外是温州的码头。石岸上脚夫扛着漆箱，福船挨着停在瓯江边。",
+      "hotspots": [
+        {
+          "id": "wz_shuomen_sulfur",
+          "x": 0.50,
+          "y": 0.68,
+          "kind": "person"
+        },
+        {
+          "id": "wz_shuomen_rumor",
+          "x": 0.62,
+          "y": 0.70,
+          "kind": "person"
+        },
+        {
+          "id": "wz_shuomen_watch",
+          "x": 0.42,
+          "y": 0.86,
+          "kind": "place"
+        },
+        {
+          "id": "wz_shuomen_rumor2",
+          "x": 0.42,
+          "y": 0.56,
+          "kind": "person"
+        },
+        {
+          "id": "npc_zhouxing_bet",
+          "x": 0.18,
+          "y": 0.58,
+          "kind": "person"
+        },
+        {
+          "id": "wz_shuomen_chests",
+          "x": 0.32,
+          "y": 0.82,
+          "kind": "goods"
+        },
+        {
+          "id": "wz_shuomen_gate",
+          "x": 0.18,
+          "y": 0.42,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "wz_shuomen_sulfur",
@@ -5650,6 +5694,18 @@
               }
             }
           ]
+        },
+        {
+          "id": "wz_shuomen_chests",
+          "type": "look",
+          "label": "漆面的人影",
+          "text": "漆面黑得照见人，脚夫一弓背，那道影就跟着歪。箱角叫麻绳勒去一小块，露出黄木。"
+        },
+        {
+          "id": "wz_shuomen_gate",
+          "type": "look",
+          "label": "门洞里的鞋声",
+          "text": "挑担的刚进洞，草鞋声就在里头碰回来。墙根潮得发暗，进出的人都拣干处下脚。"
         }
       ]
     },
