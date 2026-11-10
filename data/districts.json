@@ -5454,6 +5454,50 @@
       "kind": "temple",
       "bg": "bg_dist_wz_jiangxin.jpg",
       "description": "江心屿在瓯江当中，东西两塔夹着江心寺。渡船在屿下来回。",
+      "hotspots": [
+        {
+          "id": "wz_jiangxin_tower",
+          "x": 0.42,
+          "y": 0.50,
+          "kind": "place"
+        },
+        {
+          "id": "wz_jiangxin_rite",
+          "x": 0.10,
+          "y": 0.76,
+          "kind": "place"
+        },
+        {
+          "id": "wz_jiangxin_tea",
+          "x": 0.20,
+          "y": 0.82,
+          "kind": "goods"
+        },
+        {
+          "id": "wz_jiangxin_stay",
+          "x": 0.34,
+          "y": 0.38,
+          "kind": "place"
+        },
+        {
+          "id": "wz_jiangxin_duanwu",
+          "x": 0.56,
+          "y": 0.66,
+          "kind": "place"
+        },
+        {
+          "id": "wz_jiangxin_ferry",
+          "x": 0.50,
+          "y": 0.78,
+          "kind": "ship"
+        },
+        {
+          "id": "wz_jiangxin_bell",
+          "x": 0.30,
+          "y": 0.58,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "wz_jiangxin_tower",
@@ -5552,6 +5596,18 @@
           "port": "wenzhou",
           "good": "aromatic_medicine",
           "mul": 1.12
+        },
+        {
+          "id": "wz_jiangxin_ferry",
+          "type": "look",
+          "label": "石阶边的渡船",
+          "text": "渡船斜在石阶下，缆绳在岸桩上绕了两圈。潮一落，阶脚露出碎碗片和密密的螺蛳壳。"
+        },
+        {
+          "id": "wz_jiangxin_bell",
+          "type": "look",
+          "label": "江面的钟声",
+          "text": "风一大，钟声就贴着江面跑，渡船上有人抬头。钟槌吊在梁下，粗绳尾上散了股。"
         }
       ]
     },
