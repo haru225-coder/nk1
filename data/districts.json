@@ -5753,6 +5753,56 @@
       "kind": "workshop",
       "bg": "bg_dist_wz_lacquer.jpg",
       "description": "漆坊里匠人一遍遍上漆，盘盒排在架上阴干。温州漆器出名就出在这里。",
+      "hotspots": [
+        {
+          "id": "wz_lacquer_buy",
+          "x": 0.36,
+          "y": 0.36,
+          "kind": "goods"
+        },
+        {
+          "id": "wz_lacquer_share",
+          "x": 0.16,
+          "y": 0.64,
+          "kind": "place"
+        },
+        {
+          "id": "wz_lacquer_rack",
+          "x": 0.22,
+          "y": 0.40,
+          "kind": "goods"
+        },
+        {
+          "id": "wz_lacquer_vat",
+          "x": 0.26,
+          "y": 0.78,
+          "kind": "goods"
+        },
+        {
+          "id": "wz_lacquer_bowl",
+          "x": 0.12,
+          "y": 0.56,
+          "kind": "goods"
+        },
+        {
+          "id": "wz_lacquer_window",
+          "x": 0.62,
+          "y": 0.34,
+          "kind": "place"
+        },
+        {
+          "id": "wz_lacquer_cloth",
+          "x": 0.46,
+          "y": 0.86,
+          "kind": "place"
+        },
+        {
+          "id": "wz_lacquer_basin",
+          "x": 0.36,
+          "y": 0.70,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "wz_lacquer_buy",
@@ -5778,6 +5828,42 @@
             14,
             22
           ]
+        },
+        {
+          "id": "wz_lacquer_rack",
+          "type": "look",
+          "label": "架上湿盘",
+          "text": "靠里的几只盘还泛亮，盘沿挂着一小点漆。潮木头味里掺着生漆气，凑近有些冲鼻。"
+        },
+        {
+          "id": "wz_lacquer_vat",
+          "type": "look",
+          "label": "加盖漆桶",
+          "text": "木盖斜压着桶口，只留一道窄缝。缝边结着深色漆痂，盖面留着半个暗色指印。"
+        },
+        {
+          "id": "wz_lacquer_bowl",
+          "type": "look",
+          "label": "半漆的碗",
+          "text": "暗红漆只刷到碗腰，碗口那圈还是浅黄木头，交界拖着一道粗刷痕。台上沾着两点黑漆。"
+        },
+        {
+          "id": "wz_lacquer_window",
+          "type": "look",
+          "label": "窗缝那道光",
+          "text": "窗板只开了一指宽，灰天从缝里露出来。那道光落在脚边，浮尘一过去就亮一下。"
+        },
+        {
+          "id": "wz_lacquer_cloth",
+          "type": "look",
+          "label": "门边防尘布",
+          "text": "地上的布铺到墙根，两角拿木块压着。中间有几个灰脚印，布纹里嵌着一根刷毛。"
+        },
+        {
+          "id": "wz_lacquer_basin",
+          "type": "look",
+          "label": "一盆浑水",
+          "text": "水已经浑得看不见盆底，灰褐的水面浮着细沫。湿布搭在盆沿，布角正往砖上滴水。"
         }
       ]
     },
