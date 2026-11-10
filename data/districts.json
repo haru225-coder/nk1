@@ -891,6 +891,50 @@
             }
           ]
         }
+      ],
+      "hotspots": [
+        {
+          "id": "qz_jubao_qingbai",
+          "x": 0.24,
+          "y": 0.64,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_jubao_silk",
+          "x": 0.4,
+          "y": 0.6,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_jubao_silkshop",
+          "x": 0.44,
+          "y": 0.48,
+          "kind": "place"
+        },
+        {
+          "id": "qz_jubao_credit",
+          "x": 0.56,
+          "y": 0.52,
+          "kind": "person"
+        },
+        {
+          "id": "qz_jubao_wager",
+          "x": 0.5,
+          "y": 0.42,
+          "kind": "place"
+        },
+        {
+          "id": "npc_maruding_settle",
+          "x": 0.32,
+          "y": 0.72,
+          "kind": "person"
+        },
+        {
+          "id": "qz_jubao_lantern",
+          "x": 0.2,
+          "y": 0.38,
+          "kind": "place"
+        }
       ]
     },
     {
