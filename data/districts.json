@@ -1765,56 +1765,56 @@
       "hotspots": [
         {
           "id": "xh_mulan_share",
-          "x": 0.07,
-          "y": 0.54,
+          "x": 0.21,
+          "y": 0.69,
           "kind": "place"
         },
         {
           "id": "xh_mulan_repair",
           "x": 0.58,
-          "y": 0.48,
+          "y": 0.55,
           "kind": "place"
         },
         {
           "id": "xh_mulan_weir",
-          "x": 0.50,
-          "y": 0.76,
+          "x": 0.53,
+          "y": 0.71,
           "kind": "place"
         },
         {
           "id": "xh_mulan_grainbuy",
-          "x": 0.22,
-          "y": 0.86,
+          "x": 0.24,
+          "y": 0.84,
           "kind": "goods"
         },
         {
           "id": "xh_mulan_siege",
-          "x": 0.70,
-          "y": 0.70,
+          "x": 0.68,
+          "y": 0.64,
           "kind": "place"
         },
         {
           "id": "npc_zhengyan_meet",
-          "x": 0.10,
-          "y": 0.44,
+          "x": 0.09,
+          "y": 0.48,
           "kind": "person"
         },
         {
           "id": "npc_zhengyan_ledger",
-          "x": 0.14,
-          "y": 0.54,
+          "x": 0.10,
+          "y": 0.58,
           "kind": "goods"
         },
         {
           "id": "npc_zhengyan_invest",
-          "x": 0.16,
-          "y": 0.48,
+          "x": 0.17,
+          "y": 0.58,
           "kind": "place"
         },
         {
           "id": "npc_zhengyan_split",
-          "x": 0.11,
-          "y": 0.60,
+          "x": 0.12,
+          "y": 0.70,
           "kind": "goods"
         }
       ]
@@ -2432,8 +2432,8 @@
         },
         {
           "id": "xh_yamen_threshold",
-          "x": 0.36,
-          "y": 0.78,
+          "x": 0.38,
+          "y": 0.68,
           "kind": "place"
         },
         {
@@ -3946,8 +3946,8 @@
         },
         {
           "id": "gz_xiang_test",
-          "x": 0.30,
-          "y": 0.76,
+          "x": 0.52,
+          "y": 0.42,
           "kind": "person"
         },
         {
