@@ -4125,6 +4125,56 @@
       "kind": "workshop",
       "bg": "bg_dist_gz_yard.jpg",
       "description": "坞里在造一艘广船，肋骨还敞着。铁钉不该随便出海，坞里的人知道。",
+      "hotspots": [
+        {
+          "id": "gz_yard_smith",
+          "x": 0.46,
+          "y": 0.46,
+          "kind": "person"
+        },
+        {
+          "id": "gz_yard_iron",
+          "x": 0.42,
+          "y": 0.80,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_yard_rumor",
+          "x": 0.76,
+          "y": 0.54,
+          "kind": "person"
+        },
+        {
+          "id": "gz_yard_ribs",
+          "x": 0.54,
+          "y": 0.34,
+          "kind": "place"
+        },
+        {
+          "id": "gz_yard_caulk",
+          "x": 0.22,
+          "y": 0.60,
+          "kind": "place"
+        },
+        {
+          "id": "gz_yard_tide",
+          "x": 0.68,
+          "y": 0.78,
+          "kind": "place"
+        },
+        {
+          "id": "gz_yard_lid",
+          "x": 0.36,
+          "y": 0.84,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_yard_plan",
+          "x": 0.16,
+          "y": 0.74,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "gz_yard_smith",
@@ -4159,6 +4209,36 @@
           "port": "quanzhou",
           "good": "ironware",
           "mul": 1.18
+        },
+        {
+          "id": "gz_yard_ribs",
+          "type": "look",
+          "label": "敞着的新肋",
+          "text": "最外这根肋骨没干透，锯开的头上冒着细水珠。弯面倒刨得干净，榫眼边拖着一条没凿掉的木筋。"
+        },
+        {
+          "id": "gz_yard_caulk",
+          "type": "look",
+          "label": "盆边的油灰",
+          "text": "墩子背风处塞着火盆，桐油灰只热了一小团，边上还硬。竹片从盆里带出的灰，粘住一绺麻丝。"
+        },
+        {
+          "id": "gz_yard_tide",
+          "type": "look",
+          "label": "壁上的潮线",
+          "text": "旧潮线比水面高两掌，深色那段嵌满碎蚝壳。最底下有道凿槽在渗水，槽口一圈发白。"
+        },
+        {
+          "id": "gz_yard_lid",
+          "type": "look",
+          "label": "半掩的匣盖",
+          "text": "匣盖斜搭着，合口错开半指。常推的那条边已经磨圆，盖面叫手摸得发乌，粘着一小片刨花。"
+        },
+        {
+          "id": "gz_yard_plan",
+          "type": "look",
+          "label": "砖下的船图",
+          "text": "船图叫半块青砖压着，纸边晒得往上卷。肋骨那片的墨线最密，空处只戳了几个小墨点。"
         }
       ]
     },
