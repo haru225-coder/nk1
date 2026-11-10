@@ -970,7 +970,8 @@
      ]
     }
    ]
-  }
+  },
+  "ending_chengli": {"title": "结局：城里", "letterbox": true, "shots": [{"bg": "res://assets/bg_xinghua_besieged.jpg", "duration": 8.0, "cam_from": [0.46, 0.58, 1.28], "cam_to": [0.43, 0.57, 1.36], "grade": "cold", "fx": ["dust"], "transition_in": "ink", "shake": 0.0, "captions": [{"t": 0.6, "text": "兴化・景炎二年冬", "style": "era", "pos": "right_vertical"}, {"t": 1.8, "text": "卖饼的炉膛还热着，人被叫去守城。", "style": "narration", "pos": "lower_left"}, {"t": 4.6, "text": "挑水的把桶搁在井边，扁担靠墙。", "style": "narration", "pos": "lower_left"}]}, {"bg": "res://assets/bg_end_siege.jpg", "duration": 8.0, "cam_from": [0.52, 0.55, 1.22], "cam_to": [0.48, 0.54, 1.31], "grade": "dusk", "fx": ["embers"], "transition_in": "cut", "shake": 0.18, "captions": [{"t": 1.0, "text": "乡兵守巷口，竹竿削了尖。", "style": "narration", "pos": "lower_left"}, {"t": 4.0, "text": "锣敲到半截，后头没人接了。", "style": "narration", "pos": "lower_left"}]}, {"bg": "res://assets/cutscene/cs_citywall_sunset.jpg", "duration": 8.0, "cam_from": [0.5, 0.6, 1.35], "cam_to": [0.5, 0.59, 1.42], "grade": "dusk", "fx": ["dust"], "transition_in": "ink", "shake": 0.0, "captions": [{"t": 1.0, "text": "市口那天，人围了两层。", "style": "narration", "pos": "lower_left"}, {"t": 4.0, "text": "卖饼的挤在后头，鞋掉了一只。", "style": "narration", "pos": "lower_left"}]}, {"bg": "res://assets/bg_xinghua_harbor.jpg", "duration": 7.0, "cam_from": [0.44, 0.58, 1.5], "cam_to": [0.44, 0.58, 1.38], "grade": "cold", "fx": ["mist"], "transition_in": "ink", "shake": 0.0, "captions": [{"t": 1.2, "text": "开春，涵江船家在泉州对账，说玉湖陈家那笔船钱，销了吧。", "style": "line", "pos": "bottom"}]}]}
  },
  "chapters": {
   "1": {"bg": "res://assets/bg_ch_haikou.jpg", "focus": [0.5, 0.55], "zoom": 1.1, "epigraph": "道不行，乘桴浮于海。", "epigraph_src": "《论语・公冶长》", "year_text": "宝祐三年・一二五五"},
@@ -981,6 +982,7 @@
  "endings": {
   "忠肃": "ending_zhongsu",
   "未归": "ending_weigui",
+  "城里": "ending_chengli",
   "海上宋鬼": "ending_sea_ghost",
   "泉州蒲氏的船": "ending_pu_ship",
   "纲首": "ending_gangshou",
