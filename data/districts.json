@@ -4838,6 +4838,50 @@
       "kind": "office",
       "bg": "bg_dist_hk_dazaifu.jpg",
       "description": "大宰府管着西海道，也管宋船入港。门前立着碑，武士在门下验人。",
+      "hotspots": [
+        {
+          "id": "hk_dazaifu_gift",
+          "x": 0.48,
+          "y": 0.62,
+          "kind": "person"
+        },
+        {
+          "id": "hk_dazaifu_pass",
+          "x": 0.40,
+          "y": 0.68,
+          "kind": "goods"
+        },
+        {
+          "id": "hk_dazaifu_rumor2",
+          "x": 0.54,
+          "y": 0.60,
+          "kind": "person"
+        },
+        {
+          "id": "hk_dazaifu_watch",
+          "x": 0.32,
+          "y": 0.80,
+          "kind": "place"
+        },
+        {
+          "id": "npc_cairong_settle",
+          "x": 0.56,
+          "y": 0.74,
+          "kind": "person"
+        },
+        {
+          "id": "hk_dazaifu_stele",
+          "x": 0.60,
+          "y": 0.46,
+          "kind": "place"
+        },
+        {
+          "id": "hk_dazaifu_guard",
+          "x": 0.28,
+          "y": 0.58,
+          "kind": "person"
+        }
+      ],
       "interactions": [
         {
           "id": "hk_dazaifu_gift",
@@ -4925,6 +4969,18 @@
               }
             }
           ]
+        },
+        {
+          "id": "hk_dazaifu_stele",
+          "type": "look",
+          "label": "碑脚的苔",
+          "text": "碑脚的苔叫鞋跟蹭出了黑泥，碑沿留着几个手印。等叫名的不往门前凑，先挨着碑站。"
+        },
+        {
+          "id": "hk_dazaifu_guard",
+          "type": "look",
+          "label": "门下的矛杆",
+          "text": "验人的看完脸，又低头对纸，刀收在鞘里。矛杆往地一顿，叫到名字他才让开。"
         }
       ]
     },
