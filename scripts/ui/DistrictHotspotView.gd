@@ -4,8 +4,7 @@ class_name DistrictHotspotView
 signal hotspot_selected(id)
 signal confirmation_requested(id)
 signal brief_dismissed
-
-const INITIAL_BRIEF := "后渚是泉州出洋的码头。"
+signal option_requested(id, option_id)
 
 var _port_id: String = ""
 var _dist_id: String = ""
@@ -24,6 +23,7 @@ var _brief_body: Label
 var _brief_actions: HBoxContainer
 var _confirm_button: Button
 var _close_button: Button
+var _choice_buttons: Array = []
 
 var _brief_id: String = ""
 var _brief_closed: bool = false
@@ -325,14 +325,33 @@ func _dismiss_brief() -> void:
 	brief_dismissed.emit()
 
 func show_idle() -> void:
+	_clear_choice_buttons()
 	_mode = "idle"
 	_brief_id = ""
 	_brief_closed = false
-	_show_brief("", "", INITIAL_BRIEF, false)
-	_confirm_button.hide()
-	_close_button.show()
+	if is_instance_valid(_brief_panel):
+		_brief_panel.hide()
+
+func show_choices(id: String, options: Array) -> void:
+	_clear_choice_buttons()
+	for option in options:
+		if not option is Dictionary:
+			continue
+		var option_id := str(option.get("id", ""))
+		var button := Button.new()
+		button.text = str(option.get("label", option_id))
+		button.disabled = not bool(option.get("open", true))
+		button.tooltip_text = str(option.get("reason", ""))
+		UiTheme.style_choice_button(button)
+		button.pressed.connect(func() -> void:
+			option_requested.emit(id, option_id)
+		)
+		_brief_actions.add_child(button)
+		_brief_actions.move_child(button, _close_button.get_index())
+		_choice_buttons.append(button)
 
 func show_brief(id: String) -> void:
+	_clear_choice_buttons()
 	if not _hotspots_by_id.has(id):
 		show_idle()
 		return
@@ -342,11 +361,12 @@ func show_brief(id: String) -> void:
 	_brief_closed = false
 	var info := _view_info(id)
 	var title := str(info.get("title", info.get("name", id)))
-	var body := _interaction_text(info, "后渚的潮水连着外洋。")
+	var body := _interaction_text(info, "这里没什么可说的。")
 	_show_brief(id, title, body, false)
 	_refresh_marks()
 
 func show_confirmation(id: String) -> void:
+	_clear_choice_buttons()
 	if not _hotspots_by_id.has(id):
 		return
 	_selected_id = id
@@ -354,12 +374,13 @@ func show_confirmation(id: String) -> void:
 	_visited[id] = true
 	var info := _view_info(id)
 	var title := str(info.get("title", info.get("name", id)))
-	var body := _interaction_text(info, "要在这里办理这件事吗？")
+	var body := _interaction_text(info, "办这件事？")
 	_show_brief(id, title, body, true)
 	_mode = "confirmation"
 	_refresh_marks()
 
 func show_result(id: String, lines: Array = []) -> void:
+	_clear_choice_buttons()
 	_selected_id = id
 	_focus_id = id
 	if not id.is_empty():
@@ -374,6 +395,12 @@ func show_result(id: String, lines: Array = []) -> void:
 	_show_brief(id, title, body, false)
 	_mode = "result"
 	_refresh_marks()
+
+func _clear_choice_buttons() -> void:
+	for button in _choice_buttons:
+		if is_instance_valid(button):
+			button.queue_free()
+	_choice_buttons.clear()
 
 func clear_selection() -> void:
 	_selected_id = ""
@@ -390,6 +417,7 @@ func _show_brief(id: String, title: String, body: String, with_confirmation: boo
 	_mode = "confirmation" if with_confirmation else "brief"
 	_brief_title.text = title
 	_brief_body.text = body
+	_confirm_button.text = str(_find_interaction(id).get("label", "办"))
 	_confirm_button.visible = with_confirmation
 	_close_button.visible = true
 	_brief_actions.show()
