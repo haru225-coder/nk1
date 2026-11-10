@@ -312,6 +312,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_rep_retitle_probe.gd",  # lane w54-rep 名声跨过职衔门槛时札记写改题（委办交清 / 毁约 / 逾期、海上征船 / 难民）
 	"res://tools/qa_w54_chartui_name_band_probe.gd",  # lane w54-chartui 海图港名摆位专项探针（八处候选，先不压东西、再少出露出的图带）
 	"res://scripts/core/Districts.gd",  # lane w55 城中各处账本（买卖、入股、雇人、传闻、公凭）
+	"res://scripts/ui/DistrictHotspotView.gd",  # 城区热区场景组件（后渚试点）
 	"res://scripts/ui/DistrictPage.gd",  # lane w55 城中各处页
 	"res://tools/qa_w55_districts_probe.gd",  # lane w55 城中各处数据与交互探针
 	"res://tools/qa_w56_district_sim_probe.gd",  # lane w56 城中各处深化探针

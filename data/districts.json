@@ -64,6 +64,38 @@
             "require_flag": "qz_houzhu_pilot"
           }
         }
+      ],
+      "hotspots": [
+        {
+          "id": "qz_houzhu_salt",
+          "x": 0.22,
+          "y": 0.66,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_houzhu_ivory",
+          "x": 0.73,
+          "y": 0.69,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_houzhu_rumor",
+          "x": 0.72,
+          "y": 0.31,
+          "kind": "ship"
+        },
+        {
+          "id": "qz_houzhu_pilot",
+          "x": 0.48,
+          "y": 0.53,
+          "kind": "person"
+        },
+        {
+          "id": "qz_houzhu_fast",
+          "x": 0.4,
+          "y": 0.77,
+          "kind": "person"
+        }
       ]
     },
     {
