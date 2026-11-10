@@ -59,13 +59,13 @@ To-bo street in Hakata, Kamakura period, noon as sea mist lifts. Rice paper, ink
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 短讯形态 | 数据 |
 |---|---|---:|---|---|---|
-| `hk_tobo_silk` | 柜上的绢。 | (0.22, 0.64) | goods | 确认「出手绢帛」。 | `sell`，3，1.06。 |
-| `hk_tobo_feast` | 铺后可坐的席。 | (0.16, 0.48) | place | 确认「请纲首　40钱」。每月一次。 | `favour`。 |
-| `hk_tobo_rumor` | 席上可问的纲首。 | (0.38, 0.54) | person | 确认「问回船　15钱」。 | `rumor`，庆元倭铜 ×1.2，40 日。 |
-| `hk_tobo_intro` | 愿意领路的那位纲首。 | (0.44, 0.58) | person | 确认「引荐纲首　45钱」。一次。 | `favour`。 |
+| `hk_tobo_silk` | 柜上的绢。 | (0.12, 0.72) | goods | 确认「出手绢帛」。 | `sell`，3，1.06。 |
+| `hk_tobo_feast` | 铺后可坐的席。 | (0.22, 0.52) | place | 确认「请纲首　40钱」。每月一次。 | `favour`。 |
+| `hk_tobo_rumor` | 席上可问的纲首。 | (0.30, 0.38) | person | 确认「问回船　15钱」。 | `rumor`，庆元倭铜 ×1.2，40 日。 |
+| `hk_tobo_intro` | 愿意领路的那位纲首。 | (0.16, 0.44) | person | 确认「引荐纲首　45钱」。一次。 | `favour`。 |
 | `hk_tobo_silk2` | 验过的那一叠绢。 | (0.28, 0.72) | goods | 未引荐：还没到那一步。已引荐：确认熟价。 | `sell`，3，1.12，需 flag。 |
-| `npc_cairong_meet` | 柜上两本货簿。 | (0.12, 0.78) | goods | 确认「两本货簿」。一次。 | `favour`。 |
-| `hk_tobo_suichu` | 腊月的门笺和炭盆。 | (0.20, 0.32) | place | 非十二月：还不是这个月的事。是则确认「岁除守夜　20钱」。 | `favour`，每年一次。 |
+| `npc_cairong_meet` | 柜上两本货簿。 | (0.38, 0.76) | goods | 确认「两本货簿」。一次。 | `favour`。 |
+| `hk_tobo_suichu` | 腊月的门笺和炭盆。 | (0.40, 0.46) | place | 非十二月：还不是这个月的事。是则确认「岁除守夜　20钱」。 | `favour`，每年一次。 |
 
 ## 4. 各热区细致交互
 
