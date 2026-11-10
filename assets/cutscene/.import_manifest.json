@@ -8,7 +8,7 @@
    1080
   ],
   "note": "开场·北：漠北营帐与骑兵，远处河谷",
-  "out_sha1": "2995f85c1d9c2794458d0d5315e1150a730f65c2"
+  "out_sha1": "c794f159b3c4459361cc20184010c406c544ac78"
  },
  "cs_west_caravan.jpg": {
   "digest": "966247c92a0c2209",
@@ -19,7 +19,7 @@
    1080
   ],
   "note": "开场·西：驼队西行、圆顶城郭",
-  "out_sha1": "a68b7b50bdccc05d930860970969e7fe88493262"
+  "out_sha1": "44a99958ffe751915fdb072c1d2cfc5fafbf1771"
  },
  "cs_south_champa.jpg": {
   "digest": "0b28485a595f87f9",
@@ -30,7 +30,7 @@
    941
   ],
   "note": "开场·南：占城港，塔寺与稻米装船",
-  "out_sha1": "aad301eb955b59e3022780d9fadcfce72922650e"
+  "out_sha1": "a1ffec28cfd2dc1a46155eb562286aa0df8e67e5"
  },
  "cs_ziling_portrait.jpg": {
   "digest": "8166c688acae5975",
@@ -129,11 +129,11 @@
    964
   ],
   "size": [
-   1688,
-   920
+   1920,
+   1080
   ],
   "note": "未归/蒲氏：夕照城楼与码头人影；切掉做旧黑边",
-  "out_sha1": "5d3e59643c3aa4a791f7151d33f6551ea7e5b229"
+  "out_sha1": "eb05d86abf8c64b2cd2975bcfbec831faf47c789"
  },
  "cs_fleet_sunset.jpg": {
   "digest": "fab4071003cb6881",
