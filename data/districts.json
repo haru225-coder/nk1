@@ -5042,6 +5042,56 @@
       "kind": "dock",
       "bg": "bg_dist_hk_oki.jpg",
       "description": "博多滨是宋船下锚的地方。沙岸上搭着白幕，脚夫把箱子一件件抬上岸。",
+      "hotspots": [
+        {
+          "id": "hk_oki_sulfur",
+          "x": 0.16,
+          "y": 0.72,
+          "kind": "goods"
+        },
+        {
+          "id": "hk_oki_rumor",
+          "x": 0.68,
+          "y": 0.54,
+          "kind": "person"
+        },
+        {
+          "id": "hk_oki_tent",
+          "x": 0.10,
+          "y": 0.48,
+          "kind": "place"
+        },
+        {
+          "id": "hk_oki_porters",
+          "x": 0.34,
+          "y": 0.62,
+          "kind": "person"
+        },
+        {
+          "id": "hk_oki_ship",
+          "x": 0.76,
+          "y": 0.42,
+          "kind": "ship"
+        },
+        {
+          "id": "hk_oki_scale",
+          "x": 0.54,
+          "y": 0.72,
+          "kind": "place"
+        },
+        {
+          "id": "hk_oki_heap",
+          "x": 0.24,
+          "y": 0.82,
+          "kind": "goods"
+        },
+        {
+          "id": "hk_oki_pines",
+          "x": 0.20,
+          "y": 0.26,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "hk_oki_sulfur",
@@ -5063,6 +5113,42 @@
           "port": "wenzhou",
           "good": "sulfur",
           "mul": 1.2
+        },
+        {
+          "id": "hk_oki_tent",
+          "type": "look",
+          "label": "风掀的白幕",
+          "text": "白幕边拿沙压了一道，风从底下钻，门布一掀一合。里头的箱刚抬进去，还没开，箱角打着红押记。"
+        },
+        {
+          "id": "hk_oki_porters",
+          "type": "look",
+          "label": "沙上歇脚",
+          "text": "抬到半路，后头的脚夫把箱往沙上一顿，蹲着揉肩，前头那个扶着箱角等他。"
+        },
+        {
+          "id": "hk_oki_ship",
+          "type": "look",
+          "label": "等潮的宋船",
+          "text": "水太浅，宋船只能泊在外头，锚链斜着绷进海里；船上的人靠着船帮看水，等潮再高一点。"
+        },
+        {
+          "id": "hk_oki_scale",
+          "type": "look",
+          "label": "沙里的秤脚",
+          "text": "秤脚在沙里压出几个小坑，每称一回都得垫平，秤砣底下一圈黄末，摸过就沾手。"
+        },
+        {
+          "id": "hk_oki_heap",
+          "type": "look",
+          "label": "席上的黄块",
+          "text": "没过秤的硫黄堆在席上，受潮的细块结成团，抓一把就黄了手，管秤的见有人伸手就拦。"
+        },
+        {
+          "id": "hk_oki_pines",
+          "type": "look",
+          "label": "雾里的松原",
+          "text": "往箱崎那边看，雾薄一点，松原就清楚一点，近处的树干能数，后头还是灰绿的一片。"
         }
       ]
     },
