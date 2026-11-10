@@ -128,6 +128,49 @@ def _read_img_size(path: pathlib.Path) -> tuple:
 # 登记备索——下游「不在导入清单」与「导入了但数据里没用到」两格对池名放行/豁名，产物门（sha1/size/裁切）全量照守。
 # 后两张是章节卡挪走之后留下的旧底：耽罗北线、旧光塔（地中海塔身，不再上屏）。来源仍是原池，不是 .unused 占位。
 ASSET_POOL = {
+    "cs_after_ana.jpg",
+    "cs_after_back.jpg",
+    "cs_after_bowl.jpg",
+    "cs_after_hands.jpg",
+    "cs_after_quiet.jpg",
+    "cs_after_sea.jpg",
+    "cs_after_servant.jpg",
+    "cs_after_sit.jpg",
+    "cs_after_tide.jpg",
+    "cs_after_veteran.jpg",
+    "cs_card_east.jpg",
+    "cs_card_north.jpg",
+    "cs_card_south.jpg",
+    "cs_card_west.jpg",
+    "cs_guild_hall.jpg",
+    "cs_inn_champa.jpg",
+    "cs_inn_penghu.jpg",
+    "cs_inn_quanzhou.jpg",
+    "cs_inn_xinghua.jpg",
+    "cs_kurosawa_fork.jpg",
+    "cs_kurosawa_sea.jpg",
+    "cs_kurosawa_shed.jpg",
+    "cs_open_aerial.jpg",
+    "cs_open_fork.jpg",
+    "cs_open_hakata.jpg",
+    "cs_open_insert.jpg",
+    "cs_open_lake.jpg",
+    "cs_open_quanzhou.jpg",
+    "cs_open_shed_wide.jpg",
+    "cs_open_study.jpg",
+    "cs_open_xinghua.jpg",
+    "cs_room_champa.jpg",
+    "cs_room_penghu.jpg",
+    "cs_room_quanzhou.jpg",
+    "cs_room_xinghua.jpg",
+    "cs_tavern_champa.jpg",
+    "cs_tavern_fuzhou.jpg",
+    "cs_tavern_guangzhou.jpg",
+    "cs_tavern_hakata.jpg",
+    "cs_tavern_penghu.jpg",
+    "cs_tavern_quanzhou.jpg",
+    "cs_world_map_gold.jpg",
+    "cs_yard_inside.jpg",
     "cs_linan_surrender.jpg",
     "cs_penghu_fishing.jpg",
     "cs_quanzhou_fall.jpg",
@@ -436,6 +479,8 @@ def check(data_only: bool) -> int:
             bad.append(f"{name} {w}x{h} 大于源裁切 {cw}x{ch}——放大了")
     for f in sorted(OUT_DIR.glob("cs_*.jpg")):
         if f.name not in {m[0] for m in MANIFEST}:
+            if f.name in ASSET_POOL:
+                continue
             bad.append(f"{f.name} 不在导入清单里（来源不明）")
     bad += check_data()
     bad += _contract_selftest()

@@ -8,7 +8,7 @@
     {
      "bg": "res://assets/cutscene/cs_open_aerial.jpg",
      "duration": 9.0,
-     "cam_from": [0.55, 0.42, 1.0],
+     "cam_from": [0.5, 0.5, 1.0],
      "cam_to": [0.4, 0.52, 1.28],
      "grade": "neutral",
      "fx": ["dust"],
@@ -39,8 +39,8 @@
     {
      "bg": "res://assets/cutscene/cs_open_lake.jpg",
      "duration": 9.0,
-     "cam_from": [0.55, 0.48, 1.0],
-     "cam_to": [0.34, 0.58, 1.32],
+     "cam_from": [0.5, 0.5, 1.0],
+     "cam_to": [0.4, 0.58, 1.32],
      "grade": "neutral",
      "fx": ["rain", "mist"],
      "transition_in": "fade",
@@ -54,8 +54,8 @@
     {
      "bg": "res://assets/cutscene/cs_open_hakata.jpg",
      "duration": 8.0,
-     "cam_from": [0.38, 0.46, 1.02],
-     "cam_to": [0.62, 0.55, 1.26],
+     "cam_from": [0.5, 0.5, 1.0],
+     "cam_to": [0.6, 0.55, 1.26],
      "grade": "neutral",
      "fx": ["lantern_glow"],
      "transition_in": "fade",
@@ -102,7 +102,7 @@
     {
      "bg": "res://assets/cutscene/cs_open_quanzhou.jpg",
      "duration": 9.0,
-     "cam_from": [0.32, 0.62, 1.04],
+     "cam_from": [0.5, 0.5, 1.0],
      "cam_to": [0.55, 0.4, 1.24],
      "grade": "dawn",
      "fx": ["mist"],
@@ -117,8 +117,8 @@
     {
      "bg": "res://assets/cutscene/cs_open_study.jpg",
      "duration": 11.0,
-     "cam_from": [0.55, 0.48, 1.0],
-     "cam_to": [0.4, 0.58, 1.18],
+     "cam_from": [0.5, 0.5, 1.0],
+     "cam_to": [0.44, 0.56, 1.18],
      "grade": "neutral",
      "fx": ["lantern_glow"],
      "transition_in": "fade",
@@ -133,7 +133,7 @@
     {
      "bg": "res://assets/cutscene/cs_open_xinghua.jpg",
      "duration": 13.0,
-     "cam_from": [0.5, 0.46, 1.0],
+     "cam_from": [0.5, 0.5, 1.0],
      "cam_to": [0.42, 0.54, 1.16],
      "grade": "neutral",
      "fx": ["mist"],
