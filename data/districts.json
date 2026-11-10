@@ -1194,6 +1194,80 @@
               }
             }
           ]
+        },
+        {
+          "id": "qz_tafang_keys",
+          "type": "look",
+          "label": "钥匙串",
+          "text": "墙上挂着一串钥匙，铁环被人手磨得发亮，大把压着小把，提起来应声沉沉。"
+        },
+        {
+          "id": "qz_tafang_marks",
+          "type": "look",
+          "label": "粉笔记号",
+          "text": "箱面划着粉笔号，竖的细横的短，笔画浅得快没了，指腹蹭起有点粉。"
+        },
+        {
+          "id": "qz_tafang_backdoor",
+          "type": "look",
+          "label": "后门缝",
+          "text": "后门开了一道缝，门框下沿留着浅浅的水痕，缝里漏进来的光把地上的尘照得发亮。"
+        },
+        {
+          "id": "qz_tafang_board",
+          "type": "look",
+          "label": "行情牌",
+          "text": "门外立着一块行情牌，牌背朝着仓墙，看不出上头有字，木角磨得圆润。"
+        }
+      ],
+      "hotspots": [
+        {
+          "id": "qz_tafang_rent",
+          "x": 0.3,
+          "y": 0.5,
+          "kind": "place"
+        },
+        {
+          "id": "qz_tafang_quiet",
+          "x": 0.48,
+          "y": 0.66,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_tafang_watch",
+          "x": 0.4,
+          "y": 0.58,
+          "kind": "place"
+        },
+        {
+          "id": "qz_tafang_loan",
+          "x": 0.36,
+          "y": 0.44,
+          "kind": "person"
+        },
+        {
+          "id": "qz_tafang_keys",
+          "x": 0.22,
+          "y": 0.42,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_tafang_marks",
+          "x": 0.54,
+          "y": 0.62,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_tafang_backdoor",
+          "x": 0.62,
+          "y": 0.48,
+          "kind": "place"
+        },
+        {
+          "id": "qz_tafang_board",
+          "x": 0.18,
+          "y": 0.7,
+          "kind": "place"
         }
       ]
     },
