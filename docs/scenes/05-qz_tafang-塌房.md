@@ -60,7 +60,7 @@ Inside a Southern Song Quanzhou warehouse near the harbour, late afternoon. Rice
 | `qz_tafang_rent` | 一间空仓的门。 | (0.55, 0.40) | place | 确认「包一间」。 | 既有 `invest`。 |
 | `qz_tafang_quiet` | 靠后门的一堆瓷箱。 | (0.16, 0.78) | goods | 确认「悄悄出瓷」。注明行情牌不动。 | 既有 `sell`，福建瓷 6，0.92，`impact: false`。 |
 | `qz_tafang_watch` | 通道里可走一遭的空位。 | (0.44, 0.66) | place | 确认「查仓　10钱」。每月一次。 | 既有 `favour`。 |
-| `qz_tafang_loan` | 塌房主本人，站在柜后。 | (0.26, 0.48) | person | 一次两路：「借他」「照收租」。 | 既有 `choice`。 |
+| `qz_tafang_loan` | 塌房主本人，站在柜后。 | (0.40, 0.44) | person | 一次两路：「借他」「照收租」。 | 既有 `choice`。 |
 | `qz_tafang_keys` | 墙上的钥匙串。 | (0.12, 0.36) | goods | 旁白一句。 | 新增 `look`。 |
 | `qz_tafang_marks` | 箱上的粉笔记号。 | (0.20, 0.58) | goods | 旁白一句。 | 新增 `look`。 |
 | `qz_tafang_backdoor` | 后门缝。 | (0.64, 0.48) | place | 旁白一句。 | 新增 `look`。 |

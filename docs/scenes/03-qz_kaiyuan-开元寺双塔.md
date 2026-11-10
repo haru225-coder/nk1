@@ -74,8 +74,8 @@ Courtyard of Kaiyuan Temple, Quanzhou, Southern Song, early morning. Rice-paper 
 | `qz_kaiyuan_towers` | 两塔之间的石地，可仰头。 | (0.40, 0.72) | place | 一句后出两条路：「登东塔」「登西塔」。每年一次。 | 既有 `choice`。需新的双按钮，不能只用「确认」。 |
 | `qz_kaiyuan_incense` | 殿前香柜。 | (0.48, 0.68) | place | 确认「上香　10钱」。每月一次。 | 既有 `favour`。 |
 | `qz_kaiyuan_print` | 寺前书摊。 | (0.16, 0.86) | goods | 无 `qz_bang_print`：还没到那一步。有则确认「请印本经」。 | 既有 `buy`，0.9，需 flag。 |
-| `qz_kaiyuan_tea` | 西廊茶桶。 | (0.30, 0.78) | goods | 确认「施茶　20钱」。每月一次。 | 既有 `favour`。 |
-| `qz_kaiyuan_buddha` | 双塔下的香汤盆。 | (0.40, 0.62) | place | 非四月：还不是这个月的事。四月：确认「浴佛　15钱」。每年一次。 | 既有 `favour`，`months: [4]`。 |
+| `qz_kaiyuan_tea` | 西廊茶桶。 | (0.31, 0.86) | goods | 确认「施茶　20钱」。每月一次。 | 既有 `favour`。 |
+| `qz_kaiyuan_buddha` | 双塔下的香汤盆。 | (0.40, 0.84) | place | 非四月：还不是这个月的事。四月：确认「浴佛　15钱」。每年一次。 | 既有 `favour`，`months: [4]`。 |
 
 ## 4. 各热区细致交互
 

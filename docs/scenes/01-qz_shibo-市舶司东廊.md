@@ -82,7 +82,7 @@ Interior of the eastern corridor of the Quanzhou maritime trade office, Southern
 | `qz_shibo_coin` | 书吏本人，写到一半会停笔。 | (0.18, 0.58) | person | 确认花 20 钱后，两句对话（原传闻）。冷却中可重看，不重复给行情。 | 既有 `rumor`，指向博多 `song_coin` ×1.2，冷却 45 日。 |
 | `qz_shibo_boxes` | 廊柱根码着的香药箱子。 | (0.46, 0.58) | goods | 旁白一句。 | 新增 `look`。不改钱货。 |
 | `qz_shibo_scale` | 廊柱边的官秤。 | (0.52, 0.68) | place | 旁白一句。 | 新增 `look`。 |
-| `qz_shibo_notice` | 柱上贴着的验货条子。 | (0.49, 0.34) | place | 旁白一句。条子不要写成可认的大字，点开才用短讯说明。 | 新增 `look`。 |
+| `qz_shibo_notice` | 柱上贴着的验货条子。 | (0.53, 0.37) | place | 旁白一句。条子不要写成可认的大字，点开才用短讯说明。 | 新增 `look`。 |
 | `qz_shibo_hall` | 廊尽头通向正厅的门。 | (0.66, 0.34) | place | 旁白一句，点明货引不在这里办。 | 新增 `look`。可提示回港口走正厅／市舶旧门，不在本区新开货引。 |
 | `qz_shibo_huizi` | 案上压着的一叠会子。 | (0.23, 0.74) | goods | 旁白一句。 | 新增 `look`。 |
 

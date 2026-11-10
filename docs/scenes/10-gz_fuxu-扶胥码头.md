@@ -59,7 +59,7 @@ Fuxu wharf, Guangzhou, Southern Song, mid-morning. Rice paper, ink line. Near: a
 |---|---|---:|---|---|---|
 | `gz_fuxu_salt` | 石岸上的盐包。 | (0.24, 0.78) | goods | 确认「收海盐」。 | `buy`，8，0.92。 |
 | `gz_fuxu_pepper` | 跳板边问货的人／胡椒袋。 | (0.34, 0.86) | goods | 确认「出手胡椒」。 | `sell`，3，1.06。 |
-| `gz_fuxu_rumor` | 番船船楼上可问的梢工。 | (0.40, 0.46) | ship | 确认「问番船　16钱」。 | `rumor`，占城胡椒 ×1.22，40 日。 |
+| `gz_fuxu_rumor` | 番船船楼上可问的梢工。 | (0.45, 0.50) | ship | 确认「问番船　16钱」。 | `rumor`，占城胡椒 ×1.22，40 日。 |
 | `gz_fuxu_pilot` | 跳板旁补绳的熟港梢工。 | (0.38, 0.70) | person | 确认「请梢工　30钱」。一次。 | `favour`，flag `gz_fuxu_pilot`。 |
 | `gz_fuxu_fast` | 跳板下替商船收盐的队列。 | (0.10, 0.64) | person | 未请梢工：先请梢工。已请：确认「托梢工收盐」。 | `buy`，10，0.86，需 flag。 |
 | `npc_zhubo_letter` | 手里油纸包札的祝伯。 | (0.24, 0.56) | person | 未在神庙问过札：还没到那一步。问过：确认「托札」。 | `favour`，需 `npc_zhubo_asked`。 |
