@@ -3863,6 +3863,50 @@
       "kind": "market",
       "bg": "bg_dist_gz_xiang.jpg",
       "description": "市上专做香药、苏木与象牙。手里有南舶公凭的人，药价会让一让。",
+      "hotspots": [
+        {
+          "id": "gz_xiang_med",
+          "x": 0.10,
+          "y": 0.84,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_xiang_wood",
+          "x": 0.16,
+          "y": 0.54,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_xiang_pepper",
+          "x": 0.36,
+          "y": 0.62,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_xiang_test",
+          "x": 0.30,
+          "y": 0.76,
+          "kind": "person"
+        },
+        {
+          "id": "gz_xiang_rumor2",
+          "x": 0.50,
+          "y": 0.48,
+          "kind": "person"
+        },
+        {
+          "id": "gz_xiang_mill",
+          "x": 0.22,
+          "y": 0.86,
+          "kind": "place"
+        },
+        {
+          "id": "gz_xiang_rawwood",
+          "x": 0.24,
+          "y": 0.44,
+          "kind": "goods"
+        }
+      ],
       "interactions": [
         {
           "id": "gz_xiang_med",
@@ -3934,6 +3978,18 @@
           "port": "quanzhou",
           "good": "pepper",
           "mul": 1.15
+        },
+        {
+          "id": "gz_xiang_mill",
+          "type": "look",
+          "label": "碾旁的红末",
+          "text": "碾槽磨得发亮，槽底一圈红末没扫净，旁边还掉着两粒胡椒。"
+        },
+        {
+          "id": "gz_xiang_rawwood",
+          "type": "look",
+          "label": "刚到的苏木",
+          "text": "这截还潮，断口黄红，比摊上那堆色浅。货主把它搁在秤边，还没开价。"
         }
       ]
     },
