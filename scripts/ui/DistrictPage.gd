@@ -58,7 +58,6 @@ static func open_district(main, port_id: String, dist_id: String, flash := "", c
 	main._enter_panel_mode()
 	main._set_background_file(str(row.get("bg", "")))
 	main.scene_title.text = str(row.get("name", "城中"))
-	main.body_text.text = flash
 
 	var ixs: Array = []
 	for ix in row.get("interactions", []):
@@ -68,6 +67,12 @@ static func open_district(main, port_id: String, dist_id: String, flash := "", c
 			continue
 		ixs.append(ix)
 	var hotspot_data := _hotspot_data(port_id, ixs, row.get("hotspots", []))
+	if cards_only or hotspot_data.is_empty():
+		main.body_text.text = str(row.get("description", ""))
+		if flash != "":
+			main.body_text.text += "\n\n" + flash
+	else:
+		main.body_text.text = flash
 	if not cards_only and not hotspot_data.is_empty():
 		var scene := HotspotView.new()
 		scene.name = "DistrictHotspotView"
@@ -183,7 +188,7 @@ static func _select_hotspot(view, port_id: String, id) -> void:
 			var option_view: Dictionary = Book.view_option(port_id, ix, opt)
 			options.append({
 				"id": str(opt.get("id", "")),
-				"label": str(opt.get("label", "")),
+				"label": str(option_view.get("label", "")),
 				"open": bool(option_view.get("open", false)),
 				"reason": str(option_view.get("reason", "")),
 			})
