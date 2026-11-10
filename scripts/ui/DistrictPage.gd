@@ -58,10 +58,7 @@ static func open_district(main, port_id: String, dist_id: String, flash := "", c
 	main._enter_panel_mode()
 	main._set_background_file(str(row.get("bg", "")))
 	main.scene_title.text = str(row.get("name", "城中"))
-	var body := str(row.get("description", ""))
-	if flash != "":
-		body += "\n\n" + flash
-	main.body_text.text = body
+	main.body_text.text = flash
 
 	var ixs: Array = []
 	for ix in row.get("interactions", []):
@@ -84,7 +81,8 @@ static func open_district(main, port_id: String, dist_id: String, flash := "", c
 			hotspot_data["hotspots"],
 			hotspot_data["interactions_view"]
 		)
-		scene.hotspot_selected.connect(_select_hotspot.bind(scene))
+		scene.hotspot_selected.connect(_select_hotspot.bind(scene, port_id))
+		scene.option_requested.connect(_choose_hotspot.bind(main, port_id, dist_id))
 		scene.confirmation_requested.connect(_confirm_hotspot.bind(main, port_id, dist_id))
 		scene.brief_dismissed.connect(scene.clear_selection)
 		scene.show_idle()
@@ -170,11 +168,32 @@ static func _is_number(value) -> bool:
 	return typeof(value) == TYPE_INT or typeof(value) == TYPE_FLOAT
 
 
-static func _select_hotspot(view, id) -> void:
-	var interaction: Dictionary = Book.interaction(id)
-	var interaction_type := str(interaction.get("type", ""))
-	if interaction_type in ["buy", "sell", "work", "shift"]:
-		view.show_confirmation(id)
+static func _select_hotspot(view, port_id: String, id) -> void:
+	var ix: Dictionary = Book.interaction(str(id))
+	var ix_view: Dictionary = Book.view(port_id, ix)
+	if not bool(ix_view.get("open", true)):
+		view.show_result(id, [str(ix_view.get("reason", ""))])
+		return
+	if str(ix_view.get("mode", "stamp")) == "choice":
+		view.show_brief(id)
+		var options: Array = []
+		for opt in ix.get("options", []):
+			if typeof(opt) != TYPE_DICTIONARY:
+				continue
+			var option_view: Dictionary = Book.view_option(port_id, ix, opt)
+			options.append({
+				"id": str(opt.get("id", "")),
+				"label": str(opt.get("label", "")),
+				"open": bool(option_view.get("open", false)),
+				"reason": str(option_view.get("reason", "")),
+			})
+		view.show_choices(id, options)
+		return
+	view.show_confirmation(id)
+
+
+static func _choose_hotspot(main, port_id: String, dist_id: String, id, option_id) -> void:
+	_press(main, port_id, dist_id, str(id), str(option_id))
 
 
 static func _confirm_hotspot(main, port_id: String, dist_id: String, id) -> void:
@@ -186,26 +205,7 @@ static func _confirm_hotspot(main, port_id: String, dist_id: String, id) -> void
 	if mode == "dismiss":
 		_dismiss(main, port_id, dist_id, ix_id)
 		return
-	var option_id := ""
-	if mode == "choice":
-		for option in ix.get("options", []):
-			if typeof(option) != TYPE_DICTIONARY:
-				continue
-			var option_view: Dictionary = Book.view_option(port_id, ix, option)
-			if bool(option_view.get("open", false)):
-				option_id = str(option.get("id", ""))
-				break
-		if option_id == "":
-			return
-	_press(main, port_id, dist_id, ix_id, option_id)
-
-
-static func _toggle_cards(main, port_id: String, dist_id: String) -> void:
-	open_district(main, port_id, dist_id, "", true)
-
-
-static func _toggle_scene(main, port_id: String, dist_id: String) -> void:
-	open_district(main, port_id, dist_id, "")
+	_press(main, port_id, dist_id, ix_id, "")
 
 
 static func _ix_group(ix: Dictionary) -> String:
