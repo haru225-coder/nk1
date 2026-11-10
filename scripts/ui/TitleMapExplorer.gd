@@ -43,14 +43,6 @@ const DATA: Array[Dictionary] = [
 	}
 ]
 
-const INK := Color(0.075, 0.067, 0.055, 0.88)
-const INK_HOVER := Color(0.16, 0.145, 0.115, 0.96)
-const PAPER := Color(0.86, 0.82, 0.70, 0.97)
-const MUTED := Color(0.67, 0.64, 0.56, 1.0)
-const GOLD := Color(0.73, 0.57, 0.27, 1.0)
-const PALE_GOLD := Color(0.91, 0.79, 0.52, 1.0)
-const VEILED_INK := Color(0.035, 0.032, 0.028, 0.90)
-
 var _title_mode: Variant = null
 var _title: Label = null
 var _subtitle: Label = null
@@ -216,18 +208,18 @@ func _build() -> void:
 	var heading := Label.new()
 	heading.text = "四注可寻"
 	heading.add_theme_font_size_override("font_size", 21)
-	heading.add_theme_color_override("font_color", PALE_PAPER)
+	heading.add_theme_color_override("font_color", UiTheme.TEXT)
 	info_rows.add_child(heading)
 
 	_status = Label.new()
-	_status.add_theme_color_override("font_color", GOLD)
+	_status.add_theme_color_override("font_color", UiTheme.GOLD)
 	info_rows.add_child(_status)
 
 	_hint = Label.new()
 	_hint.text = "墨点可聚焦，查看后留泥金标记。也可直接开卷。"
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_hint.add_theme_font_size_override("font_size", 14)
-	_hint.add_theme_color_override("font_color", MUTED_PAPER)
+	_hint.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
 	info_rows.add_child(_hint)
 
 	_detail = PanelContainer.new()
@@ -250,13 +242,13 @@ func _build() -> void:
 	_detail_title = Label.new()
 	_detail_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_title.add_theme_font_size_override("font_size", 22)
-	_detail_title.add_theme_color_override("font_color", PALE_GOLD)
+	_detail_title.add_theme_color_override("font_color", UiTheme.GOLD_HI)
 	detail_rows.add_child(_detail_title)
 
 	var original_caption := Label.new()
 	original_caption.text = "原引"
 	original_caption.add_theme_font_size_override("font_size", 13)
-	original_caption.add_theme_color_override("font_color", GOLD)
+	original_caption.add_theme_color_override("font_color", UiTheme.GOLD)
 	detail_rows.add_child(original_caption)
 
 	_quote = RichTextLabel.new()
@@ -268,7 +260,7 @@ func _build() -> void:
 	_quote.custom_minimum_size = Vector2(0.0, 118.0)
 	_quote.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_quote.add_theme_font_size_override("normal_font_size", 18)
-	_quote.add_theme_color_override("default_color", Color(0.91, 0.87, 0.76))
+	_quote.add_theme_color_override("default_color", UiTheme.TEXT)
 	detail_rows.add_child(_quote)
 
 	var actions := HBoxContainer.new()
@@ -376,16 +368,16 @@ func _update_spot(index: int) -> void:
 	button.text = ("✦ " if visited else "・ ") + str(spot["title"])
 	button.add_theme_font_size_override("font_size", 17)
 
-	var base: Color = Color(0.12, 0.105, 0.075, 0.94) if visited else INK
+	var base: Color = Color(UiTheme.INK, 0.90) if visited else Color(UiTheme.INK, 0.88)
 	if selected:
-		base = Color(0.25, 0.20, 0.11, 0.98)
+		base = Color(UiTheme.BTN_HI, 0.96)
 
-	button.add_theme_stylebox_override("normal", _chip_style(base, GOLD if visited else Color(0.38, 0.34, 0.27), 1))
-	button.add_theme_stylebox_override("hover", _chip_style(INK_HOVER, GOLD, 2))
+	button.add_theme_stylebox_override("normal", _chip_style(base, UiTheme.GOLD if visited else UiTheme.TEXT_DIM, 1))
+	button.add_theme_stylebox_override("hover", _chip_style(Color(UiTheme.INK_SOFT, 0.96), UiTheme.GOLD, 2))
 	button.add_theme_stylebox_override("focus", _focus_style())
-	button.add_theme_stylebox_override("pressed", _chip_style(Color(0.29, 0.23, 0.12), PALE_GOLD, 2))
-	button.add_theme_color_override("font_color", PALE_GOLD)
-	button.add_theme_color_override("font_hover_color", Color(0.98, 0.90, 0.69))
+	button.add_theme_stylebox_override("pressed", _chip_style(Color(UiTheme.BTN_HI, 0.96), UiTheme.GOLD_HI, 2))
+	button.add_theme_color_override("font_color", UiTheme.GOLD_HI)
+	button.add_theme_color_override("font_hover_color", UiTheme.GOLD_HI)
 	button.add_theme_color_override("font_pressed_color", Color.WHITE)
 
 
@@ -514,8 +506,8 @@ func _layout() -> void:
 
 func _panel_style(alpha: float) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(VEILED_INK.r, VEILED_INK.g, VEILED_INK.b, alpha)
-	style.border_color = Color(0.42, 0.36, 0.26, 0.85)
+	style.bg_color = Color(UiTheme.INK, alpha)
+	style.border_color = UiTheme.TEXT_DIM
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(5)
 	style.content_margin_left = 2.0
@@ -544,7 +536,7 @@ func _chip_style(fill: Color, border: Color, width: int) -> StyleBoxFlat:
 func _focus_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
-	style.border_color = PALE_GOLD
+	style.border_color = UiTheme.GOLD_HI
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(4)
 	style.expand_margin_left = 3.0
@@ -557,17 +549,14 @@ func _focus_style() -> StyleBoxFlat:
 func _style_command_button(button: Button) -> void:
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	button.add_theme_font_size_override("font_size", 15)
-	button.add_theme_color_override("font_color", PALE_PAPER)
-	button.add_theme_color_override("font_hover_color", PALE_GOLD)
-	button.add_theme_color_override("font_pressed_color", PALE_GOLD)
-	button.add_theme_stylebox_override("normal", _chip_style(Color(0.12, 0.105, 0.08, 0.88), Color(0.34, 0.30, 0.23), 1))
-	button.add_theme_stylebox_override("hover", _chip_style(INK_HOVER, GOLD, 1))
-	button.add_theme_stylebox_override("pressed", _chip_style(Color(0.27, 0.21, 0.11), PALE_GOLD, 1))
+	button.add_theme_color_override("font_color", UiTheme.TEXT)
+	button.add_theme_color_override("font_hover_color", UiTheme.GOLD_HI)
+	button.add_theme_color_override("font_pressed_color", UiTheme.GOLD_HI)
+	button.add_theme_stylebox_override("normal", _chip_style(Color(UiTheme.INK, 0.88), UiTheme.TEXT_DIM, 1))
+	button.add_theme_stylebox_override("hover", _chip_style(Color(UiTheme.INK_SOFT, 0.96), UiTheme.GOLD, 1))
+	button.add_theme_stylebox_override("pressed", _chip_style(Color(UiTheme.BTN_HI, 0.96), UiTheme.GOLD_HI, 1))
 	button.add_theme_stylebox_override("focus", _focus_style())
 
-
-const PALE_PAPER := Color(0.90, 0.86, 0.75, 1.0)
-const MUTED_PAPER := Color(0.68, 0.65, 0.57, 1.0)
 
 var _original_modulate: Color = Color.WHITE
 var _background_saved := false
