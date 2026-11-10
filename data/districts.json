@@ -319,6 +319,50 @@
             "flag": "npc_maruding_ledger"
           }
         }
+      ],
+      "hotspots": [
+        {
+          "id": "qz_fanfang_interpreter",
+          "x": 0.28,
+          "y": 0.52,
+          "kind": "person"
+        },
+        {
+          "id": "qz_fanfang_ivory",
+          "x": 0.42,
+          "y": 0.66,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_fanfang_intro",
+          "x": 0.5,
+          "y": 0.54,
+          "kind": "person"
+        },
+        {
+          "id": "qz_fanfang_ivory2",
+          "x": 0.46,
+          "y": 0.62,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_fanfang_coin",
+          "x": 0.62,
+          "y": 0.58,
+          "kind": "person"
+        },
+        {
+          "id": "qz_fanfang_rumor",
+          "x": 0.32,
+          "y": 0.48,
+          "kind": "person"
+        },
+        {
+          "id": "npc_maruding_ledger",
+          "x": 0.22,
+          "y": 0.72,
+          "kind": "person"
+        }
       ]
     },
     {
@@ -434,6 +478,50 @@
             "fame": 1,
             "note": "开元寺浴佛日添过香汤。"
           }
+        }
+      ],
+      "hotspots": [
+        {
+          "id": "qz_kaiyuan_sutra",
+          "x": 0.24,
+          "y": 0.58,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_kaiyuan_copy",
+          "x": 0.3,
+          "y": 0.54,
+          "kind": "place"
+        },
+        {
+          "id": "qz_kaiyuan_towers",
+          "x": 0.48,
+          "y": 0.42,
+          "kind": "place"
+        },
+        {
+          "id": "qz_kaiyuan_incense",
+          "x": 0.4,
+          "y": 0.66,
+          "kind": "place"
+        },
+        {
+          "id": "qz_kaiyuan_print",
+          "x": 0.18,
+          "y": 0.74,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_kaiyuan_tea",
+          "x": 0.34,
+          "y": 0.7,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_kaiyuan_buddha",
+          "x": 0.52,
+          "y": 0.62,
+          "kind": "place"
         }
       ]
     },
