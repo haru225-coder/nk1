@@ -54,14 +54,14 @@ A Guangdong junk yard in Southern Song Guangzhou, mid-morning. Rice paper, ink l
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 短讯形态 | 数据 |
 |---|---|---:|---|---|---|
-| `gz_yard_smith` | 肋骨间量活的船匠。 | (0.40, 0.52) | person | 确认「雇船匠」。已雇可辞。 | 既有 `hire`，100 钱，月俸 18。 |
-| `gz_yard_iron` | 半掩的铁钉匣。 | (0.32, 0.66) | goods | 确认「收铁钉」。提示官里会记。 | 既有 `buy`，铁器 2，0.95，`attention: 3`。 |
-| `gz_yard_rumor` | 坞边歇着的人。 | (0.50, 0.60) | person | 确认「听铁器　14钱」。 | 既有 `rumor`，泉州铁器 ×1.18，45 日。 |
-| `gz_yard_ribs` | 敞着的肋骨。 | (0.46, 0.42) | place | 旁白一句。 | 新增 `look`。 |
-| `gz_yard_caulk` | 捻缝的小火盆。 | (0.28, 0.58) | place | 旁白一句。 | 新增 `look`。 |
-| `gz_yard_tide` | 坞壁上的潮痕。 | (0.58, 0.70) | place | 旁白一句。 | 新增 `look`。 |
-| `gz_yard_lid` | 钉匣的盖本身。 | (0.30, 0.70) | goods | 旁白一句，和收钉分开，避免误触成交。 | 新增 `look`。 |
-| `gz_yard_plan` | 岸上压着的船图。 | (0.22, 0.46) | place | 旁白一句。图上无字。 | 新增 `look`。 |
+| `gz_yard_smith` | 肋骨间量活的船匠。 | (0.36, 0.52) | person | 确认「雇船匠」。已雇可辞。 | 既有 `hire`，100 钱，月俸 18。 |
+| `gz_yard_iron` | 半掩的铁钉匣。 | (0.44, 0.82) | goods | 确认「收铁钉」。提示官里会记。 | 既有 `buy`，铁器 2，0.95，`attention: 3`。 |
+| `gz_yard_rumor` | 坞边歇着的人。 | (0.58, 0.66) | person | 确认「听铁器　14钱」。 | 既有 `rumor`，泉州铁器 ×1.18，45 日。 |
+| `gz_yard_ribs` | 敞着的肋骨。 | (0.54, 0.46) | place | 旁白一句。 | 新增 `look`。 |
+| `gz_yard_caulk` | 捻缝的小火盆。 | (0.30, 0.70) | place | 旁白一句。 | 新增 `look`。 |
+| `gz_yard_tide` | 坞壁上的潮痕。 | (0.64, 0.84) | place | 旁白一句。 | 新增 `look`。 |
+| `gz_yard_lid` | 钉匣的盖本身。 | (0.52, 0.80) | goods | 旁白一句，和收钉分开，避免误触成交。 | 新增 `look`。 |
+| `gz_yard_plan` | 岸上压着的船图。 | (0.14, 0.72) | place | 旁白一句。图上无字。 | 新增 `look`。 |
 
 ## 4. 各热区细致交互
 

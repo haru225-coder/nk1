@@ -55,14 +55,14 @@ Interior of a Wenzhou lacquer workshop, Southern Song, overcast. Rice paper, ink
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 短讯形态 | 数据 |
 |---|---|---:|---|---|---|
-| `wz_lacquer_buy` | 架上已干、可出坊的盘盒。 | (0.36, 0.58) | goods | 确认「收漆器」。 | 既有 `buy`，4，0.92。 |
-| `wz_lacquer_share` | 柜上的坊簿。 | (0.28, 0.46) | place | 确认「入股漆坊」。 | 既有 `invest`。 |
-| `wz_lacquer_rack` | 阴干架上还湿的那些。 | (0.50, 0.48) | goods | 旁白一句。 | 新增 `look`。 |
-| `wz_lacquer_vat` | 加盖的漆桶。 | (0.24, 0.62) | goods | 旁白一句。 | 新增 `look`。 |
-| `wz_lacquer_bowl` | 台上未完成的碗。 | (0.40, 0.64) | goods | 旁白一句。 | 新增 `look`。 |
-| `wz_lacquer_window` | 只开一条缝的窗。 | (0.58, 0.34) | place | 旁白一句。 | 新增 `look`。 |
-| `wz_lacquer_cloth` | 地上防尘的布。 | (0.44, 0.74) | place | 旁白一句。 | 新增 `look`。 |
-| `wz_lacquer_basin` | 匠人洗手的盆。 | (0.32, 0.72) | place | 旁白一句。 | 新增 `look`。 |
+| `wz_lacquer_buy` | 架上已干、可出坊的盘盒。 | (0.36, 0.36) | goods | 确认「收漆器」。 | 既有 `buy`，4，0.92。 |
+| `wz_lacquer_share` | 柜上的坊簿。 | (0.16, 0.64) | place | 确认「入股漆坊」。 | 既有 `invest`。 |
+| `wz_lacquer_rack` | 阴干架上还湿的那些。 | (0.22, 0.40) | goods | 旁白一句。 | 新增 `look`。 |
+| `wz_lacquer_vat` | 加盖的漆桶。 | (0.26, 0.78) | goods | 旁白一句。 | 新增 `look`。 |
+| `wz_lacquer_bowl` | 台上未完成的碗。 | (0.12, 0.56) | goods | 旁白一句。 | 新增 `look`。 |
+| `wz_lacquer_window` | 只开一条缝的窗。 | (0.62, 0.34) | place | 旁白一句。 | 新增 `look`。 |
+| `wz_lacquer_cloth` | 地上防尘的布。 | (0.46, 0.86) | place | 旁白一句。 | 新增 `look`。 |
+| `wz_lacquer_basin` | 匠人洗手的盆。 | (0.36, 0.70) | place | 旁白一句。 | 新增 `look`。 |
 
 ## 4. 各热区细致交互
 

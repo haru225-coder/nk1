@@ -62,13 +62,13 @@ Jubao Street arcade, Quanzhou, Southern Song, late afternoon. Rice paper, ink li
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 短讯形态 | 数据 |
 |---|---|---:|---|---|---|
-| `qz_jubao_qingbai` | 青白瓷摊。 | (0.24, 0.64) | goods | 确认「收青白瓷」。 | `buy`，4 件，0.95。 |
-| `qz_jubao_silk` | 绸庄柜台的绢。 | (0.40, 0.60) | goods | 确认「出手丝绢」。 | `sell`，3 件，1.05。 |
-| `qz_jubao_silkshop` | 丝铺柜上的账本。 | (0.44, 0.48) | place | 确认「入股丝铺」，档位走原 costs。 | `invest`。 |
-| `qz_jubao_credit` | 廊柱边的牙人。 | (0.56, 0.52) | person | 确认「请牙人坐　25钱」。每月一次。 | `favour`。 |
-| `qz_jubao_wager` | 行情牌下围着的人。 | (0.50, 0.42) | place | 一句后两路：「押上」「不押」。每月一次。 | `choice`，押上带博多丝价传闻。 |
-| `npc_maruding_settle` | 柜上一份旧纸和铜牌。 | (0.32, 0.72) | person | 无账：还没到那一步。有账：两路「销了这笔」「收九十钱」。一次。 | `choice`，需 `npc_maruding_ledger`。 |
-| `qz_jubao_lantern` | 铺面可挂灯的钩。 | (0.20, 0.38) | place | 非正月：还不是这个月的事。正月：两路「买一盏」「只看灯」。每年一次。 | `choice`，`months: [1]`。 |
+| `qz_jubao_qingbai` | 青白瓷摊。 | (0.16, 0.80) | goods | 确认「收青白瓷」。 | `buy`，4 件，0.95。 |
+| `qz_jubao_silk` | 绸庄柜台的绢。 | (0.32, 0.64) | goods | 确认「出手丝绢」。 | `sell`，3 件，1.05。 |
+| `qz_jubao_silkshop` | 丝铺柜上的账本。 | (0.26, 0.54) | place | 确认「入股丝铺」，档位走原 costs。 | `invest`。 |
+| `qz_jubao_credit` | 廊柱边的牙人。 | (0.59, 0.56) | person | 确认「请牙人坐　25钱」。每月一次。 | `favour`。 |
+| `qz_jubao_wager` | 行情牌下围着的人。 | (0.47, 0.50) | place | 一句后两路：「押上」「不押」。每月一次。 | `choice`，押上带博多丝价传闻。 |
+| `npc_maruding_settle` | 柜上一份旧纸和铜牌。 | (0.28, 0.70) | person | 无账：还没到那一步。有账：两路「销了这笔」「收九十钱」。一次。 | `choice`，需 `npc_maruding_ledger`。 |
+| `qz_jubao_lantern` | 铺面可挂灯的钩。 | (0.20, 0.34) | place | 非正月：还不是这个月的事。正月：两路「买一盏」「只看灯」。每年一次。 | `choice`，`months: [1]`。 |
 
 ## 4. 各热区细致交互
 

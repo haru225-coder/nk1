@@ -55,13 +55,13 @@ Outside the Dazaifu gate, Kamakura period, mid-morning. Rice paper, ink line. A 
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 短讯形态 | 数据 |
 |---|---|---:|---|---|---|
-| `hk_dazaifu_gift` | 书役的袖。 | (0.40, 0.56) | person | 确认「送礼　45钱」。每月一次。 | `favour`。 |
-| `hk_dazaifu_pass` | 案上的书状匣。 | (0.46, 0.50) | goods | 人情不够：人情还不够。够则确认「领入港书状　700钱」。 | `licence`，`lic_hk_pass`，`favour_min: 2`。 |
-| `hk_dazaifu_rumor2` | 书役可低声说话的位置。 | (0.38, 0.52) | person | 确认「听倭铜　14钱」。 | `rumor`，博多倭铜 ×1.12，45 日。 |
-| `hk_dazaifu_watch` | 门下可坐着记船期的石阶。 | (0.52, 0.64) | place | 确认「查船　20钱」。每月一次。 | `favour`。 |
-| `npc_cairong_settle` | 碑下的蔡荣。 | (0.30, 0.60) | person | 无证据：还没到那一步。有则两路「报大宰府」「替他遮下」。 | `choice`，需 `npc_cairong_evidence`。 |
-| `hk_dazaifu_stele` | 门前的碑。 | (0.28, 0.48) | place | 旁白一句。 | 新增 `look`。 |
-| `hk_dazaifu_guard` | 门下验人的武士。 | (0.54, 0.44) | person | 旁白一句。 | 新增 `look`。 |
+| `hk_dazaifu_gift` | 书役的袖。 | (0.48, 0.62) | person | 确认「送礼　45钱」。每月一次。 | `favour`。 |
+| `hk_dazaifu_pass` | 案上的书状匣。 | (0.40, 0.68) | goods | 人情不够：人情还不够。够则确认「领入港书状　700钱」。 | `licence`，`lic_hk_pass`，`favour_min: 2`。 |
+| `hk_dazaifu_rumor2` | 书役可低声说话的位置。 | (0.54, 0.60) | person | 确认「听倭铜　14钱」。 | `rumor`，博多倭铜 ×1.12，45 日。 |
+| `hk_dazaifu_watch` | 门下可坐着记船期的石阶。 | (0.32, 0.80) | place | 确认「查船　20钱」。每月一次。 | `favour`。 |
+| `npc_cairong_settle` | 碑下的蔡荣。 | (0.56, 0.74) | person | 无证据：还没到那一步。有则两路「报大宰府」「替他遮下」。 | `choice`，需 `npc_cairong_evidence`。 |
+| `hk_dazaifu_stele` | 门前的碑。 | (0.60, 0.46) | place | 旁白一句。 | 新增 `look`。 |
+| `hk_dazaifu_guard` | 门下验人的武士。 | (0.28, 0.58) | person | 旁白一句。 | 新增 `look`。 |
 
 ## 4. 各热区细致交互
 

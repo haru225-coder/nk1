@@ -55,15 +55,15 @@ Mulan Weir, Xinghua, Southern Song, mid-morning. Rice paper, ink line. An old st
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 短讯形态 | 数据 |
 |---|---|---:|---|---|---|
-| `xh_mulan_share` | 陂司门口的份册。 | (0.22, 0.48) | place | 确认「入水利」。 | `invest`。 |
-| `xh_mulan_repair` | 堰中段松了的一排石。 | (0.44, 0.62) | place | 确认「补堰　150钱」。一次。 | `favour`，乡情、名声。 |
-| `xh_mulan_weir` | 堰脚另一处松石。 | (0.52, 0.70) | place | 确认「修陂石　120钱」。一次，flag `xh_mulan_weir`。 | `favour`。 |
-| `xh_mulan_grainbuy` | 陂上分出来的米堆。 | (0.36, 0.66) | goods | 无 flag：还没到那一步。有则确认「陂上分米」。 | `buy`，粮 8，0.9。 |
-| `xh_mulan_siege` | 靠堰的一条可放米的船板。 | (0.58, 0.56) | place | 非围城：城防的账还没开／战况不对。围城：确认「送米进城」。 | `favour`，扣舱米 8，加城防粮。 |
-| `npc_zhengyan_meet` | 小屋里的郑堰。 | (0.26, 0.42) | person | 确认「陂司书手」。一次。 | `favour`。 |
-| `npc_zhengyan_ledger` | 他案上的水租簿。 | (0.28, 0.50) | goods | 未见：还没到那一步。见过：确认「对水租簿」。 | `favour`。 |
-| `npc_zhengyan_invest` | 簿上派工的那一栏。 | (0.30, 0.54) | place | 未对簿：还没到那一步。对过：确认「认修陂工」。 | `invest`。 |
-| `npc_zhengyan_split` | 两份摊开的账。 | (0.32, 0.58) | goods | 未认工：还没到那一步。认过：两路「留作堰工」「按契分」。 | `choice`。 |
+| `xh_mulan_share` | 陂司门口的份册。 | (0.08, 0.56) | place | 确认「入水利」。 | `invest`。 |
+| `xh_mulan_repair` | 堰中段松了的一排石。 | (0.52, 0.54) | place | 确认「补堰　150钱」。一次。 | `favour`，乡情、名声。 |
+| `xh_mulan_weir` | 堰脚另一处松石。 | (0.30, 0.80) | place | 确认「修陂石　120钱」。一次，flag `xh_mulan_weir`。 | `favour`。 |
+| `xh_mulan_grainbuy` | 陂上分出来的米堆。 | (0.40, 0.58) | goods | 无 flag：还没到那一步。有则确认「陂上分米」。 | `buy`，粮 8，0.9。 |
+| `xh_mulan_siege` | 靠堰的一条可放米的船板。 | (0.62, 0.72) | place | 非围城：城防的账还没开／战况不对。围城：确认「送米进城」。 | `favour`，扣舱米 8，加城防粮。 |
+| `npc_zhengyan_meet` | 小屋里的郑堰。 | (0.16, 0.42) | person | 确认「陂司书手」。一次。 | `favour`。 |
+| `npc_zhengyan_ledger` | 他案上的水租簿。 | (0.22, 0.50) | goods | 未见：还没到那一步。见过：确认「对水租簿」。 | `favour`。 |
+| `npc_zhengyan_invest` | 簿上派工的那一栏。 | (0.28, 0.54) | place | 未对簿：还没到那一步。对过：确认「认修陂工」。 | `invest`。 |
+| `npc_zhengyan_split` | 两份摊开的账。 | (0.24, 0.62) | goods | 未认工：还没到那一步。认过：两路「留作堰工」「按契分」。 | `choice`。 |
 
 ## 4. 各热区细致交互
 

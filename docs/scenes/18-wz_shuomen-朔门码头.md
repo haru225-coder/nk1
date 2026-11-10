@@ -57,13 +57,13 @@ Shuomen wharf outside Wenzhou’s gate, Southern Song, misty morning. Rice paper
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 短讯形态 | 数据 |
 |---|---|---:|---|---|---|
-| `wz_shuomen_sulfur` | 岸上问硫黄的人。 | (0.32, 0.62) | person | 确认「出手硫黄」。 | `sell`，3，1.06。 |
-| `wz_shuomen_rumor` | 北来的梢工。 | (0.50, 0.48) | person | 确认「问梢工　15钱」。 | `rumor`，博多绢 ×1.2，40 日。 |
-| `wz_shuomen_watch` | 可记船期的石阶。 | (0.44, 0.70) | place | 确认「记船　8钱」。每月一次。 | `favour`。 |
-| `wz_shuomen_rumor2` | 另一个等泊位的人。 | (0.56, 0.56) | person | 确认「听绢帛　15钱」。 | `rumor`，同样指向博多绢，文案略不同。 |
-| `npc_zhouxing_bet` | 米包上摊开的军报。 | (0.26, 0.54) | person | 年、月、flag 不够：出原原因。够则两路「押和议成」「押兵事未了」。 | `choice`，1259 年 10–12 月，需 `npc_zhouxing_heard`。 |
-| `wz_shuomen_chests` | 一排漆箱。 | (0.38, 0.66) | goods | 旁白一句。 | 新增 `look`。 |
-| `wz_shuomen_gate` | 朔门门洞。 | (0.20, 0.36) | place | 旁白一句。 | 新增 `look`。 |
+| `wz_shuomen_sulfur` | 岸上问硫黄的人。 | (0.50, 0.68) | person | 确认「出手硫黄」。 | `sell`，3，1.06。 |
+| `wz_shuomen_rumor` | 北来的梢工。 | (0.62, 0.70) | person | 确认「问梢工　15钱」。 | `rumor`，博多绢 ×1.2，40 日。 |
+| `wz_shuomen_watch` | 可记船期的石阶。 | (0.42, 0.86) | place | 确认「记船　8钱」。每月一次。 | `favour`。 |
+| `wz_shuomen_rumor2` | 另一个等泊位的人。 | (0.42, 0.56) | person | 确认「听绢帛　15钱」。 | `rumor`，同样指向博多绢，文案略不同。 |
+| `npc_zhouxing_bet` | 米包上摊开的军报。 | (0.18, 0.58) | person | 年、月、flag 不够：出原原因。够则两路「押和议成」「押兵事未了」。 | `choice`，1259 年 10–12 月，需 `npc_zhouxing_heard`。 |
+| `wz_shuomen_chests` | 一排漆箱。 | (0.32, 0.82) | goods | 旁白一句。 | 新增 `look`。 |
+| `wz_shuomen_gate` | 朔门门洞。 | (0.18, 0.42) | place | 旁白一句。 | 新增 `look`。 |
 
 ## 4. 各热区细致交互
 

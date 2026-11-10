@@ -56,14 +56,14 @@ Inside the ceremonial gate of Xinghua’s yamen, Southern Song, morning. Rice pa
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 短讯形态 | 数据 |
 |---|---|---:|---|---|---|
-| `xh_yamen_salt` | 案上的盐凭匣。 | (0.40, 0.56) | goods | 确认「领盐凭　300钱」。 | 既有 `licence`，`lic_xh_salt`。 |
-| `xh_yamen_clerk` | 书吏本人。 | (0.36, 0.50) | person | 一次两路：「塞钱　40钱」「按规矩」。 | 既有 `choice`。 |
-| `xh_yamen_fallen` | 仪门上的旗。 | (0.52, 0.28) | place | 城未破：眼下的战况不对。已破：两路「还认这道门」「换一张帖　50钱」。 | 既有 `choice`，`war_in: ["fallen"]`。 |
-| `xh_yamen_drum` | 庭中的鼓。 | (0.48, 0.62) | place | 旁白一句。 | 新增 `look`。 |
-| `xh_yamen_threshold` | 被磨低的门槛。 | (0.46, 0.74) | place | 旁白一句。 | 新增 `look`。 |
-| `xh_yamen_notice` | 墙上的告示。 | (0.24, 0.38) | place | 旁白一句。贴图无字。 | 新增 `look`。 |
-| `xh_yamen_huizi` | 案上的会子。 | (0.34, 0.60) | goods | 旁白一句。 | 新增 `look`。 |
-| `xh_yamen_empty` | 庭心空着的砖地。 | (0.54, 0.52) | place | 旁白一句，点明货引不在这里。 | 新增 `look`。 |
+| `xh_yamen_salt` | 案上的盐凭匣。 | (0.20, 0.71) | goods | 确认「领盐凭　300钱」。 | 既有 `licence`，`lic_xh_salt`。 |
+| `xh_yamen_clerk` | 书吏本人。 | (0.08, 0.74) | person | 一次两路：「塞钱　40钱」「按规矩」。 | 既有 `choice`。 |
+| `xh_yamen_fallen` | 仪门上的旗。 | (0.50, 0.12) | place | 城未破：眼下的战况不对。已破：两路「还认这道门」「换一张帖　50钱」。 | 既有 `choice`，`war_in: ["fallen"]`。 |
+| `xh_yamen_drum` | 庭中的鼓。 | (0.44, 0.60) | place | 旁白一句。 | 新增 `look`。 |
+| `xh_yamen_threshold` | 被磨低的门槛。 | (0.36, 0.78) | place | 旁白一句。 | 新增 `look`。 |
+| `xh_yamen_notice` | 墙上的告示。 | (0.64, 0.50) | place | 旁白一句。贴图无字。 | 新增 `look`。 |
+| `xh_yamen_huizi` | 案上的会子。 | (0.16, 0.76) | goods | 旁白一句。 | 新增 `look`。 |
+| `xh_yamen_empty` | 庭心空着的砖地。 | (0.30, 0.60) | place | 旁白一句，点明货引不在这里。 | 新增 `look`。 |
 
 ## 4. 各热区细致交互
 

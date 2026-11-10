@@ -55,13 +55,13 @@ Guangzhou aromatics market under an arcade, late morning, Southern Song. Rice pa
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 短讯形态 | 数据 |
 |---|---|---:|---|---|---|
-| `gz_xiang_med` | 摊上的香药包。 | (0.28, 0.60) | goods | 确认「收香药」。有南舶公凭则按原让价。 | `buy`，4，0.9。 |
-| `gz_xiang_wood` | 苏木堆。 | (0.46, 0.64) | goods | 确认「出手苏木」。 | `sell`，4，1.04。 |
-| `gz_xiang_pepper` | 胡椒袋。 | (0.38, 0.70) | goods | 确认「收胡椒」。 | `buy`，5，0.93。 |
-| `gz_xiang_test` | 牙人手里的小匙。 | (0.34, 0.52) | person | 两路：「试一试　5钱」「旁观」。每月一次。 | `choice`。 |
-| `gz_xiang_rumor2` | 秤边可问话的牙人袖口。 | (0.42, 0.48) | person | 确认「听胡椒　12钱」。 | `rumor`，泉州胡椒 ×1.15，40 日。 |
-| `gz_xiang_mill` | 石药碾。 | (0.22, 0.72) | place | 旁白一句。 | 新增 `look`。 |
-| `gz_xiang_rawwood` | 尚未开价的一截新苏木。 | (0.54, 0.58) | goods | 旁白一句。 | 新增 `look`。 |
+| `gz_xiang_med` | 摊上的香药包。 | (0.10, 0.84) | goods | 确认「收香药」。有南舶公凭则按原让价。 | `buy`，4，0.9。 |
+| `gz_xiang_wood` | 苏木堆。 | (0.16, 0.54) | goods | 确认「出手苏木」。 | `sell`，4，1.04。 |
+| `gz_xiang_pepper` | 胡椒袋。 | (0.36, 0.62) | goods | 确认「收胡椒」。 | `buy`，5，0.93。 |
+| `gz_xiang_test` | 牙人手里的小匙。 | (0.30, 0.76) | person | 两路：「试一试　5钱」「旁观」。每月一次。 | `choice`。 |
+| `gz_xiang_rumor2` | 秤边可问话的牙人袖口。 | (0.50, 0.48) | person | 确认「听胡椒　12钱」。 | `rumor`，泉州胡椒 ×1.15，40 日。 |
+| `gz_xiang_mill` | 石药碾。 | (0.22, 0.86) | place | 旁白一句。 | 新增 `look`。 |
+| `gz_xiang_rawwood` | 尚未开价的一截新苏木。 | (0.24, 0.44) | goods | 旁白一句。 | 新增 `look`。 |
 
 ## 4. 各热区细致交互
 

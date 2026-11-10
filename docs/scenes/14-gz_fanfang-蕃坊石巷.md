@@ -58,14 +58,14 @@ A stone alley in Guangzhou’s foreign quarter, Southern Song, afternoon. Rice p
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 短讯形态 | 数据 |
 |---|---|---:|---|---|---|
-| `gz_fanfang_interpreter` | 巷口通事。 | (0.26, 0.52) | person | 确认「雇通事　140钱」。 | `hire`，月俸 24。 |
-| `gz_fanfang_ivory` | 墙根象牙。 | (0.40, 0.66) | goods | 确认「收象牙」。通事在则让价。 | `buy`，2，0.94。 |
-| `gz_fanfang_coin` | 巷里过手宋钱的人。 | (0.58, 0.56) | person | 确认「出手宋钱」。官里查得紧。 | `sell`，2，1.12，`attention: 4`。 |
-| `gz_fanfang_rumor` | 通事袖边。 | (0.30, 0.48) | person | 确认「听象牙　12钱」。 | `rumor`，博多象牙 ×1.18。 |
-| `gz_fanfang_intro` | 牙人。 | (0.48, 0.54) | person | 确认「引荐牙人　45钱」。一次。 | `favour`。 |
-| `gz_fanfang_ivory2` | 象牙上的纸签。 | (0.44, 0.62) | goods | 未引荐：还没到那一步。已引荐：确认熟价。 | `buy`，0.9，需 flag。 |
-| `gz_fanfang_pagoda` | 巷底光塔。 | (0.62, 0.36) | place | 旁白一句。 | 新增 `look`。 |
-| `gz_fanfang_well` | 巷中石井。 | (0.34, 0.72) | place | 旁白一句。 | 新增 `look`。 |
+| `gz_fanfang_interpreter` | 巷口通事。 | (0.20, 0.64) | person | 确认「雇通事　140钱」。 | `hire`，月俸 24。 |
+| `gz_fanfang_ivory` | 墙根象牙。 | (0.10, 0.72) | goods | 确认「收象牙」。通事在则让价。 | `buy`，2，0.94。 |
+| `gz_fanfang_coin` | 巷里过手宋钱的人。 | (0.56, 0.68) | person | 确认「出手宋钱」。官里查得紧。 | `sell`，2，1.12，`attention: 4`。 |
+| `gz_fanfang_rumor` | 通事袖边。 | (0.22, 0.50) | person | 确认「听象牙　12钱」。 | `rumor`，博多象牙 ×1.18。 |
+| `gz_fanfang_intro` | 牙人。 | (0.30, 0.60) | person | 确认「引荐牙人　45钱」。一次。 | `favour`。 |
+| `gz_fanfang_ivory2` | 象牙上的纸签。 | (0.14, 0.62) | goods | 未引荐：还没到那一步。已引荐：确认熟价。 | `buy`，0.9，需 flag。 |
+| `gz_fanfang_pagoda` | 巷底光塔。 | (0.48, 0.26) | place | 旁白一句。 | 新增 `look`。 |
+| `gz_fanfang_well` | 巷中石井。 | (0.42, 0.74) | place | 旁白一句。 | 新增 `look`。 |
 
 ## 4. 各热区细致交互
 

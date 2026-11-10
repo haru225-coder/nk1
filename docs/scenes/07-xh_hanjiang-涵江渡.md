@@ -55,12 +55,12 @@ Hanjiang ferry inside Xinghua city, Southern Song, early morning. Rice paper, in
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 短讯形态 | 数据 |
 |---|---|---:|---|---|---|
-| `xh_hanjiang_salt` | 石阶上未进城的盐包。 | (0.28, 0.66) | goods | 确认「收海盐」。有 `lic_xh_salt` 则按原让价。 | `buy`，8 件，0.95。 |
-| `xh_hanjiang_rumor` | 队伍里过渡的人。 | (0.46, 0.58) | person | 确认「听泉州米价　8钱」。 | `rumor`，泉州粮 ×1.15，40 日。 |
-| `xh_hanjiang_queue` | 刚靠岸的渡船和跳板。 | (0.50, 0.48) | ship | 两路：「加钱先过」「排队」。每月一次。 | `choice`。 |
-| `npc_xudai_meet` | 秤边的许岱。 | (0.34, 0.54) | person | 确认「盐包过秤」。一次。 | `favour`，flag `npc_xudai_met`。 |
-| `npc_xudai_contract` | 石阶上可摊开的引和草契。 | (0.36, 0.62) | goods | 未见过他：还没到那一步。见过：确认「立盐契」。一次。 | `favour`，需 `npc_xudai_met`。 |
-| `npc_xudai_bargain` | 压在秤砣下的盐引。 | (0.32, 0.58) | goods | 年、战况、契任一不够：出原原因。够则两路「认旧价」「折关子」。 | `choice`，需契、`year_min: 1276`、战况 besieged 或 fallen。 |
+| `xh_hanjiang_salt` | 石阶上未进城的盐包。 | (0.36, 0.86) | goods | 确认「收海盐」。有 `lic_xh_salt` 则按原让价。 | `buy`，8 件，0.95。 |
+| `xh_hanjiang_rumor` | 队伍里过渡的人。 | (0.20, 0.36) | person | 确认「听泉州米价　8钱」。 | `rumor`，泉州粮 ×1.15，40 日。 |
+| `xh_hanjiang_queue` | 刚靠岸的渡船和跳板。 | (0.42, 0.52) | ship | 两路：「加钱先过」「排队」。每月一次。 | `choice`。 |
+| `npc_xudai_meet` | 秤边的许岱。 | (0.14, 0.64) | person | 确认「盐包过秤」。一次。 | `favour`，flag `npc_xudai_met`。 |
+| `npc_xudai_contract` | 石阶上可摊开的引和草契。 | (0.30, 0.70) | goods | 未见过他：还没到那一步。见过：确认「立盐契」。一次。 | `favour`，需 `npc_xudai_met`。 |
+| `npc_xudai_bargain` | 压在秤砣下的盐引。 | (0.24, 0.78) | goods | 年、战况、契任一不够：出原原因。够则两路「认旧价」「折关子」。 | `choice`，需契、`year_min: 1276`、战况 besieged 或 fallen。 |
 
 ## 4. 各热区细致交互
 

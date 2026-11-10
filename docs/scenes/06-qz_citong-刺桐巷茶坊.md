@@ -56,13 +56,13 @@ Interior of a teahouse in Citong Alley, Quanzhou, Southern Song, afternoon. Rice
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 短讯形态 | 数据 |
 |---|---|---:|---|---|---|
-| `qz_citong_stall` | 柜上入股用的簿。 | (0.26, 0.48) | place | 确认「入股茶坊」。 | `invest`。 |
-| `qz_citong_wager` | 中景那两盏对坐的茶。 | (0.46, 0.56) | goods | 两路：「押一盏」「作东」。每月一次。 | `choice`，押上带博多茶价。 |
-| `qz_citong_rumor` | 茶博士侧耳可问的位置。 | (0.38, 0.50) | person | 确认「听茶价　8钱」。 | `rumor`，博多茶 ×1.12，30 日。 |
-| `qz_citong_tea` | 柜上一排茶叶罐。 | (0.30, 0.64) | goods | 确认「收茶叶」。 | `buy`，6 件，0.9。 |
-| `qz_citong_hire` | 茶博士本人。 | (0.36, 0.46) | person | 确认「雇茶博士」。已雇可辞。 | `hire`，90 钱，月俸 16。 |
-| `qz_citong_gift` | 可送出的一罐建茶。 | (0.34, 0.70) | goods | 确认「送建茶　15钱」。每月一次。 | `favour`。 |
-| `qz_citong_dongzhi` | 冬至才支起的那口茶瓮。 | (0.54, 0.68) | goods | 非十一月：还不是这个月的事。是则确认「冬至茶」。 | `sell`，茶 4，1.08，每年一次，`months: [11]`。 |
+| `qz_citong_stall` | 柜上入股用的簿。 | (0.12, 0.50) | place | 确认「入股茶坊」。 | `invest`。 |
+| `qz_citong_wager` | 中景那两盏对坐的茶。 | (0.52, 0.70) | goods | 两路：「押一盏」「作东」。每月一次。 | `choice`，押上带博多茶价。 |
+| `qz_citong_rumor` | 茶博士侧耳可问的位置。 | (0.16, 0.36) | person | 确认「听茶价　8钱」。 | `rumor`，博多茶 ×1.12，30 日。 |
+| `qz_citong_tea` | 柜上一排茶叶罐。 | (0.10, 0.26) | goods | 确认「收茶叶」。 | `buy`，6 件，0.9。 |
+| `qz_citong_hire` | 茶博士本人。 | (0.20, 0.58) | person | 确认「雇茶博士」。已雇可辞。 | `hire`，90 钱，月俸 16。 |
+| `qz_citong_gift` | 可送出的一罐建茶。 | (0.06, 0.38) | goods | 确认「送建茶　15钱」。每月一次。 | `favour`。 |
+| `qz_citong_dongzhi` | 冬至才支起的那口茶瓮。 | (0.30, 0.80) | goods | 非十一月：还不是这个月的事。是则确认「冬至茶」。 | `sell`，茶 4，1.08，每年一次，`months: [11]`。 |
 
 ## 4. 各热区细致交互
 

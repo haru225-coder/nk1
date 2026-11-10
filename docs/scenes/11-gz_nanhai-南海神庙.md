@@ -57,12 +57,12 @@ Front court of Nanhai Temple, Guangzhou, Southern Song, early morning. Rice pape
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 短讯形态 | 数据 |
 |---|---|---:|---|---|---|
-| `gz_nanhai_rite` | 殿前香案。 | (0.40, 0.58) | place | 确认「祭海　30钱」。每月一次。 | `favour`。 |
-| `gz_nanhai_before` | 廊下等着的牙人。 | (0.52, 0.50) | person | 两路：「自己许」「请牙人　20钱」。每年一次。 | `choice`。 |
-| `gz_nanhai_rumor` | 祝伯可问话的位置。 | (0.36, 0.48) | person | 确认「听香价　12钱」。 | `rumor`，泉州香药 ×1.18，40 日。 |
-| `npc_zhubo_ask` | 香案上未封口的札。 | (0.42, 0.52) | goods | 确认「香火札」。一次。 | `favour`，flag `npc_zhubo_asked`。 |
-| `npc_liang_tide` | 压在案下的断缆。 | (0.46, 0.64) | goods | 未听沉船：还没到那一步。听过：确认「等潮」。 | `favour`，需 `npc_liang_met`。 |
-| `gz_nanhai_birth` | 庙前临时的香药摊。 | (0.26, 0.70) | goods | 非二月：还不是这个月的事。二月：确认「神诞香市」。 | `sell`，香药 3，1.10，每年一次。 |
+| `gz_nanhai_rite` | 殿前香案。 | (0.26, 0.76) | place | 确认「祭海　30钱」。每月一次。 | `favour`。 |
+| `gz_nanhai_before` | 廊下等着的牙人。 | (0.40, 0.58) | person | 两路：「自己许」「请牙人　20钱」。每年一次。 | `choice`。 |
+| `gz_nanhai_rumor` | 祝伯可问话的位置。 | (0.28, 0.46) | person | 确认「听香价　12钱」。 | `rumor`，泉州香药 ×1.18，40 日。 |
+| `npc_zhubo_ask` | 香案上未封口的札。 | (0.34, 0.52) | goods | 确认「香火札」。一次。 | `favour`，flag `npc_zhubo_asked`。 |
+| `npc_liang_tide` | 压在案下的断缆。 | (0.30, 0.64) | goods | 未听沉船：还没到那一步。听过：确认「等潮」。 | `favour`，需 `npc_liang_met`。 |
+| `gz_nanhai_birth` | 庙前临时的香药摊。 | (0.14, 0.82) | goods | 非二月：还不是这个月的事。二月：确认「神诞香市」。 | `sell`，香药 3，1.10，每年一次。 |
 
 ## 4. 各热区细致交互
 

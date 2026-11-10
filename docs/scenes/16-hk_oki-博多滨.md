@@ -55,14 +55,14 @@ Hakata beach, Kamakura period, morning mist. Rice paper, ink line. Sand, several
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 短讯形态 | 数据 |
 |---|---|---:|---|---|---|
-| `hk_oki_sulfur` | 席上过秤的硫黄。 | (0.30, 0.64) | goods | 确认「收硫黄」。 | 既有 `buy`，6，0.92。 |
-| `hk_oki_rumor` | 宋船跳板上的梢工。 | (0.56, 0.46) | person | 确认「问梢工　15钱」。 | 既有 `rumor`，温州硫黄 ×1.2，40 日。 |
-| `hk_oki_tent` | 近处白幕门。 | (0.40, 0.50) | place | 旁白一句。 | 新增 `look`。 |
-| `hk_oki_porters` | 正在抬箱的脚夫。 | (0.48, 0.60) | person | 旁白一句。 | 新增 `look`。 |
-| `hk_oki_ship` | 下锚的宋船。 | (0.62, 0.36) | ship | 旁白一句。 | 新增 `look`。 |
-| `hk_oki_scale` | 沙上的秤。 | (0.34, 0.70) | place | 旁白一句。 | 新增 `look`。 |
-| `hk_oki_heap` | 未过秤的硫黄细块。 | (0.26, 0.58) | goods | 旁白一句。 | 新增 `look`。 |
-| `hk_oki_pines` | 远处松原。 | (0.22, 0.32) | place | 旁白一句，点到箱崎方向，不跳场景。 | 新增 `look`。 |
+| `hk_oki_sulfur` | 席上过秤的硫黄。 | (0.16, 0.72) | goods | 确认「收硫黄」。 | 既有 `buy`，6，0.92。 |
+| `hk_oki_rumor` | 宋船跳板上的梢工。 | (0.68, 0.54) | person | 确认「问梢工　15钱」。 | 既有 `rumor`，温州硫黄 ×1.2，40 日。 |
+| `hk_oki_tent` | 近处白幕门。 | (0.10, 0.48) | place | 旁白一句。 | 新增 `look`。 |
+| `hk_oki_porters` | 正在抬箱的脚夫。 | (0.34, 0.62) | person | 旁白一句。 | 新增 `look`。 |
+| `hk_oki_ship` | 下锚的宋船。 | (0.76, 0.42) | ship | 旁白一句。 | 新增 `look`。 |
+| `hk_oki_scale` | 沙上的秤。 | (0.54, 0.72) | place | 旁白一句。 | 新增 `look`。 |
+| `hk_oki_heap` | 未过秤的硫黄细块。 | (0.24, 0.82) | goods | 旁白一句。 | 新增 `look`。 |
+| `hk_oki_pines` | 远处松原。 | (0.20, 0.26) | place | 旁白一句，点到箱崎方向，不跳场景。 | 新增 `look`。 |
 
 ## 4. 各热区细致交互
 

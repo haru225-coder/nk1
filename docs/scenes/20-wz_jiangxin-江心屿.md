@@ -63,13 +63,13 @@ Jiangxin Island, Wenzhou, Southern Song, afternoon on an ebb tide. Rice paper, i
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 短讯形态 | 数据 |
 |---|---|---:|---|---|---|
-| `wz_jiangxin_tower` | 两塔之间可仰头的石地。 | (0.48, 0.40) | place | 一句后两路：「登东塔」「登西塔」。每年一次。 | 既有 `choice`。 |
-| `wz_jiangxin_rite` | 殿前香。 | (0.38, 0.58) | place | 确认「上香　25钱」。每月一次。 | 既有 `favour`。 |
-| `wz_jiangxin_tea` | 施茶的桶。 | (0.32, 0.66) | goods | 确认「施茶　15钱」。每月一次。 | 既有 `favour`。 |
-| `wz_jiangxin_stay` | 寺侧可留宿的僧房门。 | (0.28, 0.50) | place | 一次两路：「留宿　20钱」「回船」。 | 既有 `choice`。 |
-| `wz_jiangxin_duanwu` | 江下可听见鼓的位置。 | (0.54, 0.70) | place | 非五月：还不是这个月的事。五月：确认「端午听鼓　10钱」。 | 既有 `rumor`，温州香药 ×1.12，每年一次。 |
-| `wz_jiangxin_ferry` | 石阶上的渡船。 | (0.42, 0.76) | ship | 旁白一句。 | 新增 `look`。 |
-| `wz_jiangxin_bell` | 寺钟。 | (0.56, 0.46) | place | 旁白一句。 | 新增 `look`。 |
+| `wz_jiangxin_tower` | 两塔之间可仰头的石地。 | (0.42, 0.50) | place | 一句后两路：「登东塔」「登西塔」。每年一次。 | 既有 `choice`。 |
+| `wz_jiangxin_rite` | 殿前香。 | (0.10, 0.76) | place | 确认「上香　25钱」。每月一次。 | 既有 `favour`。 |
+| `wz_jiangxin_tea` | 施茶的桶。 | (0.20, 0.82) | goods | 确认「施茶　15钱」。每月一次。 | 既有 `favour`。 |
+| `wz_jiangxin_stay` | 寺侧可留宿的僧房门。 | (0.34, 0.38) | place | 一次两路：「留宿　20钱」「回船」。 | 既有 `choice`。 |
+| `wz_jiangxin_duanwu` | 江下可听见鼓的位置。 | (0.56, 0.66) | place | 非五月：还不是这个月的事。五月：确认「端午听鼓　10钱」。 | 既有 `rumor`，温州香药 ×1.12，每年一次。 |
+| `wz_jiangxin_ferry` | 石阶上的渡船。 | (0.50, 0.78) | ship | 旁白一句。 | 新增 `look`。 |
+| `wz_jiangxin_bell` | 寺钟。 | (0.30, 0.58) | place | 旁白一句。 | 新增 `look`。 |
 
 登塔用一个热区再分东西，与开元寺相同，避免给东塔西塔各绑不存在的 id。
 

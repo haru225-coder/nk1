@@ -70,13 +70,13 @@ A narrow stone alley in the foreign quarter of Southern Song Quanzhou, mid-after
 
 | id | 画面上像什么 | 坐标 (x,y) | kind | 点开后的短讯形态 | 数据与执行 |
 |---|---|---:|---|---|---|
-| `qz_fanfang_interpreter` | 巷口通事。 | (0.28, 0.52) | person | 确认条「雇通事」。已雇则出「在身边」并可辞退（走原 dismiss）。 | 既有 `hire`，120 钱，月俸 22。 |
-| `qz_fanfang_ivory` | 墙根那堆象牙。 | (0.42, 0.66) | goods | 确认条「收象牙」。通事在身边时价按原 `hire_mul`。 | 既有 `buy`，象牙 2，0.95。 |
-| `qz_fanfang_intro` | 巷中坐着的牙人。 | (0.50, 0.54) | person | 对话两句，确认「引荐牙人　45钱」。一次。 | 既有 `favour`，一次，flag `qz_fanfang_intro`。 |
-| `qz_fanfang_ivory2` | 同一堆象牙上后添的纸签。 | (0.46, 0.62) | goods | 未引荐：旁白「还没到那一步」。已引荐：确认「按引荐价收象牙」。 | 既有 `buy`，0.9，需 flag。两点不要完全重叠。 |
-| `qz_fanfang_coin` | 巷深处按着钱袋的人。 | (0.62, 0.58) | person | 确认「出手宋钱」。并提醒官里会记一笔。 | 既有 `sell`，宋钱 2，1.15，`attention: 4`。 |
-| `qz_fanfang_rumor` | 通事袖边，可向他问货。 | (0.32, 0.48) | person | 确认 12 钱后两句对话。 | 既有 `rumor`，博多象牙 ×1.18，30 日。与雇通事分两点，一近袖、一近身。 |
-| `npc_maruding_ledger` | 墙根摊开的铜牌和账页。 | (0.22, 0.72) | person | 未见过他：原句「还没到那一步」。见过：对话后确认「对账」。一次。 | 既有 `favour`，需 `npc_maruding_met`，记 `npc_maruding_ledger`。 |
+| `qz_fanfang_interpreter` | 巷口通事。 | (0.24, 0.56) | person | 确认条「雇通事」。已雇则出「在身边」并可辞退（走原 dismiss）。 | 既有 `hire`，120 钱，月俸 22。 |
+| `qz_fanfang_ivory` | 墙根那堆象牙。 | (0.10, 0.86) | goods | 确认条「收象牙」。通事在身边时价按原 `hire_mul`。 | 既有 `buy`，象牙 2，0.95。 |
+| `qz_fanfang_intro` | 巷中坐着的牙人。 | (0.40, 0.58) | person | 对话两句，确认「引荐牙人　45钱」。一次。 | 既有 `favour`，一次，flag `qz_fanfang_intro`。 |
+| `qz_fanfang_ivory2` | 同一堆象牙上后添的纸签。 | (0.18, 0.78) | goods | 未引荐：旁白「还没到那一步」。已引荐：确认「按引荐价收象牙」。 | 既有 `buy`，0.9，需 flag。两点不要完全重叠。 |
+| `qz_fanfang_coin` | 巷深处按着钱袋的人。 | (0.54, 0.52) | person | 确认「出手宋钱」。并提醒官里会记一笔。 | 既有 `sell`，宋钱 2，1.15，`attention: 4`。 |
+| `qz_fanfang_rumor` | 通事袖边，可向他问货。 | (0.20, 0.44) | person | 确认 12 钱后两句对话。 | 既有 `rumor`，博多象牙 ×1.18，30 日。与雇通事分两点，一近袖、一近身。 |
+| `npc_maruding_ledger` | 墙根摊开的铜牌和账页。 | (0.08, 0.64) | person | 未见过他：原句「还没到那一步」。见过：对话后确认「对账」。一次。 | 既有 `favour`，需 `npc_maruding_met`，记 `npc_maruding_ledger`。 |
 
 ## 4. 各热区细致交互
 

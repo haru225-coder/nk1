@@ -178,50 +178,50 @@
       "hotspots": [
         {
           "id": "qz_shibo_gift",
-          "x": 0.34,
-          "y": 0.58,
+          "x": 0.10,
+          "y": 0.80,
           "kind": "goods"
         },
         {
           "id": "qz_shibo_fine",
-          "x": 0.46,
-          "y": 0.47,
+          "x": 0.35,
+          "y": 0.63,
           "kind": "goods"
         },
         {
           "id": "qz_shibo_coin",
-          "x": 0.38,
-          "y": 0.52,
+          "x": 0.18,
+          "y": 0.58,
           "kind": "person"
         },
         {
           "id": "qz_shibo_boxes",
-          "x": 0.22,
-          "y": 0.7,
+          "x": 0.46,
+          "y": 0.58,
           "kind": "goods"
         },
         {
           "id": "qz_shibo_scale",
-          "x": 0.56,
-          "y": 0.66,
+          "x": 0.52,
+          "y": 0.68,
           "kind": "place"
         },
         {
           "id": "qz_shibo_notice",
-          "x": 0.26,
-          "y": 0.3,
+          "x": 0.49,
+          "y": 0.34,
           "kind": "place"
         },
         {
           "id": "qz_shibo_hall",
-          "x": 0.62,
-          "y": 0.36,
+          "x": 0.66,
+          "y": 0.34,
           "kind": "place"
         },
         {
           "id": "qz_shibo_huizi",
-          "x": 0.42,
-          "y": 0.64,
+          "x": 0.23,
+          "y": 0.74,
           "kind": "goods"
         }
       ]
@@ -323,44 +323,44 @@
       "hotspots": [
         {
           "id": "qz_fanfang_interpreter",
-          "x": 0.28,
-          "y": 0.52,
+          "x": 0.24,
+          "y": 0.56,
           "kind": "person"
         },
         {
           "id": "qz_fanfang_ivory",
-          "x": 0.42,
-          "y": 0.66,
+          "x": 0.10,
+          "y": 0.86,
           "kind": "goods"
         },
         {
           "id": "qz_fanfang_intro",
-          "x": 0.5,
-          "y": 0.54,
-          "kind": "person"
-        },
-        {
-          "id": "qz_fanfang_ivory2",
-          "x": 0.46,
-          "y": 0.62,
-          "kind": "goods"
-        },
-        {
-          "id": "qz_fanfang_coin",
-          "x": 0.62,
+          "x": 0.40,
           "y": 0.58,
           "kind": "person"
         },
         {
+          "id": "qz_fanfang_ivory2",
+          "x": 0.18,
+          "y": 0.78,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_fanfang_coin",
+          "x": 0.54,
+          "y": 0.52,
+          "kind": "person"
+        },
+        {
           "id": "qz_fanfang_rumor",
-          "x": 0.32,
-          "y": 0.48,
+          "x": 0.20,
+          "y": 0.44,
           "kind": "person"
         },
         {
           "id": "npc_maruding_ledger",
-          "x": 0.22,
-          "y": 0.72,
+          "x": 0.08,
+          "y": 0.64,
           "kind": "person"
         }
       ]
@@ -483,43 +483,43 @@
       "hotspots": [
         {
           "id": "qz_kaiyuan_sutra",
-          "x": 0.24,
-          "y": 0.58,
+          "x": 0.10,
+          "y": 0.80,
           "kind": "goods"
         },
         {
           "id": "qz_kaiyuan_copy",
-          "x": 0.3,
-          "y": 0.54,
+          "x": 0.16,
+          "y": 0.64,
           "kind": "place"
         },
         {
           "id": "qz_kaiyuan_towers",
-          "x": 0.48,
-          "y": 0.42,
+          "x": 0.40,
+          "y": 0.72,
           "kind": "place"
         },
         {
           "id": "qz_kaiyuan_incense",
-          "x": 0.4,
-          "y": 0.66,
+          "x": 0.48,
+          "y": 0.68,
           "kind": "place"
         },
         {
           "id": "qz_kaiyuan_print",
-          "x": 0.18,
-          "y": 0.74,
+          "x": 0.16,
+          "y": 0.86,
           "kind": "goods"
         },
         {
           "id": "qz_kaiyuan_tea",
-          "x": 0.34,
-          "y": 0.7,
+          "x": 0.30,
+          "y": 0.78,
           "kind": "goods"
         },
         {
           "id": "qz_kaiyuan_buddha",
-          "x": 0.52,
+          "x": 0.40,
           "y": 0.62,
           "kind": "place"
         }
@@ -983,44 +983,44 @@
       "hotspots": [
         {
           "id": "qz_jubao_qingbai",
-          "x": 0.24,
-          "y": 0.64,
+          "x": 0.16,
+          "y": 0.80,
           "kind": "goods"
         },
         {
           "id": "qz_jubao_silk",
-          "x": 0.4,
-          "y": 0.6,
+          "x": 0.32,
+          "y": 0.64,
           "kind": "goods"
         },
         {
           "id": "qz_jubao_silkshop",
-          "x": 0.44,
-          "y": 0.48,
+          "x": 0.26,
+          "y": 0.54,
           "kind": "place"
         },
         {
           "id": "qz_jubao_credit",
-          "x": 0.56,
-          "y": 0.52,
+          "x": 0.59,
+          "y": 0.56,
           "kind": "person"
         },
         {
           "id": "qz_jubao_wager",
-          "x": 0.5,
-          "y": 0.42,
+          "x": 0.47,
+          "y": 0.50,
           "kind": "place"
         },
         {
           "id": "npc_maruding_settle",
-          "x": 0.32,
-          "y": 0.72,
+          "x": 0.28,
+          "y": 0.70,
           "kind": "person"
         },
         {
           "id": "qz_jubao_lantern",
-          "x": 0.2,
-          "y": 0.38,
+          "x": 0.20,
+          "y": 0.34,
           "kind": "place"
         }
       ]
@@ -1223,50 +1223,50 @@
       "hotspots": [
         {
           "id": "qz_tafang_rent",
-          "x": 0.3,
-          "y": 0.5,
+          "x": 0.55,
+          "y": 0.40,
           "kind": "place"
         },
         {
           "id": "qz_tafang_quiet",
-          "x": 0.48,
-          "y": 0.66,
+          "x": 0.16,
+          "y": 0.78,
           "kind": "goods"
         },
         {
           "id": "qz_tafang_watch",
-          "x": 0.4,
-          "y": 0.58,
+          "x": 0.44,
+          "y": 0.66,
           "kind": "place"
         },
         {
           "id": "qz_tafang_loan",
-          "x": 0.36,
-          "y": 0.44,
+          "x": 0.26,
+          "y": 0.48,
           "kind": "person"
         },
         {
           "id": "qz_tafang_keys",
-          "x": 0.22,
-          "y": 0.42,
+          "x": 0.12,
+          "y": 0.36,
           "kind": "goods"
         },
         {
           "id": "qz_tafang_marks",
-          "x": 0.54,
-          "y": 0.62,
+          "x": 0.20,
+          "y": 0.58,
           "kind": "goods"
         },
         {
           "id": "qz_tafang_backdoor",
-          "x": 0.62,
+          "x": 0.64,
           "y": 0.48,
           "kind": "place"
         },
         {
           "id": "qz_tafang_board",
-          "x": 0.18,
-          "y": 0.7,
+          "x": 0.50,
+          "y": 0.54,
           "kind": "place"
         }
       ]
@@ -1557,44 +1557,44 @@
       "hotspots": [
         {
           "id": "qz_citong_stall",
-          "x": 0.26,
-          "y": 0.48,
+          "x": 0.12,
+          "y": 0.50,
           "kind": "place"
         },
         {
           "id": "qz_citong_wager",
-          "x": 0.46,
-          "y": 0.56,
+          "x": 0.52,
+          "y": 0.70,
           "kind": "goods"
         },
         {
           "id": "qz_citong_rumor",
-          "x": 0.38,
-          "y": 0.5,
+          "x": 0.16,
+          "y": 0.36,
           "kind": "person"
         },
         {
           "id": "qz_citong_tea",
-          "x": 0.3,
-          "y": 0.64,
+          "x": 0.10,
+          "y": 0.26,
           "kind": "goods"
         },
         {
           "id": "qz_citong_hire",
-          "x": 0.36,
-          "y": 0.46,
+          "x": 0.20,
+          "y": 0.58,
           "kind": "person"
         },
         {
           "id": "qz_citong_gift",
-          "x": 0.34,
-          "y": 0.7,
+          "x": 0.06,
+          "y": 0.38,
           "kind": "goods"
         },
         {
           "id": "qz_citong_dongzhi",
-          "x": 0.54,
-          "y": 0.68,
+          "x": 0.30,
+          "y": 0.80,
           "kind": "goods"
         }
       ]
@@ -1765,56 +1765,56 @@
       "hotspots": [
         {
           "id": "xh_mulan_share",
-          "x": 0.22,
-          "y": 0.48,
-          "kind": "place"
-        },
-        {
-          "id": "xh_mulan_repair",
-          "x": 0.44,
-          "y": 0.62,
-          "kind": "place"
-        },
-        {
-          "id": "xh_mulan_weir",
-          "x": 0.52,
-          "y": 0.7,
-          "kind": "place"
-        },
-        {
-          "id": "xh_mulan_grainbuy",
-          "x": 0.36,
-          "y": 0.66,
-          "kind": "goods"
-        },
-        {
-          "id": "xh_mulan_siege",
-          "x": 0.58,
+          "x": 0.08,
           "y": 0.56,
           "kind": "place"
         },
         {
+          "id": "xh_mulan_repair",
+          "x": 0.52,
+          "y": 0.54,
+          "kind": "place"
+        },
+        {
+          "id": "xh_mulan_weir",
+          "x": 0.30,
+          "y": 0.80,
+          "kind": "place"
+        },
+        {
+          "id": "xh_mulan_grainbuy",
+          "x": 0.40,
+          "y": 0.58,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_mulan_siege",
+          "x": 0.62,
+          "y": 0.72,
+          "kind": "place"
+        },
+        {
           "id": "npc_zhengyan_meet",
-          "x": 0.26,
+          "x": 0.16,
           "y": 0.42,
           "kind": "person"
         },
         {
           "id": "npc_zhengyan_ledger",
-          "x": 0.28,
-          "y": 0.5,
+          "x": 0.22,
+          "y": 0.50,
           "kind": "goods"
         },
         {
           "id": "npc_zhengyan_invest",
-          "x": 0.3,
+          "x": 0.28,
           "y": 0.54,
           "kind": "place"
         },
         {
           "id": "npc_zhengyan_split",
-          "x": 0.32,
-          "y": 0.58,
+          "x": 0.24,
+          "y": 0.62,
           "kind": "goods"
         }
       ]
@@ -2304,38 +2304,38 @@
       "hotspots": [
         {
           "id": "xh_hanjiang_salt",
-          "x": 0.28,
-          "y": 0.66,
+          "x": 0.36,
+          "y": 0.86,
           "kind": "goods"
         },
         {
           "id": "xh_hanjiang_rumor",
-          "x": 0.46,
-          "y": 0.58,
+          "x": 0.20,
+          "y": 0.36,
           "kind": "person"
         },
         {
           "id": "xh_hanjiang_queue",
-          "x": 0.5,
-          "y": 0.48,
+          "x": 0.42,
+          "y": 0.52,
           "kind": "ship"
         },
         {
           "id": "npc_xudai_meet",
-          "x": 0.34,
-          "y": 0.54,
+          "x": 0.14,
+          "y": 0.64,
           "kind": "person"
         },
         {
           "id": "npc_xudai_contract",
-          "x": 0.36,
-          "y": 0.62,
+          "x": 0.30,
+          "y": 0.70,
           "kind": "goods"
         },
         {
           "id": "npc_xudai_bargain",
-          "x": 0.32,
-          "y": 0.58,
+          "x": 0.24,
+          "y": 0.78,
           "kind": "goods"
         }
       ]
@@ -2408,50 +2408,50 @@
       "hotspots": [
         {
           "id": "xh_yamen_salt",
-          "x": 0.4,
-          "y": 0.56,
+          "x": 0.20,
+          "y": 0.71,
           "kind": "goods"
         },
         {
           "id": "xh_yamen_clerk",
-          "x": 0.36,
-          "y": 0.5,
+          "x": 0.08,
+          "y": 0.74,
           "kind": "person"
         },
         {
           "id": "xh_yamen_fallen",
-          "x": 0.52,
-          "y": 0.28,
+          "x": 0.50,
+          "y": 0.12,
           "kind": "place"
         },
         {
           "id": "xh_yamen_drum",
-          "x": 0.48,
-          "y": 0.62,
+          "x": 0.44,
+          "y": 0.60,
           "kind": "place"
         },
         {
           "id": "xh_yamen_threshold",
-          "x": 0.46,
-          "y": 0.74,
+          "x": 0.36,
+          "y": 0.78,
           "kind": "place"
         },
         {
           "id": "xh_yamen_notice",
-          "x": 0.24,
-          "y": 0.38,
+          "x": 0.64,
+          "y": 0.50,
           "kind": "place"
         },
         {
           "id": "xh_yamen_huizi",
-          "x": 0.34,
-          "y": 0.6,
+          "x": 0.16,
+          "y": 0.76,
           "kind": "goods"
         },
         {
           "id": "xh_yamen_empty",
-          "x": 0.54,
-          "y": 0.52,
+          "x": 0.30,
+          "y": 0.60,
           "kind": "place"
         }
       ],
@@ -3149,43 +3149,43 @@
         {
           "id": "gz_fuxu_salt",
           "x": 0.24,
-          "y": 0.66,
+          "y": 0.78,
           "kind": "goods"
         },
         {
           "id": "gz_fuxu_pepper",
-          "x": 0.56,
-          "y": 0.62,
+          "x": 0.34,
+          "y": 0.86,
           "kind": "goods"
         },
         {
           "id": "gz_fuxu_rumor",
-          "x": 0.6,
-          "y": 0.34,
+          "x": 0.40,
+          "y": 0.46,
           "kind": "ship"
         },
         {
           "id": "gz_fuxu_pilot",
-          "x": 0.44,
-          "y": 0.52,
+          "x": 0.38,
+          "y": 0.70,
           "kind": "person"
         },
         {
           "id": "gz_fuxu_fast",
-          "x": 0.38,
-          "y": 0.76,
+          "x": 0.10,
+          "y": 0.64,
           "kind": "person"
         },
         {
           "id": "npc_zhubo_letter",
-          "x": 0.32,
-          "y": 0.48,
+          "x": 0.24,
+          "y": 0.56,
           "kind": "person"
         },
         {
           "id": "npc_liang_wreck",
-          "x": 0.5,
-          "y": 0.7,
+          "x": 0.32,
+          "y": 0.60,
           "kind": "person"
         }
       ]
@@ -3293,38 +3293,38 @@
       "hotspots": [
         {
           "id": "gz_nanhai_rite",
-          "x": 0.4,
-          "y": 0.58,
+          "x": 0.26,
+          "y": 0.76,
           "kind": "place"
         },
         {
           "id": "gz_nanhai_before",
-          "x": 0.52,
-          "y": 0.5,
+          "x": 0.40,
+          "y": 0.58,
           "kind": "person"
         },
         {
           "id": "gz_nanhai_rumor",
-          "x": 0.36,
-          "y": 0.48,
+          "x": 0.28,
+          "y": 0.46,
           "kind": "person"
         },
         {
           "id": "npc_zhubo_ask",
-          "x": 0.42,
+          "x": 0.34,
           "y": 0.52,
           "kind": "goods"
         },
         {
           "id": "npc_liang_tide",
-          "x": 0.46,
+          "x": 0.30,
           "y": 0.64,
           "kind": "goods"
         },
         {
           "id": "gz_nanhai_birth",
-          "x": 0.26,
-          "y": 0.7,
+          "x": 0.14,
+          "y": 0.82,
           "kind": "goods"
         }
       ]
@@ -4384,44 +4384,44 @@
       "hotspots": [
         {
           "id": "hk_tobo_silk",
-          "x": 0.3,
-          "y": 0.58,
-          "kind": "goods"
-        },
-        {
-          "id": "hk_tobo_feast",
-          "x": 0.42,
-          "y": 0.5,
-          "kind": "place"
-        },
-        {
-          "id": "hk_tobo_rumor",
-          "x": 0.46,
-          "y": 0.46,
-          "kind": "person"
-        },
-        {
-          "id": "hk_tobo_intro",
-          "x": 0.5,
-          "y": 0.52,
-          "kind": "person"
-        },
-        {
-          "id": "hk_tobo_silk2",
-          "x": 0.34,
-          "y": 0.54,
-          "kind": "goods"
-        },
-        {
-          "id": "npc_cairong_meet",
-          "x": 0.26,
+          "x": 0.22,
           "y": 0.64,
           "kind": "goods"
         },
         {
+          "id": "hk_tobo_feast",
+          "x": 0.16,
+          "y": 0.48,
+          "kind": "place"
+        },
+        {
+          "id": "hk_tobo_rumor",
+          "x": 0.38,
+          "y": 0.54,
+          "kind": "person"
+        },
+        {
+          "id": "hk_tobo_intro",
+          "x": 0.44,
+          "y": 0.58,
+          "kind": "person"
+        },
+        {
+          "id": "hk_tobo_silk2",
+          "x": 0.28,
+          "y": 0.72,
+          "kind": "goods"
+        },
+        {
+          "id": "npc_cairong_meet",
+          "x": 0.12,
+          "y": 0.78,
+          "kind": "goods"
+        },
+        {
           "id": "hk_tobo_suichu",
-          "x": 0.22,
-          "y": 0.4,
+          "x": 0.20,
+          "y": 0.32,
           "kind": "place"
         }
       ]
