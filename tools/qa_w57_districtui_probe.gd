@@ -183,6 +183,28 @@ func _sec_ui() -> void:
 	into.pressed.emit()
 	await _settle(4)
 	_check(str(_main.get("_bg_file")) == "bg_dist_qz_houzhu.jpg", "UI：进入后渚")
+	_check(_main.find_child("DistrictHotspotView", true, false) != null, "UI：后渚先开热区场景")
+	var scene := _main.find_child("DistrictHotspotView", true, false) as Control
+	if scene == null:
+		return
+	scene.skip_enter()
+	var money_before := int(gs.money)
+	scene._activate_hotspot("qz_houzhu_fast")
+	await _settle(2)
+	_check(str(scene._mode) != "confirmation" and int(gs.money) == money_before, "UI：没请梢工，托收盐不确认、不扣钱")
+	scene._activate_hotspot("qz_houzhu_salt")
+	await _settle(2)
+	_check(str(scene._mode) == "confirmation" and int(gs.money) == money_before, "UI：点盐包只出确认，钱还在")
+	scene._on_confirmation_pressed()
+	await _settle(4)
+	_check(int(gs.money) < money_before, "UI：确认后才付盐钱")
+	_check(_main.find_child("DistrictHotspotView", true, false) != null, "UI：付完仍在热区场景")
+	var cards := _find_button(_main, "工席名单")
+	_check(cards != null, "UI：可切回工席名单")
+	if cards == null:
+		return
+	cards.pressed.emit()
+	await _settle(4)
 	var labels_all2: Array = []
 	_collect_labels(_main, labels_all2)
 	var catset: Dictionary = {"买卖":true,"入股":true,"雇人":true,"传闻":true,"公凭":true,"抉择":true,"行事":true,"事":true}

@@ -1332,6 +1332,7 @@ const ENDING_BG := {
 	"泉州蒲氏的船": "bg_end_pu.jpg",
 	"纲首": "bg_end_pu.jpg",
 	"岸上的根": "bg_end_root.jpg",
+	"城里": "bg_end_siege.jpg",
 }
 
 
@@ -2665,12 +2666,20 @@ func _on_rest(days: int, port_id: String, rate: int = INN_RATE, place: String = 
 	if not GameState.spend_money(cost):
 		log_msg("【钱不够】掌柜把算盘一推：「客官，先结了前账罢。」")
 		return
+	var before_ym := "%04d-%02d" % [Calendar.year, Calendar.month]
 	GameManager.advance_days(days)
 	Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + days * 2)
 	log_msg("在%s歇了 %d 日，付房钱 %d。如今是 %s，%s。" % [
 		place, days, cost, Calendar.get_date_string(), Calendar.get_monsoon_desc(),
 	])
+	var miss := _hanjiang_miss(before_ym, port_id)
+	if miss == "death":
+		_hanjiang_miss_death(port_id)
+		update_status_panel()
+		return
 	load_scene(current_scene_id)
+	if miss == "letter":
+		_hanjiang_miss_letter()
 
 
 ## 已解锁港口中、从此港买出能正赚的价差，按利润降序。两头有一头牙行上了门闸（围城 / 封港）的不抄：这头买不着、那头卖不掉（lane w53-6）
@@ -3097,7 +3106,7 @@ func _make_shore_door(fac: Dictionary, pinned_yard: bool) -> Control:
 	const SPECIAL_ICON := {
 		"siege_muster": "yamen", "siege_grain": "market", "siege_wall": "shipyard",
 		"siege_envoy": "tavern", "siege_nangshan": "yamen", "siege_nunnery": "temple",
-		"special_hanjiang_escape": "residence", "special_resign_1275": "exam",
+		"special_hanjiang_escape": "hanjiang", "special_resign_1275": "exam",
 		"special_yashan": "shipyard", "special_gangshou_end": "yamen",
 		"siege_enter": "yamen",
 	}
@@ -3261,6 +3270,8 @@ func _on_shore_wait() -> void:
 	# 候日这句先写、再推日子：当天的月初通告（战况、月息、辞船）排在它上面，不被压住。
 	# 守城页五扇门是固定的，候一日不换门，另写一句守城的
 	log_msg("城上又守了一日。" if _shore_mode == "siege" else "在岸上又候了一日，门又换了几处。")
+	var before_ym := "%04d-%02d" % [Calendar.year, Calendar.month]
+	var here := current_scene_id
 	GameManager.advance_days(1)
 	# 守城页候过城破时点：先记一句城破那天，再按城破结算，不退回寻常岸带
 	if _siege_overdue():
@@ -3274,9 +3285,17 @@ func _on_shore_wait() -> void:
 		_clear_shore()
 		update_status_panel()
 		return
+	var miss := _hanjiang_miss(before_ym, here)
+	if miss == "death":
+		_clear_shore()
+		_hanjiang_miss_death(here)
+		update_status_panel()
+		return
 	_refresh_port_bg()
 	# 按页型重排（守城页候一日仍是守城页，不会退回寻常岸带多出「看风」）
 	_build_shore()
+	if miss == "letter":
+		_hanjiang_miss_letter()
 	update_status_panel()
 
 
@@ -3954,6 +3973,9 @@ const CARD_GANGSHOU := "special_gangshou_end"
 func _check_absent_from_xinghua() -> bool:
 	if GameState.is_ended() or not GameState.has_flag("renamed_wenlong"):
 		return false
+	# 晚投海商没去知兴化军，人物志按不守城写；这一支不走「未归」
+	if GameState.has_flag("late_defection"):
+		return false
 	if GameState.siege_open() or GameState.has_flag("siege_fought"):
 		return false
 	# 按日期判，不按当前战况：1277-02 至 08 陈瓒复城时兴化会回 loyal（09 起唆都再围），
@@ -4554,14 +4576,62 @@ func _cn_num(n: int, liang := false) -> String:
 
 
 
-func _show_notice_dialog(title: String, head: String, text: String, ending: String = "") -> void:
+func _show_notice_dialog(title: String, head: String, text: String, ending: String = "", aside: String = "") -> void:
 	if ending != "":
 		GameState.finish(ending, text)
 	# 云端 7f92 起主场景不再弹系统对话框；本地 main 的终局通知改走同一张居中册页（ChapterSheet），「记下这一纲」后回到当前场景（终局后港口页由 _setup_ended_port 接管）。
 	# ending 随 res 交给册页：有结局过场先演过场，册页弹出时再换结算底图（ENDING_BG）。不落结局的（辞呈三条路的去向）不是了结：
 	# 眉题写时地、大题写事由、钮「合上册页」，不印「了结 / 记下这一纲」（同战报册页另传眉题钮字）
 	var shown_head := head if title == "" else "%s　%s" % [title, head]
-	_show_chapter_dialog({"title": shown_head, "text": text, "resolved": true, "scene": "", "ending": ending} if ending != "" else {"title": title, "text": text, "resolved": true, "scene": "", "kicker": head, "ok_text": "合上册页"})
+	var sheet := {"title": shown_head, "text": text, "resolved": true, "scene": "", "ending": ending} if ending != "" else {"title": title, "text": text, "resolved": true, "scene": "", "kicker": head, "ok_text": "合上册页"}
+	if aside != "":
+		sheet["aside"] = aside
+	_show_chapter_dialog(sheet)
+
+
+## 涵江卡开过、人没走，日历跨进兴化再陷那一月。人在兴化或海口：死亡结算。
+## 乡土线人在别处：只给一封族中来信。海上抵港不走这里。返回 "death" / "letter" / ""。
+func _hanjiang_miss(before_ym: String, here: String) -> String:
+	if GameState.is_ended() or GameState.has_flag("hanjiang_miss_told") or GameState.has_flag("ending_root_sea"):
+		return ""
+	if GameState.has_flag("renamed_wenlong") or not GameState.has_found("nameless_shelter_bay"):
+		return ""
+	var falls := _xinghua_fall_yms()
+	if falls.size() < 2:
+		return ""
+	var fall := str(falls[1])
+	var now := "%04d-%02d" % [Calendar.year, Calendar.month]
+	if before_ym >= fall or now < fall:
+		return ""
+	if here in ["xinghua", "xinghua_harbor"]:
+		return "death"
+	if GameState.identity == "hometown":
+		return "letter"
+	return ""
+
+
+func _hanjiang_miss_death(here: String) -> void:
+	GameState.set_flag("hanjiang_miss_told")
+	var place := GameManager.get_port_name(here)
+	_show_notice_dialog(
+		"城里",
+		"%s・%s%s" % [place, Calendar.get_era_year_string(), Calendar.get_month_name()],
+		"你还在%s。涵江那条船，你没有上。\n\n城破了。巷战从早打到天黑。你没有走出这条巷。" % place,
+		"城里",
+		"陈瓒被执，车裂于市。"
+	)
+
+
+func _hanjiang_miss_letter() -> void:
+	GameState.set_flag("hanjiang_miss_told")
+	GameState.add_ledger_note("族中来信")
+	_show_notice_dialog(
+		"族中来信",
+		"%s・%s%s" % [GameManager.get_port_name(GameState.last_port), Calendar.get_era_year_string(), Calendar.get_month_name()],
+		"兴化有人托船带来一封信。信很短：城破了，族里走得动的都上了船，你不在。",
+		"",
+		"陈瓒被执，车裂于市。"
+	)
 
 
 ## 上报发现：航中勘见的东西要回衙门报了才换得赏格与名声
@@ -4579,6 +4649,8 @@ func _siege_active() -> bool:
 ## 该不该守城（不看人在哪、不开城防记录）：士人线改了名、1276 年、兴化正被围。海口「入城」卡与守城页共用这一判据。
 func _siege_due() -> bool:
 	if GameState.is_ended() or not GameState.has_flag("renamed_wenlong"):
+		return false
+	if GameState.has_flag("late_defection"):
 		return false
 	# 陈文龙守的是 1276 冬那一次；1277 秋唆都再围是陈瓒的城
 	if Calendar.year != 1276:

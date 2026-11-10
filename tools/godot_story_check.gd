@@ -583,15 +583,21 @@ func _route_check() -> void:
 	main.load_scene("xinghua")
 	_check(Eco.war_status("xinghua") == "besieged", "1277-09 唆都再围（涵江卡前提）")
 	_check("special_hanjiang_escape" in main.shore_hand, "1277-09 兴化岸上有涵江海口卡（名单 %s）" % [main.shore_hand])
-	# S3 不得误触发：1277 秋再围不是陈文龙的城。没改名的玩家在兴化候过 1277-11 再陷，不得冒出城防记录或城破结算
+	# S3 不得误触发：1277 秋再围不是陈文龙的城，不得冒出城防记录。
+	# 涵江卡能点却没点、人还在兴化：再陷那天结「城里」，不是守城城破。
 	Cal.from_dict({"year": 1277, "month": 10, "day": 25})
 	main.load_scene("xinghua")
 	var waited_root := 0
 	while Eco.war_status("xinghua") == "besieged" and waited_root < 45:
 		main._on_shore_wait()
 		waited_root += 1
-	_check(Eco.war_status("xinghua") == "fallen" and not GS.is_ended() and not GS.siege_open(),
-		"没改名的玩家候过 1277 再围（候 %d 日到 %s）不冒城防、不结算（结局「%s」）" % [waited_root, Cal.get_date_string(), GS.ended])
+	_check(Eco.war_status("xinghua") == "fallen" and GS.ended == "城里" and not GS.siege_open(),
+		"没改名的玩家候过 1277 再围（候 %d 日到 %s）不冒城防，涵江没走则结「城里」（结局「%s」）" % [waited_root, Cal.get_date_string(), GS.ended])
+	main._confirm_chapter_sheet()
+	_close_dialogs(main)
+	GS.from_dict({})
+	GS.identity = "merchant"
+	GS.record_discovery("nameless_shelter_bay")
 	Cal.from_dict({"year": 1277, "month": 9, "day": 10})
 	main.load_scene("xinghua")
 	# 涵江出海：结算标题的年号跟出海后的日历走、与终局落款同年（原先硬写「景炎三年三月」，卡却只在景炎二年出现，门禁一直绿）
@@ -1259,17 +1265,19 @@ func _life_line_check(main: Node) -> void:
 				"%s主角生卒（%s）%s卒年：「%s」" % [pair[0], tag, "写" if dead else "不写", t])
 		cx.queue_free()
 		pp.queue_free()
-	# #11 卒年到次年才写：陈瓒卒于 1277（冬），1277 年里不写，1278 年写
-	var cz: Dictionary = GM.get_character("chen_zan")
-	var cz_died := int(cz.get("died", 0))
-	_check(cz_died > 0, "陈瓒原稿有卒年（%d）" % cz_died)
+	# 死讯露出那月起写卒年：陈瓒 1277-11、林华 1277-02、断臂老兵 1267-11
 	GS.from_dict({})
-	Cal.from_dict({"year": cz_died, "month": 11, "day": 5})
-	var cz_same: String = Art.life_line(cz)
-	Cal.from_dict({"year": cz_died + 1, "month": 1, "day": 1})
-	var cz_next: String = Art.life_line(cz)
-	_check(cz_same.find(str(cz_died)) < 0 and cz_next.find(str(cz_died)) >= 0,
-		"卒年到次年才写：陈瓒 %d 年里「%s」，%d 年正月「%s」" % [cz_died, cz_same, cz_died + 1, cz_next])
+	for row in [["chen_zan", 1277, 11], ["lin_hua", 1277, 2], ["veteran", 1267, 11]]:
+		var who: Dictionary = GM.get_character(str(row[0]))
+		var y := int(row[1])
+		var m := int(row[2])
+		_check(str(who.get("died_ym", "")) == "%04d-%02d" % [y, m], "%s 的 died_ym 跟死讯同月" % str(row[0]))
+		Cal.from_dict({"year": y, "month": m - 1, "day": 5})
+		var before: String = Art.life_line(who)
+		Cal.from_dict({"year": y, "month": m, "day": 5})
+		var on_month: String = Art.life_line(who)
+		_check(before.find(str(y)) < 0 and on_month.find(str(y)) >= 0,
+			"%s 死讯前一月「%s」不写卒年，%d-%02d「%s」起写" % [str(row[0]), before, y, m, on_month])
 	GS.from_dict({})
 
 
@@ -2340,11 +2348,15 @@ func _v0928_visual_check(_main: Node) -> void:
 	GS.chapter = 4
 	Cal.from_dict({"year": 1276, "month": 11, "day": 5})
 	GS.siege_begin()
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	_check(Art.codex_look(pc).find("宝祐三年") >= 0 and Art.portrait_path(pc).ends_with("chen_wenlong.png"),
+		"1276 前相貌与立绘仍是宝祐三年的学生（「%s」／%s）" % [Art.codex_look(pc), Art.portrait_path(pc)])
+	Cal.from_dict({"year": 1276, "month": 11, "day": 5})
 	var sc_bio: String = Art.codex_bio(pc)
 	_check(Art.courtesy_of(pc).find("君贲") >= 0 and Art.codex_title(pc).find("知兴化军") >= 0 and sc_bio.find("殿试") >= 0
 			and sc_bio.find("知兴化军") >= 0 and not ("陈纲首" in Art.codex_alts(pc)) and sc_bio.find("岳王庙") < 0
-			and Art.codex_look(pc).find("宝祐三年") >= 0,
-		"士人线守城中：字号有君贲，称谓「%s」，小传有殿试改名、知兴化军，无陈纲首、无死法，形貌标宝祐三年" % Art.codex_title(pc))
+			and Art.codex_look(pc).find("短须") >= 0 and Art.portrait_path(pc).ends_with("chen_wenlong_1276.png"),
+		"士人线守城中：字号有君贲，称谓「%s」，小传有殿试改名、知兴化军，无陈纲首、无死法，相貌与立绘换成短须（「%s」）" % [Art.codex_title(pc), Art.codex_look(pc)])
 	# 海商线第三章（1270-06）：有陈纲首；士人线同年没有
 	GS.from_dict({})
 	GS.identity = "merchant"
@@ -2455,6 +2467,25 @@ func _v0928_visual_recheck(Art, pc: Dictionary, zan: Dictionary, lu: Dictionary,
 	_check(heir_gs.find("船股") < 0 and heir_gs.find("陈大人") < 0 and heir_zs.find("船股") < 0 and heir_zs.find("一铺之地") < 0
 			and heir_ld.find("船股") >= 0 and heir_ld.find("一铺之地") >= 0,
 		"林家后人：纲首、忠肃了结后无「陈大人」「船股一分」，晚投海商那一支 1276-01 未了结就有")
+	# 晚投没去守城：招降、为质、回书和两枚关系签都不露；士人线同月仍露
+	var kin: Dictionary = GM.get_character("kin_envoy")
+	var jing: Dictionary = GM.get_character("chen_jing")
+	var gang: Dictionary = GM.get_character("wang_gangzhong")
+	GS.from_dict({})
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	Cal.from_dict({"year": 1276, "month": 11, "day": 5})
+	_check(Art.codex_bio(kin).find("招降") >= 0 and Art.codex_short(jing).find("为质") >= 0
+			and Art.codex_bio(gang).find("回书") >= 0 and Art.rel_visible("拒降之人"),
+		"士人线 1276-11：姻亲招降、陈璥为质、王刚中回书与「拒降之人」仍在")
+	Cal.from_dict({"year": 1276, "month": 12, "day": 5})
+	_check(Art.rel_visible("所负主官"), "士人线 1276-12：「所负主官」仍在")
+	GS.set_flag("late_defection")
+	var kin_t: String = Art.codex_short(kin) + Art.codex_bio(kin) + Art.codex_title(kin)
+	var jing_t: String = Art.codex_short(jing) + Art.codex_bio(jing)
+	_check(kin_t.find("招降") < 0 and kin_t.find("璥") < 0 and jing_t.find("为质") < 0
+			and Art.codex_bio(gang).find("回书") < 0 and not Art.rel_visible("拒降之人") and not Art.rel_visible("所负主官"),
+		"晚投海商：姻亲招降、陈璥为质、王刚中回书不露，「拒降之人」「所负主官」不露")
 	# 市舶小吏「添纲首二字」与主角称谓同一口径（c3 且身份是海商 / 未定）：士人线第三章不露
 	var cust: Dictionary = GM.get_character("customs_official")
 	GS.from_dict({})
@@ -2680,9 +2711,10 @@ func _v0928_hanjiang_check(main: Node) -> void:
 		var urgent := sub.find("撑不过这个月") >= 0
 		_check(sub != "" and urgent == bool(sc[3]),
 			"涵江卡 %d-%02d-%02d 副题%s（「%s」）" % [sc[0], sc[1], sc[2], "催促" if sc[3] else "写去处", sub])
-	# 卡的图标借「宅」（带族人走），不再和船屋门撞同一张大船。撞图对象换成了「住宅」门（同日可并排），待美术出涵江卡专用图标
+	# 涵江卡用自己的夜港图标，不和「住宅」门并排同一张宅院图
 	var main_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
-	_check(main_src.find("\"special_hanjiang_escape\": \"residence\"") >= 0, "SPECIAL_ICON 里涵江卡借 residence 图标")
+	_check(main_src.find("\"special_hanjiang_escape\": \"hanjiang\"") >= 0 and FileAccess.file_exists("res://assets/icon_hanjiang.png"),
+		"SPECIAL_ICON 里涵江卡用 icon_hanjiang")
 
 	# ⑤ 陈瓒船股：围城起点前一月有；起点当月、再陷前一月（陈瓒仍活着）没有；已立股那行照旧显示
 	var s0y := int(siege0.split("-")[0])
@@ -2913,6 +2945,34 @@ func _v0928_hanjiang_check(main: Node) -> void:
 				if str(cap.get("text", "")).find("旧避风澳泊了六天") >= 0:
 					moor_left = float(shot.get("duration", 0.0)) - float(cap.get("t", 0.0))
 	_check(moor_left >= 3.5, "ending_root「船在旧避风澳泊了六天」字幕到镜末 %.1f 秒（≥3.5）" % moor_left)
+
+	# 错过涵江：再陷月从兴化候一日跨进去、卡没点 →「城里」；已经在再陷月里再候不算；
+	# 乡土线在别港只收族中来信。车裂一句是小字。
+	reset_root.call(last_y, last_m, Cal.DAYS_PER_MONTH)
+	main._on_shore_wait()
+	var aside := _find_label_text(main.get("_chapter_host"), "车裂")
+	_check(GS.ended == "城里" and "%04d-%02d" % [Cal.year, Cal.month] == zan_fall and aside.find("车裂") >= 0,
+		"再陷那天人在兴化、涵江卡没点，候一日结「城里」，车裂是小字（「%s」%s「%s」）" % [GS.ended, Cal.get_date_string(), aside])
+	main._confirm_chapter_sheet()
+	_close_dialogs(main)
+	reset_root.call(zfy, zfm, 2)
+	main._on_shore_wait()
+	_check(not GS.is_ended(), "已经进了再陷月再候一日，不算再陷那天（结局「%s」）" % GS.ended)
+	reset_root.call(last_y, last_m, Cal.DAYS_PER_MONTH)
+	GS.identity = "hometown"
+	GS.last_port = "quanzhou"
+	main.load_scene("quanzhou")
+	main._on_shore_wait()
+	_check(not GS.is_ended() and GS.has_flag("hanjiang_miss_told") and _find_label_text(main.get("_chapter_host"), "族中来信") != "",
+		"乡土线不在兴化，再陷那天只收族中来信（结局「%s」）" % GS.ended)
+	main._confirm_chapter_sheet()
+	_close_dialogs(main)
+	reset_root.call(last_y, last_m, Cal.DAYS_PER_MONTH)
+	main._on_rest(1, "xinghua_harbor")
+	_check(GS.ended == "城里", "旅店歇过再陷那天、人在兴化海口，同样结「城里」（「%s」）" % GS.ended)
+	main._confirm_chapter_sheet()
+	_close_dialogs(main)
+
 	GS.from_dict({})
 	Flt.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
@@ -2927,6 +2987,13 @@ func _v0928_hanjiang_check(main: Node) -> void:
 func _v0928_siege_check(main: Node) -> void:
 	var Crw: Node = root.get_node("Crew")
 	var Art = load("res://scripts/ui/CharacterArt.gd")
+	GS.from_dict({})
+	GS.identity = "merchant"
+	GS.set_flag("renamed_wenlong")
+	GS.set_flag("late_defection")
+	Cal.from_dict({"year": 1276, "month": 12, "day": 5})
+	_check(not main._siege_due() and not main._check_absent_from_xinghua(),
+		"晚投海商不守城，也不走未归")
 	var fp: Dictionary = main._siege_fall_point()
 	_check(not fp.is_empty() and str(fp.get("month", "")) != "", "首守城破时点推得出历法写法（%s）" % [fp])
 	if fp.is_empty():

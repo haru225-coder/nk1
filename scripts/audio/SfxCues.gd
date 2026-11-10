@@ -90,6 +90,15 @@ const HOOKS := {
 		"where": "ChapterCard._ready（章节卡开卷：一声磬，与墨幕那声同在收声组 bell）"},
 	&"cs_seal": {"layers": [[&"combat_hit", -14.0, 0.0, 0.55]], "added": true, "gap_ms": 120,
 		"where": "cs_seal._apply 触纸（朱印落纸一声轻拍：开场方位印、章节卡、抵港横幅「泊」、标题页的印）"},
+	# 城区热区进场。只用现成八样里最轻的几声，不另做声音。
+	&"dist_door": {"layers": [[&"combat_hit", -16.0, 0.0, 0.5]], "added": true, "gap_ms": 800,
+		"where": "DistrictPage 热区进场（衙廊、作坊、塌房、城门：门轴一声轻响）"},
+	&"dist_water": {"layers": [[&"combat_flee", -14.0, 0.0, 0.65]], "added": true, "gap_ms": 800,
+		"where": "DistrictPage 热区进场（码头、渡口、陂塘：水声）"},
+	&"dist_bell": {"layers": [[&"transition", -14.0, 0.0, 0.8]], "added": true, "gap_ms": 800, "group": &"bell",
+		"where": "DistrictPage 热区进场（寺观、山亭：一声轻磬）"},
+	&"dist_air": {"layers": [[&"combat_flee", -18.0, 0.0, 1.15]], "added": true, "gap_ms": 800,
+		"where": "DistrictPage 热区进场（坊市、坊巷、茶坊：一阵很轻的风）"},
 }
 
 ## 旗舰损伤事件（Ship.damage_event 的 kind）→ 挂点；表外的 kind 不响

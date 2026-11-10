@@ -242,10 +242,13 @@
         }
       ],
       "look": "二十余岁，清瘦，指节有笔茧；青布直裰洗得发白，束髻插木簪，腰系旧丝绦，袖中常藏一卷货引。",
-      "portrait": "res://assets/portraits/chen_wenlong.png",
-      "portrait_src": "codex:portrait_chen_wenlong.png",
+      "portrait": "res://assets/portraits/chen_wenlong_1276.png",
+      "portrait_before": {
+        "1276-01": "res://assets/portraits/chen_wenlong.png"
+      },
+      "portrait_src": "gen:cursor:chen_wenlong_late.jpg",
       "portrait_status": "painted",
-      "portrait_note": ""
+      "portrait_note": "1276 起换四十余岁短须像。此前仍挂宝祐三年的学生像。"
     },
     {
       "id": "chen_uncle",
@@ -305,9 +308,9 @@
       ],
       "look": "四十余岁，海风晒黑的脸，短须；青布短褐外罩旧褙子，腰挂算袋与铜钥，手背有缆绳勒痕。",
       "portrait": "res://assets/portraits/chen_uncle.png",
-      "portrait_src": "gen:grok:chen_uncle.png",
+      "portrait_src": "gen:cursor:chen_uncle_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": "2026-10-26 重出。敞口油灯，没有玻璃罩。西式钥匙已去掉，腰间没有铜钥。一方朱印。胸口一个布结。"
+      "portrait_note": "2026-11-10 重绘。算袋和铜钥挂在腰上，案上敞口陶油碗。领口仍有一个布结。"
     },
     {
       "id": "xinghua_messenger",
@@ -424,9 +427,9 @@
       ],
       "look": "年约五旬，光头，白须修剪整齐，眉目温和；灰褐直裰外披金缘褐色袈裟，手捻念珠，袖口沾墨。",
       "portrait": "res://assets/portraits/monk_jinghai.png",
-      "portrait_src": "codex:portrait_old_monk.png",
+      "portrait_src": "gen:cursor:monk_jinghai.jpg",
       "portrait_status": "painted",
-      "portrait_note": "樱花、和式寺檐、石灯笼已换成虚化的暮色背景，袈裟上的家纹式团纹已盖掉；面相与袈裟形制仍偏日式禅僧。【P1 重绘】"
+      "portrait_note": "2026-11-10 重绘。宋式褐袍、念珠、袖口墨点；寺墙是中式屋檐，无樱花、石灯笼和家纹。"
     },
     {
       "id": "merchant_lin",
@@ -504,9 +507,9 @@
       ],
       "look": "四十五六，精瘦，八字短须；黑纱高装巾子，深靛暗纹直裰，袖口磨白，腰悬算袋，手不离一册纸本货账。",
       "portrait": "res://assets/portraits/merchant_lin.png",
-      "portrait_src": "codex:portrait_mingzhou_merchant.png",
+      "portrait_src": "gen:cursor:merchant_lin.jpg",
       "portrait_status": "painted",
-      "portrait_note": "灯笼「処」、陶罐「銘酒」、竖招牌「千客萬来」等日文用字已补成素面（保留灯笼「酒」字）；酒肆陈设仍带和风，人物略年轻于设定。【P1 重绘】"
+      "portrait_note": "2026-11-10 重绘。四十五岁上下，短须，高装巾，港桅为背景。账册无字。巾额有一枚小金饰，不是字。"
     },
     {
       "id": "pilot_ana",
@@ -570,9 +573,9 @@
       ],
       "look": "二十出头，精瘦结实，日晒古铜近黑；红布缠头，靛青短褐外罩破麻背心，腰掖短刀，赤脚。",
       "portrait": "res://assets/portraits/pilot_ana.png",
-      "portrait_src": "main:sprite_ana.png",
+      "portrait_src": "gen:cursor:pilot_ana.jpg",
       "portrait_status": "painted",
-      "portrait_note": "sprite_ana 的紫色皮肤已按亮度重映射为日晒古铜，并做厚涂化、去画框、4:5 裁切；底稿是硬线数码插画，笔触与 Codex 厚涂仍有差别。【P1 重绘】"
+      "portrait_note": "2026-11-10 重绘。厚涂，日晒古铜，红布缠头，肩上盘缆，腰间短刀。不再用紫皮肤硬线稿。"
     },
     {
       "id": "chen_zan",
@@ -586,6 +589,7 @@
       "origin": "兴化莆田玉湖",
       "born": null,
       "died": 1277,
+      "died_ym": "1277-11",
       "historical": true,
       "tier": "major",
       "chapters": [
@@ -642,9 +646,9 @@
       ],
       "look": "四十上下，方面阔口，须髯浓黑；绛褐绸面褙子内衬白纻衫，头戴高装巾子，腰悬铜鱼钥。",
       "portrait": "res://assets/portraits/chen_zan.png",
-      "portrait_src": "gen:grok:chen_zan.png",
+      "portrait_src": "gen:cursor:chen_zan.jpg",
       "portrait_status": "painted",
-      "portrait_note": "2026-10-26 重出。高装巾子立起来了，顶上有一道直缝，偏硬。方孔钱在手里，钱上有浅字。敞口油灯、交叠背心和白绦还在。铜鱼钥没画出。"
+      "portrait_note": "2026-11-10 重绘。高装巾、绛褐褙子、白衫、敞口油灯。铜鱼钥和方孔钱在手里，钱上无字。"
     },
     {
       "id": "lin_hua",
@@ -658,6 +662,7 @@
       "origin": "泉州",
       "born": null,
       "died": 1277,
+      "died_ym": "1277-02",
       "historical": true,
       "tier": "major",
       "chapters": [
@@ -763,9 +768,9 @@
       ],
       "look": "年近六旬，白须垂胸，眉目慈和；靛青暗纹直裰，头裹青布幅巾，手握一卷纸札，立于碑林古榕之间。",
       "portrait": "res://assets/portraits/huang_quan.png",
-      "portrait_src": "codex:portrait_jiaozhi_temple_keeper.png",
+      "portrait_src": "gen:cursor:huang_quan.jpg",
       "portrait_status": "painted",
-      "portrait_note": "胸前绣片近明式补子，头巾近明式方巾。【P3 可选重绘】"
+      "portrait_note": "2026-11-10 重绘。青布幅巾、靛青直裰，没有补子。碑林古榕。碑面有浅痕，看不清字。"
     },
     {
       "id": "chen_mother",
@@ -831,9 +836,9 @@
       ],
       "look": "年过五旬，银丝挽髻插素木簪，面容清瘦；月白交领大袖衫外罩深褐褙子，素无纹饰，手有织茧，坐于织机旁。",
       "portrait": "res://assets/portraits/chen_mother.png",
-      "portrait_src": "gen:cursor:chen_mother_v2.png",
+      "portrait_src": "gen:cursor:chen_mother_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": "油画原稿：银发低髻的黄氏低头扶着木织机横梁，月白大袖衫外罩深褐无袖外衣，烛光侧照；簪头带金色尖端不算素木，外衣是交叠坎肩而非对襟褙子。"
+      "portrait_note": "2026-11-10 重绘。银髻素木簪，月白大袖，坐在织机旁。深褐外衣仍是交叠坎肩，不是对襟褙子。"
     },
     {
       "id": "customs_official",
@@ -893,9 +898,9 @@
       ],
       "look": "四十余岁，面色蜡黄，嘴角下垂；黑纱展脚幞头，皂色圆领公服，腰束革带，袖里总揣着铜钱与货单。",
       "portrait": "res://assets/portraits/customs_official.png",
-      "portrait_src": "codex:portrait_customs_official.png",
+      "portrait_src": "gen:cursor:customs_official.jpg",
       "portrait_status": "painted",
-      "portrait_note": "明式凤纹补子与左胸一列盘扣已抹去；第 2 轮返工再抹去清式翻领尖、前襟竖缝与胸前横向盘扣纹，颈根改成宋式圆领（黑缎领圈，上沿露一线白纻护领），与 look「皂色圆领公服」相合。短翅乌纱仍在（look 为展脚幞头）。【P2 可选重绘】"
+      "portrait_note": "2026-11-10 重绘。展脚幞头横翅拉直，皂色圆领，革带。没有补子和盘扣。"
     },
     {
       "id": "veteran",
@@ -909,6 +914,7 @@
       "origin": "未详（端平年间北来）",
       "born": null,
       "died": 1267,
+      "died_ym": "1267-11",
       "historical": false,
       "tier": "minor",
       "chapters": [
@@ -1119,9 +1125,9 @@
       ],
       "look": "三十来岁，冻红的脸，胡茬杂乱；破毡笠，灰褐厚絮短袄，腰缠草绳，手握长鞭，靴上沾着江泥。",
       "portrait": "res://assets/portraits/linan_carter.png",
-      "portrait_src": "gen:cursor:linan_carter_v1.png",
+      "portrait_src": "gen:cursor:linan_carter.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画：灰蒙钱塘江头回头侧脸的车夫，冻红脸、胡茬，戴破毡笠，灰褐厚絮短袄束草绳，一手握长鞭杆、鞭绳绕身，嘴边一缕呵气；毡笠帽顶有折痕，轮廓近西式软呢帽，远处雾里的城门楼形制不清，无字。"
+      "portrait_note": "2026-11-10 重绘。冻红脸、呵气、草绳、长鞭、江雾城门。毡笠是圆檐软帽，不再是折痕呢帽。"
     },
     {
       "id": "shishou_chief",
@@ -1169,9 +1175,9 @@
       ],
       "look": "四十上下，虎背熊腰，满脸风霜；赭色粗布短褐，腰缠布带挂石囊，赤臂缠旧布，手掂一块拳大青石。",
       "portrait": "res://assets/portraits/shishou_chief.png",
-      "portrait_src": "gen:cursor:shishou_chief_v1.png",
+      "portrait_src": "gen:cursor:shishou_chief.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画：黄昏木兰陂石堰跌水前，赭黄粗布短褐挽袖，前臂与腕缠旧布，右手高举一块青石、左手另握一块，斜挎一只满装石块的麻囊，红褐布带束腰；石堰顶上两个小木架略突兀，无字。"
+      "portrait_note": "2026-11-10 重绘。赭短褐、臂缠旧布、两手青石、石囊。石堰跌水，顶上没有木架。"
     },
     {
       "id": "pu_steward",
@@ -1328,9 +1334,9 @@
       ],
       "look": "十一二岁，剃发光头，圆脸冻红；灰布小直裰短了一截，赤脚踏草鞋，怀里揣着油纸包好的拓本。",
       "portrait": "res://assets/portraits/kaiyuan_novice.png",
-      "portrait_src": "gen:cursor:kaiyuan_novice_v2.png",
+      "portrait_src": "gen:cursor:kaiyuan_novice.jpg",
       "portrait_status": "painted",
-      "portrait_note": "油画半身：剃发小沙弥着灰布直裰，雨中合十，臂弯夹一叠黄褐油纸包，背后是开元寺回廊木柱与楼阁式塔的虚影；冷灰雨色、脸上暖光；面相略大于十一二岁，纸包偏硬板。"
+      "portrait_note": "2026-11-10 重绘。十一二岁，灰直裰、草鞋，雨中合十，背后楼阁塔。油纸包仍偏硬。"
     },
     {
       "id": "quanzhou_broker",
@@ -1383,9 +1389,9 @@
       ],
       "look": "三十来岁，尖脸小眼，两撇细须；皂色头巾，半旧褐绸窄袖衫，腰挂钱袋与算袋，手里捏一叠货单。",
       "portrait": "res://assets/portraits/quanzhou_broker.png",
-      "portrait_src": "gen:cursor:quanzhou_broker_v1.png",
+      "portrait_src": "gen:cursor:quanzhou_broker.jpg",
       "portrait_status": "painted",
-      "portrait_note": "油画半身：皂色裹头巾、髭须加颏须的牙人，褐色厚外衣内衬两层交领，两手各捏一张空白货单，暗褐素墙；腰间钱袋是金属横梁框口袋，略带西式，已裁到画幅下缘。"
+      "portrait_note": "2026-11-10 重绘。皂巾、空白货单。腰间是布抽绳钱袋，不是金属框口袋。"
     },
     {
       "id": "guild_head",
@@ -1439,9 +1445,9 @@
       ],
       "look": "五十上下，富态圆脸，短须；黑纱幞头，酱色绸面圆领袍，腰围革带，手按一本发黄账簿。",
       "portrait": "res://assets/portraits/guild_head.png",
-      "portrait_src": "gen:cursor:guild_head_v1.png",
+      "portrait_src": "gen:cursor:guild_head.jpg",
       "portrait_status": "painted",
-      "portrait_note": "油画原稿：五十上下的商行行首，富态圆脸、短须、神情冷，黑布高巾，土黄交领宽袖袍系革带，右手食指按一叠发黄毛边软皮账簿，背后是捆扎的木货箱和横木上吊的一只木秤砣；袍为交领土黄（设定原写酱色圆领）。"
+      "portrait_note": "2026-11-10 重绘。酱色圆领、软翅幞头，手按空白账簿。背后是货箱和秤砣。"
     },
     {
       "id": "kin_envoy",
@@ -1493,9 +1499,9 @@
       ],
       "look": "四十余岁，文弱白净，满面尘土；褪色蓝绸圆领袍，头巾歪斜，跪于城下，双手高擎一封书信。",
       "portrait": "res://assets/portraits/kin_envoy.png",
-      "portrait_src": "gen:cursor:kin_envoy_v2.png",
+      "portrait_src": "gen:cursor:kin_envoy_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画：冬日灰城墙下，文弱男子满面尘泪、灰巾歪系额头，身穿褪色蓝袍，双手把一封空白折信高举过头；右后挂一面素白布旗，左后远处是城楼剪影；袍画成交领（非圆领），跪姿看不出，通幅偏冷灰，无字。"
+      "portrait_note": "2026-11-10 重绘。褪色蓝绸圆领，双膝跪在城下，空白信举过头顶。灰巾、尘泪、白旗。"
     },
     {
       "id": "wu_zhen",
@@ -1542,9 +1548,9 @@
       "relations": [],
       "look": "年近五十，精瘦黝黑，眼角鱼尾纹深，颏下一把花白短须；戴旧竹笠，麻布交领短褐外披蓑衣，蓑衣下挂小铜针盘，手有渔网老茧。",
       "portrait": "res://assets/portraits/wu_zhen.png",
-      "portrait_src": "codex:portrait_penghu_fisherman.png",
+      "portrait_src": "gen:cursor:wu_zhen_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Codex「澎湖渔夫」油画：口衔长烟杆是明末以后的物件，已补掉（近口段取胡须平移、远端补晚霞）。竹笠、蓑衣、交领短褐与设定一致；形貌年纪按画改为年近五十。"
+      "portrait_note": "2026-11-10 重绘。竹笠、蓑衣、交领短褐。胸前是一只敞口铜盘，盘里一根素针。"
     },
     {
       "id": "cai_qixing",
@@ -2048,9 +2054,9 @@
       "relations": [],
       "look": "三十余岁，高鼻深目，浓黑络腮胡；褪色花布缠头，深青织纹窄袖长袍，颈围旧巾，立于船舷，目光沉静。",
       "portrait": "res://assets/portraits/shi_naowei.png",
-      "portrait_src": "codex:portrait_abbas.png",
+      "portrait_src": "gen:cursor:shi_naowei.jpg",
       "portrait_status": "painted",
-      "portrait_note": "正午蓝天碧海已改为暮色并虚化，右侧绳梯索具与雕花舷栏读不出形制；船仍偏西式横帆。【P2 可选重绘】"
+      "portrait_note": "2026-11-10 重绘。花布缠头，暮色。帆是竹篾撑条的硬帆，不是西式横帆。"
     },
     {
       "id": "zhou_suanchou",
@@ -2206,9 +2212,9 @@
       ],
       "look": "四十余岁，面容和气，眼角笑纹；皂纱软幞头，赭褐织纹交领袍，胸前抱一架黑漆算盘，身后灯火账铺。",
       "portrait": "res://assets/portraits/huang_zhangfang.png",
-      "portrait_src": "codex:portrait_innkeeper.png",
+      "portrait_src": "gen:cursor:huang_zhangfang.jpg",
       "portrait_status": "painted",
-      "portrait_note": "头戴明清式六合帽、衣襟盘扣，与 look「皂纱软幞头」不符。【P2 可选重绘】"
+      "portrait_note": "2026-11-10 重绘。皂纱软幞头、交领袍、黑漆算盘。不再是六合帽和盘扣。算盘是这个人的设定，不是账房底图那只。"
     },
     {
       "id": "ye_shibo",
@@ -2255,9 +2261,9 @@
       "relations": [],
       "look": "五十余岁，面容憔悴，眼神闪避；乌纱短翅幞头，深靛圆领旧公服，怀抱几卷舶货簿籍，身后海岸风急。",
       "portrait": "res://assets/portraits/ye_shibo.png",
-      "portrait_src": "codex:portrait_jeju_official.png",
+      "portrait_src": "gen:cursor:ye_shibo.jpg",
       "portrait_status": "painted",
-      "portrait_note": "胸前方形绣片近明式补子；背景有马匹（Codex 原为耽罗官员）。【P2 可选重绘】"
+      "portrait_note": "2026-11-10 重绘。短翅幞头、圆领公服，胸前没有补子。背景是海岸和船，没有马。"
     },
     {
       "id": "pu_alie",
@@ -2309,9 +2315,9 @@
       ],
       "look": "十六七岁，瘦高，眉眼深、肤色微褐；白布小缠头，半旧青布窄袖衫，腰束彩织带，笑起来露一口白牙。",
       "portrait": "res://assets/portraits/pu_alie.png",
-      "portrait_src": "gen:grok:pu_alie.png",
+      "portrait_src": "gen:cursor:pu_alie.jpg",
       "portrait_status": "painted",
-      "portrait_note": "2026-10-26 重出。十六七岁的瘦脸，青布窄袖交领，白缠头，彩织带。门楼仍是单层雉堞尖拱，不是清净寺逐层内凹。"
+      "portrait_note": "2026-11-10 重绘。十六七岁，白缠头、青布窄袖、彩织带。门楼改成逐层内凹的尖拱。领口有一个布结。"
     },
     {
       "id": "kondo_saburo",
@@ -2358,9 +2364,9 @@
       "relations": [],
       "look": "三十上下，面容端正，目光温和；黑漆乌帽，素色直垂外罩青灰狩衣，腰佩短刀，袖中揣汉文书札。",
       "portrait": "res://assets/portraits/kondo_saburo.png",
-      "portrait_src": "gen:grok:kondo_saburo.png",
+      "portrait_src": "gen:cursor:kondo_saburo.jpg",
       "portrait_status": "painted",
-      "portrait_note": "2026-10-26 重出。日本面孔、立乌帽、青灰狩衣，不是主角换帽子。帆是素色。刀改成素木柄。町屋仍有点江户味道。"
+      "portrait_note": "2026-11-10 重绘。立乌帽、青灰狩衣、素木柄、素帆、板屋。书札拿在手里。"
     },
     {
       "id": "jinghai_shami",
@@ -2423,9 +2429,9 @@
       ],
       "look": "十五六岁，清瘦，剃发光头，眉目细长沉静；灰黑直裰外搭素色缦衣，脚着草鞋，腕挂木念珠，袖口露出一角折好的短札。",
       "portrait": "res://assets/portraits/jinghai_shami.png",
-      "portrait_src": "gen:cursor:jinghai_shami_v1.png",
+      "portrait_src": "gen:cursor:jinghai_shami.jpg",
       "portrait_status": "painted",
-      "portrait_note": "油画原稿（取全身像上半）：博多承天寺记名沙弥，十五六岁少年光头，深灰直裰，长木念珠，双手合十，袖口夹一叠折好的空白短札，石座上一盏敞口油灯，草鞋。"
+      "portrait_note": "2026-11-10 重绘。十五六岁，素色外衣、深灰直裰、草鞋、袖口短札，石座上敞口油盏。念珠搭在合十的手上。"
     },
     {
       "id": "jin_tanluo",
@@ -2573,9 +2579,9 @@
       ],
       "look": "四十余岁，光头，面容清瘦慈悲；赭黄旧直裰外披褐色福田衣，背一只竹药箱，腕挂念珠，指甲缝有药渍。",
       "portrait": "res://assets/portraits/monk_puji.png",
-      "portrait_src": "gen:cursor:monk_puji_v1.png",
+      "portrait_src": "gen:cursor:monk_puji.jpg",
       "portrait_status": "painted",
-      "portrait_note": "开元寺医僧半身油画：光头，赭黄旧直裰外披褐色拼块福田衣，颈挂长念珠，背敞口竹篓，左手捻一撮药草，案上敞口油盏，暗木舱壁。已知小瑕：唇上淡髭；右上暗立板有极淡笔触（非字）；背的是竹篓而非带盖药箱。"
+      "portrait_note": "2026-11-10 重绘。光头无须，赭黄直裰外披福田衣，背上是带盖竹药箱。念珠挂在颈上，腕上也有一串。案上敞口油盏。"
     },
     {
       "id": "wu_yiren",
@@ -2622,9 +2628,9 @@
       "relations": [],
       "look": "四十上下，精瘦，八字胡，眼珠灵活；褪色蓝布长衫，头裹青布幅巾，肩挎药褡裢，手摇串铃。",
       "portrait": "res://assets/portraits/wu_yiren.png",
-      "portrait_src": "gen:cursor:wu_yiren_v1.png",
+      "portrait_src": "gen:cursor:wu_yiren.jpg",
       "portrait_status": "painted",
-      "portrait_note": "漳州走方郎中半身油画：精瘦，八字胡加山羊须，咧嘴笑，青布缠头，褪色蓝布长衫系赭红腰带，斜挎布褡裢，右手举铜手铃，背景是暮色中的榕树与气根。已知小瑕：铃画成单只手铃而非串铃；晚霞偏紫艳，笔触偏刮刀碎块。"
+      "portrait_note": "2026-11-10 重绘。青布缠头、褪色蓝衫、药褡裢，手里是一串铜铃。榕树气根，暮色偏暖。"
     },
     {
       "id": "sun_qiaoshou",
@@ -2670,9 +2676,9 @@
       "relations": [],
       "look": "五十余岁，瘦小精干，花白短须；褐色窄袖长衫，袖口挽起，头裹黑幅巾，腰挂针囊与小药刀，手指细长。",
       "portrait": "res://assets/portraits/sun_qiaoshou.png",
-      "portrait_src": "gen:cursor:sun_qiaoshou_v1.png",
+      "portrait_src": "gen:cursor:sun_qiaoshou_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": "温州老医人半身油画：瘦小，花白短须，黑幅巾，褐紫窄袖长衫挽袖，腰间皮囊插针筒与小刀，两手捏一枚柑橘，左侧是无标签的木药柜，暗褐舱内暖光。已知小瑕：腌菜串未画；腰囊形似后世工具袋。"
+      "portrait_note": "2026-11-10 重绘。黑幅巾、褐窄袖，柑橘和腌菜串，无签药柜。腰间是布卷扎着一束针，旁边一把短刀。"
     },
     {
       "id": "pu_shougeng",
@@ -2746,9 +2752,9 @@
       ],
       "look": "五十余岁，高鼻深目，花白长髯；黑纱幞头，紫色圆领公服，腰佩金鱼袋，指上一枚宝石戒。",
       "portrait": "res://assets/portraits/pu_shougeng.png",
-      "portrait_src": "gen:grok:pu_shougeng.png",
+      "portrait_src": "gen:cursor:pu_shougeng_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": "2026-10-26 重出。直脚幞头、紫袍、金鱼袋、宝石戒，石砌尖拱。领口那颗结已抹成素绸。门楼仍是单层拱，不是逐层内凹。"
+      "portrait_note": "2026-11-10 重绘。直脚、紫袍、金鱼、宝石戒。门楼改成逐层内凹的尖拱，拱形仍偏高尖。"
     },
     {
       "id": "wen_tianxiang",
@@ -2884,9 +2890,9 @@
       ],
       "look": "四十余岁，燕赵大汉，虬髯方颐，目光如炬；乌铁山文甲外罩绯色战袍，兜鍪红缨，按剑立于楼船甲板。",
       "portrait": "res://assets/portraits/zhang_shijie.png",
-      "portrait_src": "gen:cursor:zhang_shijie_v2.png",
+      "portrait_src": "gen:cursor:zhang_shijie.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画：暮色楼船甲板上的虬髯大汉，尖顶兜鍪、红缨、甲片顿项，绯袍罩乌铁甲，左手按舷栏、右手握刀，背后是素面红旗；胸甲把山文甲画成了山景浮雕，桅旁索具偏多，腰间两柄刀护手近圆盘，无字。"
+      "portrait_note": "2026-11-10 重绘。绯袍、红缨兜鍪、楼船甲板。胸甲是菱格甲片，不再画成山景。一把刀。"
     },
     {
       "id": "lu_xiufu",
@@ -2940,9 +2946,9 @@
       ],
       "look": "四十岁上下，清瘦端严，三绺长须；紫色圆领朝服，展脚幞头，手执象笏，衣襟被海风吹乱仍立得笔直。",
       "portrait": "res://assets/portraits/lu_xiufu.png",
-      "portrait_src": "gen:cursor:lu_xiufu_v1.png",
+      "portrait_src": "gen:cursor:lu_xiufu.jpg",
       "portrait_status": "painted",
-      "portrait_note": "油画半身：清瘦端严的陆秀夫，紫色圆领大袖朝服、展脚幞头，双手执窄长素笏，长颏须，暗褐素墙；右耳后多垂一根软带。"
+      "portrait_note": "2026-11-10 重绘。紫圆领、展脚幞头、素笏。耳后没有软带。"
     },
     {
       "id": "jia_sidao",
@@ -3017,9 +3023,9 @@
       ],
       "look": "五十余岁，面白微胖，细目含笑；紫罗公服，玉带金鱼，长翅乌纱幞头，手边搁着一只蟋蟀罐。",
       "portrait": "res://assets/portraits/jia_sidao.png",
-      "portrait_src": "gen:cursor:jia_sidao_v1.png",
+      "portrait_src": "gen:cursor:jia_sidao.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画：素墙木格前，紫罗圆领公服、青玉带，软脚乌纱幞头上横穿一簪，右手抚一只素面龙泉青瓷瓶；幞头没有长翅，青瓷画成瓶而不是蟋蟀罐，看不到金鱼袋，面相清瘦、不显微胖，右缘木格暗斑不是字。"
+      "portrait_note": "2026-11-10 重绘。紫罗圆领、长翅幞头、青玉带。手边是一只有盖的小罐，不再是高瓶。"
     },
     {
       "id": "dong_wenbing",
@@ -3072,9 +3078,9 @@
       ],
       "look": "六十岁上下，方脸浓眉，须髯斑白，神情持重；钹笠帽，织金辫线袄外罩铁札甲，坐于灯火通明的军帐中。",
       "portrait": "res://assets/portraits/dong_wenbing.png",
-      "portrait_src": "gen:cursor:dong_wenbing_v2.png",
+      "portrait_src": "gen:cursor:dong_wenbing_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": "油画原稿：年近六十的元初汉人统帅，方脸浓眉、须髯斑白，戴铁瓣盔、毛皮檐、顶缨、垂顿项，铆钉札甲罩素色交领袍，双手按案，案上两只敞口陶碗燃明火，背后军帐帷幕；盔非钹笠，帐幕上多画了一扇木框窗。"
+      "portrait_note": "2026-11-10 重绘。宽檐钹笠，织金袍罩札甲，案上两盏敞口油碗。帐幕左侧仍有一扇木框窗。"
     },
     {
       "id": "sodu",
@@ -3123,9 +3129,9 @@
       ],
       "look": "四十余岁，蒙古骑将，颧高眼细，髭须浓密；皮铁叶甲外罩貂领袍，戴钹笠铁盔，腰挎弯刀与角弓。",
       "portrait": "res://assets/portraits/sodu.png",
-      "portrait_src": "gen:cursor:sodu_v2.png",
+      "portrait_src": "gen:cursor:sodu_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": "油画原稿：四十余岁蒙古骑将，颧高眼细、八字浓髭、披发，戴尖顶铁盔，毛领袍罩铆钉札甲，斜挎角弓和弯刀，双手按城垛，背后黄昏城墙起火冒黑烟，有攻城车和素面旗；盔形非钹笠，城楼略带石堡感。"
+      "portrait_note": "2026-11-10 重绘。宽檐钹笠，貂领罩札甲，角弓和弯刀。黄昏火烟、攻城车。城墙仍偏石砌。"
     },
     {
       "id": "wang_gangzhong",
@@ -3179,9 +3185,9 @@
       ],
       "look": "五十岁上下，面团团而目游移；深青圆领官袍，乌纱幞头，腰系犀带，手里捏着一封劝降书反复折叠。",
       "portrait": "res://assets/portraits/wang_gangzhong.png",
-      "portrait_src": "gen:cursor:wang_gangzhong_v2.png",
+      "portrait_src": "gen:cursor:wang_gangzhong.jpg",
       "portrait_status": "painted",
-      "portrait_note": "油画原稿：五十上下的降元守臣，面团团、眼神心虚游移，深青圆领宽袖袍，黑色高顶巾左侧横一根簪（不是展脚幞头），双手捧一封展开的空白折信，革带銙片为兽面和人面浮雕，素墙暗背景；帽顶贴画幅上缘。"
+      "portrait_note": "2026-11-10 重绘。深青圆领、展脚幞头、空白劝降书。革带是素扣，没有兽面銙。"
     },
     {
       "id": "cao_chengsun",
@@ -3227,9 +3233,9 @@
       ],
       "look": "四十余岁，白净文弱，眼下青黑；绿色圆领官袍，乌纱幞头，手提一盏灯笼，站在东门门闩旁。",
       "portrait": "res://assets/portraits/cao_chengsun.png",
-      "portrait_src": "gen:cursor:cao_chengsun_v1.png",
+      "portrait_src": "gen:cursor:cao_chengsun.jpg",
       "portrait_status": "painted",
-      "portrait_note": "油画原稿：四十余岁的兴化通判，神情惊惶，绿色圆领宽袖袍，黑色高巾横一根簪（不是展脚幞头），右手提、左手托一盏竹骨油纸圆筒灯，身旁一根带铁箍的大木柱，背后夜色中深檐亭屋亮灯有人影；门闩没有画出。"
+      "portrait_note": "2026-11-10 重绘。展脚幞头、绿色圆领、油纸灯笼。身旁是门闩。"
     },
     {
       "id": "wang_shiqiang",
@@ -3275,9 +3281,9 @@
       ],
       "look": "四十余岁，武人体格，面色阴沉，髭须短硬；宋式铁甲卸了护心镜，外罩元军所赐织金袍，腰悬宋刀。",
       "portrait": "res://assets/portraits/wang_shiqiang.png",
-      "portrait_src": "gen:cursor:wang_shiqiang_v2.png",
+      "portrait_src": "gen:cursor:wang_shiqiang.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画第二版：侧身低头按刀，织金袍罩宋式札甲，卸了护心镜，背景是福建山道和兽纹黑旗，旗上无字；未戴盔，束发小冠横簪。"
+      "portrait_note": "2026-11-10 重绘。补了铁盔。织金袍罩札甲，没有护心镜，腰悬宋刀。山道、兽纹旗，旗上无字。"
     },
     {
       "id": "chen_junqing",
@@ -3326,9 +3332,9 @@
       ],
       "look": "六旬老相，须发皆白，面容方正；紫罗圆领朝服，展脚幞头，腰佩金鱼袋，手执象笏，端坐如祠堂画像。",
       "portrait": "res://assets/portraits/chen_junqing.png",
-      "portrait_src": "gen:grok:chen_junqing.png",
+      "portrait_src": "gen:cursor:chen_junqing.jpg",
       "portrait_status": "painted",
-      "portrait_note": "2026-10-26 重出。展脚是长直横翅。右下角朱红印改成一块素绢。笏上端仍有浅痕。"
+      "portrait_note": "2026-11-10 重绘。长直展脚、紫袍、素笏。腰间金袋是圆囊。"
     },
     {
       "id": "chen_jing",
@@ -3380,9 +3386,9 @@
       ],
       "look": "六七岁男童，瘦小，眼睛很大；素白小袄，总角束发，衣角打着补丁，攥着祖母衣袖站在尼寺廊下。",
       "portrait": "res://assets/portraits/chen_jing.png",
-      "portrait_src": "gen:cursor:chen_jing_v1.png",
+      "portrait_src": "gen:cursor:chen_jing_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": "油画双人像：总角男童着打补丁的白棉袄（带兜帽），攥住祖母臂弯；祖母灰发插簪、深褐交领袍，居画面中上；冬日尼寺廊下飘雪。祖母面相偏年轻，兜帽偏近世。"
+      "portrait_note": "2026-11-10 重绘。总角结在耳侧，这一面只看见一结。补丁白袄，攥着祖母袖。廊下有石灯。"
     },
     {
       "id": "chen_zhongzi",
@@ -3480,9 +3486,9 @@
       ],
       "look": "五十岁上下，面容憔悴而刚硬，须髯蓬乱；残破鱼鳞甲外罩旧战袍，立于箭痕累累的城头。",
       "portrait": "res://assets/portraits/lv_wenhuan.png",
-      "portrait_src": "gen:cursor:lv_wenhuan_v1.png",
+      "portrait_src": "gen:cursor:lv_wenhuan.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画第一版：城头垛口，残破鱼鳞甲外罩旧战袍，眼带血丝，颊上有血痕，远处河对岸敌营起烟；右侧破旗是暗红菱纹，不是字；未戴盔。"
+      "portrait_note": "2026-11-10 重绘。补了铁盔。鱼鳞甲、城头、对岸烟。旗是菱纹，不是字。盔形偏圆。"
     },
     {
       "id": "fan_wenhu",
@@ -3538,9 +3544,9 @@
       ],
       "look": "四十余岁，白胖富态，目光游移；锦绣戎袍罩在未经刀箭的亮银甲上，腰悬镶金宝剑，身后随从捧伞盖。",
       "portrait": "res://assets/portraits/fan_wenhu.png",
-      "portrait_src": "gen:grok:fan_wenhu.png",
+      "portrait_src": "gen:cursor:fan_wenhu.jpg",
       "portrait_status": "painted",
-      "portrait_note": "2026-10-26 重出。锦袍下是札甲鳞片，不是欧式板甲。人偏秃，天色偏亮。"
+      "portrait_note": "2026-11-10 重绘。有发。锦袍下是银札甲，镶金剑，身后有伞盖。天色是暮色。"
     },
     {
       "id": "zhao_jin",
@@ -3586,9 +3592,9 @@
       ],
       "look": "四十余岁，面白少须，衣饰讲究；紫罗袍外罩软甲，乌纱幞头，神色惶惶，身后车马满载箱笼。",
       "portrait": "res://assets/portraits/zhao_jin.png",
-      "portrait_src": "gen:cursor:zhao_jin_v1.png",
+      "portrait_src": "gen:cursor:zhao_jin.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画第一版：紫罗交领袍敞襟露出札甲，头戴黑软巾，回望神色惶惶；背后是城门洞、满载箱笼的车和随从，箱笼无标签。"
+      "portrait_note": "2026-11-10 重绘。展脚幞头、紫袍敞襟露出软甲。身后是城门和装了箱笼的车，没有匾。"
     },
     {
       "id": "huang_wanshi",
@@ -3639,9 +3645,9 @@
       ],
       "look": "五十岁上下，面白微须，笑容圆滑；绯色圆领官袍，腰系金带，乌纱幞头，袖手而立，眼角斜睨。",
       "portrait": "res://assets/portraits/huang_wanshi.png",
-      "portrait_src": "gen:cursor:huang_wanshi_v1_desat.png",
+      "portrait_src": "gen:cursor:huang_wanshi.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画第一版：绯色圆领袍，金銙带，袖手，斜睨含笑，素墙；乌纱幞头上横穿一根簪，不是展脚。 大红袍饱和度偏高，入库前整体降饱和两成。"
+      "portrait_note": "2026-11-10 重绘。绯袍压暗，展脚幞头，袖手。不再是横簪软巾。"
     },
     {
       "id": "li_ke",
@@ -3691,9 +3697,9 @@
       ],
       "look": "四十岁上下，瘦长脸，薄唇细目；青绿官袍，乌纱幞头，手捧一纸弹章，神情恭谨而冷淡。",
       "portrait": "res://assets/portraits/li_ke.png",
-      "portrait_src": "gen:cursor:li_ke_v2.png",
+      "portrait_src": "gen:cursor:li_ke.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画第二版：青绿圆领袍，低头看一纸旧黄色的空白弹章，素墙；乌纱软裹头上横穿一根簪，不是展脚，只用一只手持纸。"
+      "portrait_note": "2026-11-10 重绘。展脚幞头、青绿圆领。两手持空白弹章。"
     },
     {
       "id": "hong_qiwei",
@@ -3745,9 +3751,9 @@
       ],
       "look": "五十岁上下，面容精明，须短而硬；深绿官袍，乌纱幞头，案前摊着鱼鳞图册与算筹。",
       "portrait": "res://assets/portraits/hong_qiwei.png",
-      "portrait_src": "gen:cursor:hong_qiwei_v2.png",
+      "portrait_src": "gen:cursor:hong_qiwei.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 出图第二版：深绿圆领袍、白护领，案上敞口铜油盏和空白卷子；帽子画成插簪高巾，不是乌纱幞头，算筹粗如木杆。"
+      "portrait_note": "2026-11-10 重绘。展脚幞头、深绿圆领。案上敞口油盏、空白纸、细算筹。没有玻璃灯罩。"
     },
     {
       "id": "bayan",
@@ -3809,9 +3815,9 @@
       ],
       "look": "四十岁，身材颀长，面容沉静，短髭；白毡暖帽，织金质孙服外罩铁甲，骑白马，神色从容。",
       "portrait": "res://assets/portraits/bayan.png",
-      "portrait_src": "gen:cursor:bayan_v1.png",
+      "portrait_src": "gen:cursor:bayan.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 出图第一版：白毡暖帽、织金袍外罩札甲、骑白马，远处是城楼剪影和营帐；天色偏紫蓝，毡帽两侧的白毛护耳乍看像白发，刮刀笔触比同系列粗。"
+      "portrait_note": "2026-11-10 重绘。白毡暖帽、织金袍罩札甲、白马。帽耳是帽子，不是白发。天色是暖暮色。"
     },
     {
       "id": "kublai",
@@ -3935,9 +3941,9 @@
       ],
       "look": "五十岁，魁梧冷峻，面颊风霜皴痕；金顶暖帽，貂领织金袍外罩铁甲，按弯刀坐于帐前。",
       "portrait": "res://assets/portraits/mongke.png",
-      "portrait_src": "gen:cursor:mongke_v1.png",
+      "portrait_src": "gen:cursor:mongke_v3.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 出图第一版：金顶暖帽、貂领织金袍外罩札甲，身后群山营帐和烽火；手里是直鞘短刀，不是弯刀，天色偏紫，旗上的金色结纹小到读不出。"
+      "portrait_note": "2026-11-10 重绘。天色改成暖暮色。金顶暖帽、貂领织金袍罩札甲，手里是弯刀。旗上有一小块金纹。"
     },
     {
       "id": "hulagu",
@@ -3993,9 +3999,9 @@
       ],
       "look": "四十岁上下，面阔颧高，髭须浓黑；翻沿皮暖帽，锦缘皮袍外罩鳞甲，身后远处是烟火中的圆顶城池。",
       "portrait": "res://assets/portraits/hulagu.png",
-      "portrait_src": "gen:cursor:hulagu_v1.png",
+      "portrait_src": "gen:cursor:hulagu.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 出图第一版：尖顶翻沿皮帽、皮袍外罩鳞甲，身后圆顶城在烧；双手按的横木下原有一段织机经线和白布，裁切后只剩细边，头发披散，没编辫。"
+      "portrait_note": "2026-11-10 重绘。两根辫子。翻沿皮帽、锦缘皮袍罩鳞甲，身后圆顶城在烧。横木是素的。"
     },
     {
       "id": "hojo_tokiyori",
@@ -4039,9 +4045,9 @@
       "relations": [],
       "look": "三十岁上下，面容清癯，目光锐利；出家后剃发，墨染僧衣外披黑色袈裟，手持念珠，坐于禅院檐下。",
       "portrait": "res://assets/portraits/hojo_tokiyori.png",
-      "portrait_src": "gen:cursor:hojo_tokiyori_v1.png",
+      "portrait_src": "gen:cursor:hojo_tokiyori.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 出图第一版：剃发，白色直垂外斜披黑袈裟，双手捻念珠，背景是檐下木构、纸格窗和枯山水；白天阴天的光，比同系列的暖金侧光冷。"
+      "portrait_note": "2026-11-10 重绘。剃发，墨色僧衣，念珠，檐下暖侧光。袈裟和僧衣连成一身黑。"
     },
     {
       "id": "song_lizong",
@@ -4179,9 +4185,9 @@
       ],
       "look": "三十岁上下，面色苍白浮肿，神情萎靡；赭黄袍，直脚幞头，手握御笔，案上一纸唱第名单墨迹未干。",
       "portrait": "res://assets/portraits/song_duzong.png",
-      "portrait_src": "gen:cursor:song_duzong_v2.png",
+      "portrait_src": "gen:cursor:song_duzong_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": "油画半身：体胖面浮的度宗，素赭黄圆领袍、直脚幞头（两脚偏短），右手执笔、左手按素纸，暗褐素墙；面色偏黄，不够苍白。"
+      "portrait_note": "2026-11-10 重绘。面色改成苍白浮肿。直脚、赭黄袍、执笔按素纸。"
     },
     {
       "id": "song_gongdi",
@@ -4239,9 +4245,9 @@
       ],
       "look": "五六岁男童，眉目清秀，神情茫然；小号赭黄袍，童冠，被宫人领着走出宫门，雪落在衣襟上。",
       "portrait": "res://assets/portraits/song_gongdi.png",
-      "portrait_src": "gen:cursor:song_gongdi_v1.png",
+      "portrait_src": "gen:cursor:song_gongdi.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 出图第一版：雪中宫门台阶前，一只成人的手按在男童肩上；袍色是压暗的赭黄，近乎土褐，戴裹布便帽而非童冠，额前齐刘海，看不出帝王身份。【P3 可选重绘】"
+      "portrait_note": "2026-11-10 重绘。赭黄袍、金缘童冠、雪中宫门，成人的手按在肩上。门上没有匾。"
     },
     {
       "id": "song_duanzong",
@@ -4304,9 +4310,9 @@
       ],
       "look": "七八岁男童，面色苍白，眼圈发青；小号赭黄袍，童冠，坐于楼船舱中，舷窗外海浪翻涌。",
       "portrait": "res://assets/portraits/song_duanzong.png",
-      "portrait_src": "gen:cursor:song_duanzong_v1.png",
+      "portrait_src": "gen:cursor:song_duanzong.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画：楼船舱中惊惶的男童，舷窗外怒浪，桌上敞口油盏，舱壁无字。袍色是暗褐粗布，不像赭黄；童冠画成布巾，帝王身份不显。【P3 可选重绘】"
+      "portrait_note": "2026-11-10 重绘。赭黄袍、金缘黑纱童冠。楼船舱、怒浪、敞口油盏。舱壁无字。"
     },
     {
       "id": "empress_xie",
@@ -4363,9 +4369,9 @@
       ],
       "look": "六十余岁，面容端肃，鬓发斑白；深青翟衣，龙凤花钗冠，双手捧锦匣所盛传国玺。",
       "portrait": "res://assets/portraits/empress_xie.png",
-      "portrait_src": "gen:cursor:empress_xie_v2.png",
+      "portrait_src": "gen:cursor:empress_xie.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画：深青交领大袖袍、捧素金锦匣，素墙，鬓发灰白。龙凤花钗冠画成嵌蓝宝石的低矮金冠带，近西式冠冕；面相约五十，比设定年轻。【P3 可选重绘】"
+      "portrait_note": "2026-11-10 重绘。六十余岁，鬓发灰白，深青大袖，金凤花钗冠，双手捧锦匣。不是西式蓝宝石冠。"
     },
     {
       "id": "dong_songchen",
@@ -4417,9 +4423,9 @@
       ],
       "look": "五十余岁宦官，面白无须，体态臃肿，笑容谄媚；紫色窄袖内侍袍，戴小幞头，手捧拂尘。",
       "portrait": "res://assets/portraits/dong_songchen.png",
-      "portrait_src": "gen:cursor:dong_songchen_v2.png",
+      "portrait_src": "gen:cursor:dong_songchen.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画：黑色软裹幞头、紫袍、马尾拂尘，面白无须，谄笑，素墙。袖为大袖，不是窄袖。"
+      "portrait_note": "2026-11-10 重绘。无须、小幞头、马尾拂尘。袖仍偏宽，不是窄袖。"
     },
     {
       "id": "ding_daquan",
@@ -4471,9 +4477,9 @@
       ],
       "look": "六十余岁，面色青蓝如铁，颧骨高耸，目光阴冷；紫罗公服，长翅乌纱幞头，腰系玉带。",
       "portrait": "res://assets/portraits/ding_daquan.png",
-      "portrait_src": "gen:cursor:ding_daquan_v1.png",
+      "portrait_src": "gen:cursor:ding_daquan.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画：紫罗圆领公服、绿玉带、展脚幞头，长须冷目，素墙。面色是常人黄褐，没有「青蓝如铁」；帽翅圆头偏宽，略近明式。"
+      "portrait_note": "2026-11-10 重绘。长翅幞头拉直。面色是灰青，不是健康的黄褐，也不是一身蓝。"
     },
     {
       "id": "chen_yizhong",
@@ -4533,9 +4539,9 @@
       ],
       "look": "四十余岁，面容清俊而眉间多忧，三绺须；紫罗朝服，乌纱幞头，身后行李箱笼已捆好。",
       "portrait": "res://assets/portraits/chen_yizhong.png",
-      "portrait_src": "gen:cursor:chen_yizhong_v2.png",
+      "portrait_src": "gen:cursor:chen_yizhong_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画：黑色软脚幞头、紫袍、三绺须，手抱捆好的木箱，箱上无签，素墙。袍为交领，不是公服圆领。"
+      "portrait_note": "2026-11-10 重绘。展脚幞头，翅略下垂。紫圆领。箱笼无签。"
     },
     {
       "id": "wang_yue",
@@ -4631,9 +4637,9 @@
       ],
       "look": "五十岁上下，儒雅清瘦，须髯半白；青布直裰，头裹幅巾，手持一卷书，立于长乐海边旧宅门前。",
       "portrait": "res://assets/portraits/chen_ci.png",
-      "portrait_src": "gen:cursor:chen_ci_v2.png",
+      "portrait_src": "gen:cursor:chen_ci_v2.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画：灰蓝幅巾、青布交领袍，手展一卷空白纸，背景是暮色海湾与远山。纸卷无轴，卷法偏西式；没有画旧宅门楣。"
+      "portrait_note": "2026-11-10 重绘。灰蓝幅巾、青布交领，立在旧宅门楣下。卷子收成一筒，轴头偏繁。"
     },
     {
       "id": "yue_fei",
@@ -4684,9 +4690,9 @@
       ],
       "look": "三十九岁，魁伟方颐，浓眉虎目，短髯；金漆锁子甲外罩紫袍，凤翅兜鍪，按剑而立。",
       "portrait": "res://assets/portraits/yue_fei.png",
-      "portrait_src": "gen:cursor:yue_fei_v1.png",
+      "portrait_src": "gen:cursor:yue_fei.jpg",
       "portrait_status": "painted",
-      "portrait_note": "Cursor 油画：神像式正面，凤翅兜鍪、金鳞甲外罩紫袍，身前铜香炉升香烟，素墙。凤翅画成写实羽翼；甲为鳞甲，不是锁子甲。"
+      "portrait_note": "2026-11-10 重绘。凤翅是金属翅，不是羽毛。胸甲近环锁，肩甲仍是鳞片。香炉在身前。"
     }
   ]
 }

@@ -159,6 +159,15 @@ static func show_dialog(main: Control, res: Dictionary) -> void:
 	scroll.add_child(body)
 	# 滚动区底边 24px 渐隐：还有下文时底行淡进墨里，而不是被一刀裁掉半行（第 1 轮评审 minor 2）
 	col.add_child(UiTheme.fade_scroll(scroll, 24))
+	if str(res.get("aside", "")) != "":
+		var aside := Label.new()
+		aside.text = str(res["aside"])
+		aside.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		aside.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		aside.add_theme_font_override("font", UiTheme.font())
+		aside.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+		aside.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
+		col.add_child(aside)
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 2)
 	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE

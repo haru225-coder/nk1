@@ -5,10 +5,13 @@ extends RefCounted
 const Book := preload("res://scripts/core/Districts.gd")
 const _NOTES := preload("res://scripts/ui/CombatNotes.gd")
 const HotspotView := preload("res://scripts/ui/DistrictHotspotView.gd")
+const _SFX := preload("res://scripts/audio/SfxCues.gd")
 
 
 static func open_index(main, port_id: String) -> void:
 	main._enter_panel_mode()
+	_fit_scene(main, false)
+	main.body_text.visible = true
 	main.scene_title.text = "城中各处"
 	var pname := GameManager.get_port_name(port_id)
 	main.body_text.text = "%s城里不止码头这一处。坊巷、寺观、衙廊，各有各的事。" % pname
@@ -33,7 +36,11 @@ static func open_index(main, port_id: String) -> void:
 		main._begin_benches()
 		for row in (groups[kk] as Array):
 			var card: VBoxContainer = main._slip_body()
-			main._slip_title(card, str(row.get("name", "")), Book.kind_label(str(row.get("kind", ""))))
+			var aside := Book.kind_label(str(row.get("kind", "")))
+			var spots = row.get("hotspots", [])
+			if typeof(spots) == TYPE_ARRAY and not spots.is_empty():
+				aside += " · 场景"
+			main._slip_title(card, str(row.get("name", "")), aside)
 			main._slip_note(card, str(row.get("description", "")))
 			var line: HFlowContainer = main._slip_row(card)
 			var why := Book.district_reason(row)
@@ -47,7 +54,7 @@ static func open_index(main, port_id: String) -> void:
 	_leave(main, _to_port.bind(main, port_id))
 
 
-static func open_district(main, port_id: String, dist_id: String, flash := "", cards_only := false) -> void:
+static func open_district(main, port_id: String, dist_id: String, flash := "", cards_only := false, focus_id := "", quiet := false) -> void:
 	var row := Book.district(dist_id)
 	if row.is_empty() or str(row.get("port", "")) != port_id:
 		open_index(main, port_id)
@@ -58,6 +65,10 @@ static func open_district(main, port_id: String, dist_id: String, flash := "", c
 	main._enter_panel_mode()
 	main._set_background_file(str(row.get("bg", "")))
 	main.scene_title.text = str(row.get("name", "城中"))
+	var body := str(row.get("description", ""))
+	if flash != "":
+		body += "\n\n" + flash
+	main.body_text.text = body
 
 	var ixs: Array = []
 	for ix in row.get("interactions", []):
@@ -67,18 +78,17 @@ static func open_district(main, port_id: String, dist_id: String, flash := "", c
 			continue
 		ixs.append(ix)
 	var hotspot_data := _hotspot_data(port_id, ixs, row.get("hotspots", []))
-	if cards_only or hotspot_data.is_empty():
-		main.body_text.text = str(row.get("description", ""))
-		if flash != "":
-			main.body_text.text += "\n\n" + flash
-	else:
-		main.body_text.text = flash
 	if not cards_only and not hotspot_data.is_empty():
+		main.body_text.text = ""
+		main.body_text.visible = false
 		var scene := HotspotView.new()
 		scene.name = "DistrictHotspotView"
 		scene.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		scene.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		scene.custom_minimum_size = Vector2(0, 540)
+		_fit_scene(main, true)
 		main.choices_container.add_child(scene)
+		_fill_scene_soon(main, scene)
 		scene.setup(
 			port_id,
 			dist_id,
@@ -86,18 +96,30 @@ static func open_district(main, port_id: String, dist_id: String, flash := "", c
 			hotspot_data["hotspots"],
 			hotspot_data["interactions_view"]
 		)
-		scene.hotspot_selected.connect(_select_hotspot.bind(scene, port_id))
-		scene.option_requested.connect(_choose_hotspot.bind(main, port_id, dist_id))
-		scene.confirmation_requested.connect(_confirm_hotspot.bind(main, port_id, dist_id))
+		scene.hotspot_selected.connect(func(ix_id): _select_hotspot(scene, port_id, ix_id))
+		scene.confirmation_requested.connect(func(ix_id): _confirm_hotspot(main, port_id, dist_id, ix_id))
+		scene.option_chosen.connect(func(ix_id, opt_id): _press(main, port_id, dist_id, ix_id, opt_id))
 		scene.brief_dismissed.connect(scene.clear_selection)
-		scene.show_idle()
-		_mode_toggle(main, "工席名单", open_district.bind(main, port_id, dist_id, flash, true))
+		if flash != "":
+			scene.skip_enter()
+			scene.show_result(focus_id, [flash])
+		elif quiet:
+			scene.skip_enter()
+			scene.show_idle()
+		else:
+			_SFX.play(main, _enter_hook(str(row.get("kind", ""))))
+			scene.show_idle()
+		_mode_toggle(main, "工席名单", open_district.bind(main, port_id, dist_id, flash, true, focus_id))
 		_leave(main, _back.bind(main, port_id))
 		return
 
+	main.body_text.visible = true
+	_fit_scene(main, false)
 	var groups: Dictionary = {}
 	var order: Array = []
 	for ix in ixs:
+		if str(ix.get("type", "")) == "look":
+			continue
 		var cat := _ix_group(ix)
 		if not groups.has(cat):
 			groups[cat] = []
@@ -114,7 +136,7 @@ static func open_district(main, port_id: String, dist_id: String, flash := "", c
 			_paint(main, port_id, dist_id, ix)
 		main._end_benches()
 	if not hotspot_data.is_empty():
-		_mode_toggle(main, "场景", open_district.bind(main, port_id, dist_id, flash, false))
+		_mode_toggle(main, "场景", open_district.bind(main, port_id, dist_id, flash, false, focus_id, true))
 	_leave(main, _back.bind(main, port_id))
 
 
@@ -131,6 +153,12 @@ static func _hotspot_data(port_id: String, ixs: Array, raw_hotspots) -> Dictiona
 		if bool(view.get("hidden", false)):
 			continue
 		visible_ids[id] = true
+		view["text"] = str(ix.get("text", ""))
+		view["again"] = str(ix.get("again", ""))
+		view["source_label"] = str(ix.get("label", ""))
+		var lead := str(ix.get("lead", ""))
+		if lead != "":
+			view["brief"] = lead
 		interactions_view[id] = view
 	if visible_ids.is_empty():
 		return {}
@@ -174,34 +202,26 @@ static func _is_number(value) -> bool:
 
 
 static func _select_hotspot(view, port_id: String, id) -> void:
-	var ix: Dictionary = Book.interaction(str(id))
-	var ix_view: Dictionary = Book.view(port_id, ix)
-	if str(ix_view.get("mode", "")) == "look":
-		view.show_result(id, [str(ix.get("text", ""))])
+	var interaction: Dictionary = Book.interaction(str(id))
+	if interaction.is_empty():
 		return
-	if not bool(ix_view.get("open", true)):
-		view.show_result(id, [str(ix_view.get("reason", ""))])
-		return
-	if str(ix_view.get("mode", "stamp")) == "choice":
-		view.show_brief(id)
+	var seen: Dictionary = Book.view(port_id, interaction)
+	var mode := str(seen.get("mode", "stamp"))
+	if mode == "chip" or mode == "dismiss":
+		view.show_confirmation(id)
+	elif mode == "choice":
 		var options: Array = []
-		for opt in ix.get("options", []):
+		for opt in interaction.get("options", []):
 			if typeof(opt) != TYPE_DICTIONARY:
 				continue
-			var option_view: Dictionary = Book.view_option(port_id, ix, opt)
+			var ov: Dictionary = Book.view_option(port_id, interaction, opt)
 			options.append({
 				"id": str(opt.get("id", "")),
-				"label": str(option_view.get("label", "")),
-				"open": bool(option_view.get("open", false)),
-				"reason": str(option_view.get("reason", "")),
+				"label": str(ov.get("label", "就这样")),
+				"open": bool(ov.get("open", false)),
+				"reason": str(ov.get("reason", "")),
 			})
 		view.show_choices(id, options)
-		return
-	view.show_confirmation(id)
-
-
-static func _choose_hotspot(main, port_id: String, dist_id: String, id, option_id) -> void:
-	_press(main, port_id, dist_id, str(id), str(option_id))
 
 
 static func _confirm_hotspot(main, port_id: String, dist_id: String, id) -> void:
@@ -214,6 +234,14 @@ static func _confirm_hotspot(main, port_id: String, dist_id: String, id) -> void
 		_dismiss(main, port_id, dist_id, ix_id)
 		return
 	_press(main, port_id, dist_id, ix_id, "")
+
+
+static func _toggle_cards(main, port_id: String, dist_id: String) -> void:
+	open_district(main, port_id, dist_id, "", true)
+
+
+static func _toggle_scene(main, port_id: String, dist_id: String) -> void:
+	open_district(main, port_id, dist_id, "")
 
 
 static func _ix_group(ix: Dictionary) -> String:
@@ -326,7 +354,7 @@ static func _press(main, port_id: String, dist_id: String, ix_id: String, opt_id
 	var msg := str(res.get("msg", ""))
 	if msg != "":
 		main.log_msg(msg)
-	open_district(main, port_id, dist_id, msg if bool(res.get("ok", false)) else "")
+	open_district(main, port_id, dist_id, msg, false, ix_id)
 
 
 static func _dismiss(main, port_id: String, dist_id: String, ix_id: String) -> void:
@@ -335,7 +363,7 @@ static func _dismiss(main, port_id: String, dist_id: String, ix_id: String) -> v
 	Book.dismiss(ix_id)
 	var msg := "【%s】%s辞了。" % [where, str(ix.get("who", "帮手"))]
 	main.log_msg(msg)
-	open_district(main, port_id, dist_id, msg)
+	open_district(main, port_id, dist_id, msg, false, ix_id)
 
 
 static func _enter(main, port_id: String, dist_id: String) -> void:
@@ -347,7 +375,65 @@ static func _back(main, port_id: String) -> void:
 	open_index(main, port_id)
 
 
+static func _fit_scene(main, on: bool) -> void:
+	var box := main.choices_container.get_parent() as Control
+	if box == null:
+		return
+	box.size_flags_vertical = Control.SIZE_EXPAND_FILL if on else Control.SIZE_FILL
+	var rule := main.scene_title.get_parent().get_node_or_null("HSeparator") as CanvasItem
+	if rule != null:
+		rule.visible = not on
+
+
+static func _fill_scene_soon(main, scene: Control) -> void:
+	var tree: SceneTree = main.get_tree()
+	if tree == null:
+		return
+	tree.process_frame.connect(func() -> void: _fill_scene(main, scene), CONNECT_ONE_SHOT)
+	var box := main.choices_container.get_parent() as Control
+	var scroll := box.get_parent() as Control if box != null else null
+	if scroll == null:
+		return
+	var follow := _fill_scene.bind(main, scene)
+	scroll.resized.connect(follow)
+	scene.tree_exiting.connect(func() -> void:
+		if is_instance_valid(scroll) and scroll.resized.is_connected(follow):
+			scroll.resized.disconnect(follow)
+	)
+
+
+static func _fill_scene(main, scene: Control) -> void:
+	if not is_instance_valid(scene) or not scene.is_inside_tree():
+		return
+	var box := main.choices_container.get_parent() as Control
+	if box == null:
+		return
+	var scroll := box.get_parent() as Control
+	if scroll == null:
+		return
+	var title_h := 0.0
+	if main.scene_title is Control and (main.scene_title as Control).visible:
+		title_h = (main.scene_title as Control).size.y
+	var room := scroll.size.y - title_h - 16.0
+	if room < 540.0:
+		room = 540.0
+	scene.custom_minimum_size = Vector2(0, room)
+
+
+static func _enter_hook(kind: String) -> StringName:
+	match kind:
+		"dock", "ferry", "dam":
+			return &"dist_water"
+		"temple", "hill", "shrine", "pavilion":
+			return &"dist_bell"
+		"office", "exam", "warehouse", "workshop", "academy", "gate", "manor", "smithy":
+			return &"dist_door"
+		_:
+			return &"dist_air"
+
+
 static func _to_port(main, port_id: String) -> void:
+	main.body_text.visible = true
 	main.load_scene(port_id)
 
 

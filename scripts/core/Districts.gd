@@ -14,6 +14,8 @@ const KIND_LABEL := {
 	"hill": "山亭", "bridge": "石桥", "market": "坊市", "workshop": "作坊",
 	"warehouse": "塌房", "exam": "贡院", "teahouse": "茶坊", "academy": "军学",
 	"grove": "果林", "ferry": "渡口", "gate": "城门", "dam": "陂塘",
+	"shrine": "宫庙", "manor": "宅馆", "smithy": "铁作", "shop": "铺户",
+	"orchard": "果园", "pavilion": "山亭", "stall": "小卖",
 }
 
 static var _rows: Array = []
@@ -207,9 +209,9 @@ static func view(port_id: String, ix: Dictionary) -> Dictionary:
 		return out
 	var t := str(ix.get("type", ""))
 	if t == "look":
-		out.mode = "look"
+		out.mode = "read"
 		out.open = true
-		out.affordable = true
+		out.note = str(ix.get("text", ""))
 		return out
 	var why := _block_reason(port_id, ix, ix)
 	if t == "hire" and is_hired(str(ix.get("id", ""))):
@@ -229,6 +231,10 @@ static func view(port_id: String, ix: Dictionary) -> Dictionary:
 		out.reason = why
 		out.note = why
 		out.aside = why
+		if why == "已经办过":
+			out["mark"] = "已办"
+		elif why == "过些日子再来" and t == "rumor":
+			out["mark"] = "已闻"
 		return out
 	var need := _spend_need(port_id, ix)
 	out.mode = "chip"
@@ -263,6 +269,8 @@ static func apply(ix_id: String, opt_id: String = "") -> Dictionary:
 		return _fail("没有这桩事")
 	if not TYPES.has(str(ix.get("type", ""))):
 		return _fail("没有这桩事")
+	if str(ix.get("type", "")) == "look":
+		return {"ok": true, "msg": str(ix.get("text", "")), "money_delta": 0}
 	var port := str(_ix_port.get(ix_id, ""))
 	var spec: Dictionary = ix
 	if str(ix.get("type", "")) == "choice":

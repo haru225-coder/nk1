@@ -152,8 +152,8 @@ static func life_line(ch: Dictionary) -> String:
 
 ## 卒年此刻写不写（未了结时）。characters.json 可选 died_ym "YYYY-MM"：到了那一月才写，取人物志文本层露出死讯的
 ## 同一月（陆秀夫、张世杰的崖山卡开到 1279-03，投海、覆舟的段键是 "1279-04"，卒年也从 1279-04 起写，
-## 不再小传写着投海、生卒一行只有「生于 1236」）。没有 died_ym 的按次年正月：卒年当年不写——
-## 陈瓒死在 1277 冬，正月就写「卒于 1277」是透底。
+## 不再小传写着投海、生卒一行只有「生于 1236」）。没有 died_ym 的按次年正月：卒年当年不写，
+## 避免正月就写出这一年才发生的死。有死讯段键的人把 died_ym 写成那一月。
 static func died_known(ch: Dictionary) -> bool:
 	var died = ch.get("died")
 	if died == null:
@@ -352,6 +352,9 @@ static func codex_lines(ch: Dictionary) -> PackedStringArray:
 
 static func codex_look(ch: Dictionary) -> String:
 	var o = layer(ch).get("look")
+	if typeof(o) == TYPE_ARRAY:
+		var vis := visible_segments(o)
+		return vis[vis.size() - 1] if not vis.is_empty() else ""
 	return fill_names(str(o if o != null else ch.get("look", "")))
 
 

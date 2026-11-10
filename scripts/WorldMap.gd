@@ -72,6 +72,8 @@ const COMBAT_SPAWN_DIST_MIN := 700.0
 const COMBAT_SPAWN_DIST_MAX := 720.0
 ## 镜头内等于已进 800 射程；不延迟会被 9 门齐射秒掉开局小艍
 const COMBAT_FIRE_DELAY := 3.5
+## 同一拨敌船首轮错开（V0928-8）：第 i 艘再晚 i 拍，避免三艘哨船同一拍砸在小艍上。
+const COMBAT_FIRE_STAGGER := 1.6
 ## 两艘满编 9 门 × 25 伤 = 450，开局 120 耐久一波沉。封顶 2 门：
 ## 第一轮约 100，停着打第二轮才沉，B 来得及按。
 const COMBAT_CANNON_CAP := 2
@@ -907,7 +909,8 @@ func _spawn_enemy(type_id: String, count: int, pb: Dictionary, sprite_id := "") 
 		p.cannon_count = mini(COMBAT_CANNON_CAP, maxi(1, int(round(3.0 * scale))))
 		# 刷在镜头里等于已经进射程。fire_timer 默认 0 会首帧齐射，
 		# 开局小艍 120 耐久扛不住 2 艘 × 9 门，HUD 还没看清就沉。
-		p.fire_timer = COMBAT_FIRE_DELAY
+		# 同一拨里按序号再错开，三艘哨船不在同一拍开炮。
+		p.fire_timer = COMBAT_FIRE_DELAY + float(i) * COMBAT_FIRE_STAGGER
 		p.name = "PirateShip_%d" % (total_enemies + 1)  # 按全场序号起名：两条以上（闯封锁 / 崖山）各条从 1 起会撞名、被改成 @CharacterBody2D@N
 		add_child(p)
 		_wire_enemy_signals(p)
