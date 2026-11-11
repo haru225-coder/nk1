@@ -1073,8 +1073,8 @@ const PROLOGUE_PAGE_BG := {
 	# 酒棚一幕：油画原色，灰雨，不打夜色，不用闪电暗黑稿
 	"cg_narrate_table": "cutscene/cs_kurosawa_shed.jpg",
 	"cg_narrate_table_2": "cutscene/cs_after_sit.jpg",
-	"cg_narrate_table_3": "cutscene/cs_open_insert.jpg",
-	"cg_narrate_table_4": "cutscene/cs_open_insert.jpg",
+	"cg_narrate_table_3": "cutscene/cs_table_draft.jpg",
+	"cg_narrate_table_4": "cutscene/cs_table_letter.jpg",
 	"cg_narrate_table_5": "cutscene/cs_open_insert.jpg",
 	"cg_veteran": "cutscene/cs_after_veteran.jpg",
 	"cg_veteran_2": "cutscene/cs_after_veteran.jpg",
@@ -1113,9 +1113,11 @@ const STAGE_SPOTS := {
 		{"label": "栈桥", "x": 0.42, "y": 0.42, "text": "桥是一条线，通向那条船。", "result": "你顺着桥走。风从侧面来。"},
 		{"label": "灯", "x": 0.64, "y": 0.32, "text": "船上只有一盏灯。", "result": "你看着那盏灯。天还很宽。"},
 	],
+	"cutscene/cs_table_draft.jpg": [
+		{"label": "镇纸", "x": 0.26, "y": 0.42, "text": "镇纸压着一叠空白的纸。", "result": "你按了按镇纸。纸还是空白的。"},
+	],
 	"cutscene/cs_open_insert.jpg": [
-		{"label": "镇纸", "x": 0.20, "y": 0.40, "text": "镇纸压着一叠空白的纸。", "result": "你按了按镇纸。纸还是空白的。"},
-		{"label": "朱印", "x": 0.68, "y": 0.46, "text": "红印是圆的，上面没有字。", "result": "你看过那枚印。红的，没有字。"},
+		{"label": "朱印", "x": 0.66, "y": 0.64, "text": "红印是圆的，上面没有字。", "result": "你看过那枚印。红的，没有字。"},
 	],
 	"cutscene/cs_open_fork.jpg": [
 		{"label": "官道", "x": 0.30, "y": 0.34, "text": "左边那条路往城门去。", "result": "你看了看左边。路是湿的，门还开着。"},
