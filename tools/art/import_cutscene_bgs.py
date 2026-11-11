@@ -163,6 +163,8 @@ ASSET_POOL = {
     "cs_room_penghu.jpg",
     "cs_room_quanzhou.jpg",
     "cs_room_xinghua.jpg",
+    "cs_taijiang_dawn.jpg",
+    "cs_taijiang_no_temple.jpg",
     "cs_tavern_champa.jpg",
     "cs_tavern_fuzhou.jpg",
     "cs_tavern_guangzhou.jpg",
@@ -215,8 +217,6 @@ MANIFEST = [
      "岸上的根·涵江海口：月夜搬箱上船，远处城灯"),
     ("cs_shore_soldiers.jpg", POOLS / "wenzhou" / "021.jpg", None,
      "岸上的根·出海口：岸上兵影，小船出港，云破日出"),
-    ("cs_taijiang_dawn.jpg", POOLS / "mingzhou" / "027.jpg", None,
-     "五段结局后记「一百多年后・福州台江」：晨雾江岸、石桥、远帆与渔船（原先借用兴化海口，地理不对）"),
     # ── 云端集成（port 线，2026-09-25）──
     ("cs_world_map_gold.jpg", LEGACY / "bg_world_map.jpg", None,
      "开场首镜「舆图总纲」：旧底 main 9233852 的泥金靛海舆图（华南海岸、台湾、琉球弧、日本）。云端 da29e49 把 "

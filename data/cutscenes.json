@@ -285,7 +285,7 @@
      ]
     },
     {
-     "bg": "res://assets/cutscene/cs_taijiang_dawn.jpg",
+     "bg": "res://assets/cutscene/cs_taijiang_no_temple.jpg",
      "duration": 9.0,
      "cam_from": [0.4, 0.62, 1.38],
      "cam_to": [0.36, 0.61, 1.45],
@@ -351,7 +351,7 @@
      ]
     },
     {
-     "bg": "res://assets/cutscene/cs_taijiang_dawn.jpg",
+     "bg": "res://assets/cutscene/cs_taijiang_no_temple.jpg",
      "duration": 10.0,
      "cam_from": [0.5, 0.57, 1.52],
      "cam_to": [0.52, 0.56, 1.44],
@@ -417,7 +417,7 @@
      ]
     },
     {
-     "bg": "res://assets/cutscene/cs_taijiang_dawn.jpg",
+     "bg": "res://assets/cutscene/cs_taijiang_no_temple.jpg",
      "duration": 9.0,
      "cam_from": [0.5, 0.57, 1.52],
      "cam_to": [0.52, 0.56, 1.44],
@@ -484,7 +484,7 @@
      ]
     },
     {
-     "bg": "res://assets/cutscene/cs_taijiang_dawn.jpg",
+     "bg": "res://assets/cutscene/cs_taijiang_no_temple.jpg",
      "duration": 8.0,
      "cam_from": [0.5, 0.57, 1.52],
      "cam_to": [0.52, 0.56, 1.44],
@@ -565,7 +565,7 @@
      ]
     },
     {
-     "bg": "res://assets/cutscene/cs_taijiang_dawn.jpg",
+     "bg": "res://assets/cutscene/cs_taijiang_no_temple.jpg",
      "duration": 7.5,
      "cam_from": [0.5, 0.57, 1.52],
      "cam_to": [0.52, 0.56, 1.44],
