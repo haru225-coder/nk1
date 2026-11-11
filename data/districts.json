@@ -531,7 +531,7 @@
       "name": "顺济宫",
       "kind": "temple",
       "bg": "bg_dist_qz_shunji.jpg",
-      "description": "宫临江。渔户来还愿，帆樯就在墙外。神位是一块素木。",
+      "description": "宫临江。渔户来还愿，帆樯就在墙外。宫外有人搭着香火摊。",
       "interactions": [
         {
           "id": "qz_shunji_rite",
@@ -4049,7 +4049,7 @@
       "name": "广化寺",
       "kind": "temple",
       "bg": "bg_dist_xh_guanghua.jpg",
-      "description": "南山广化寺。城门开着才上得去。寺里抄经，不卖经。",
+      "description": "南山广化寺。寺里抄经，不卖经。寺前有石碑。",
       "lock_reason": "城门不开，去不得南山",
       "unlock": {
         "war_not": [
@@ -4622,7 +4622,7 @@
       "name": "净慧寺花塔",
       "kind": "temple",
       "bg": "bg_dist_gz_liurong.jpg",
-      "description": "净慧寺的花塔是八角砖身，外环木檐。塔下榕树很老。寺中相传苏轼题过『六榕』二字。",
+      "description": "净慧寺的花塔是八角砖身，外环木檐。塔下榕树很老，风起时铃会响。寺中相传苏轼题过「六榕」二字。",
       "hotspots": [
         {
           "id": "gz_liurong_banyan",
@@ -7660,7 +7660,7 @@
           "id": "wz_jiangxin_duanwu",
           "type": "rumor",
           "label": "端午听鼓",
-          "text": "五月初五，江心屿下龙舟竞渡。永嘉市上的香药先贵。",
+          "text": "五月初五，江心屿下龙舟竞渡。温州牙行的香药先贵。",
           "cost": 10,
           "once_per": "year",
           "unlock": {
@@ -7846,7 +7846,7 @@
       "name": "市舶务",
       "kind": "office",
       "bg": "bg_dist_wz_shibo.jpg",
-      "description": "温州设市舶务，比泉州小。廊下小吏在案上验漆器，箱子按件编号。",
+      "description": "温州设市舶务，比泉州小。廊下小吏在案上验漆器。",
       "interactions": [
         {
           "id": "wz_shibo_gift",
@@ -8159,7 +8159,7 @@
       "name": "永嘉市",
       "kind": "market",
       "bg": "bg_dist_wz_market.jpg",
-      "description": "城里的市从城门一直排进来，摊上是米、茶与杂货，人挨着人走。",
+      "description": "城里的市从城门一直排进来，摊上是米、茶与杂货。有人问胡椒。",
       "hotspots": [
         {
           "id": "wz_market_canopy",
@@ -8785,7 +8785,7 @@
       "name": "瓯江渡",
       "kind": "ferry",
       "bg": "bg_dist_wz_ferry.jpg",
-      "description": "瓯江渡口，篷船载人去江心屿。岸上的人望着江心。",
+      "description": "瓯江渡口，篷船载人去江心屿。船家在岸边解缆。",
       "interactions": [
         {
           "id": "wz_ferry_ride",
