@@ -209,6 +209,13 @@ static func view(port_id: String, ix: Dictionary) -> Dictionary:
 		return out
 	var t := str(ix.get("type", ""))
 	if t == "look":
+		var unlock := _as_dict(ix.get("unlock", {}))
+		var lock_why := _block_reason(port_id, ix, ix) if not unlock.is_empty() else ""
+		if lock_why != "":
+			out.reason = lock_why
+			out.note = lock_why
+			out.aside = lock_why
+			return out
 		out.mode = "read"
 		out.open = true
 		out.note = str(ix.get("text", ""))
@@ -269,9 +276,14 @@ static func apply(ix_id: String, opt_id: String = "") -> Dictionary:
 		return _fail("没有这桩事")
 	if not TYPES.has(str(ix.get("type", ""))):
 		return _fail("没有这桩事")
-	if str(ix.get("type", "")) == "look":
-		return {"ok": true, "msg": str(ix.get("text", "")), "money_delta": 0}
 	var port := str(_ix_port.get(ix_id, ""))
+	if str(ix.get("type", "")) == "look":
+		var unlock := _as_dict(ix.get("unlock", {}))
+		if not unlock.is_empty():
+			var lock_why := _block_reason(port, ix, ix)
+			if lock_why != "":
+				return _fail(lock_why)
+		return {"ok": true, "msg": str(ix.get("text", "")), "money_delta": 0}
 	var spec: Dictionary = ix
 	if str(ix.get("type", "")) == "choice":
 		var opt := _option(ix, opt_id)
