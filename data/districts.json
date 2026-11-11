@@ -7930,11 +7930,13 @@
           "id": "wz_lacquer_buy",
           "type": "buy",
           "label": "收漆器",
-          "text": "坊里刚出一批盘盒，按坊价出。",
+          "text": "手里有市舶务的漆货公凭，这一批盘盒少要一成多。",
           "good": "lacquerware",
           "qty": 4,
           "price_mul": 0.92,
-          "impact": true
+          "impact": true,
+          "licence_bonus": "lic_wz_lacquer",
+          "bonus_mul": 0.88
         },
         {
           "id": "wz_lacquer_share",
