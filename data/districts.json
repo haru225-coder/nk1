@@ -3542,6 +3542,56 @@
       "kind": "hill",
       "bg": "bg_dist_gz_haishan.jpg",
       "description": "海山楼在城南市舶亭侧，枕水而立。楼上正对五洲，其下叫小海。官人常在这里看船，十月里设市舶宴。",
+      "hotspots": [
+        {
+          "id": "gz_haishan_climb",
+          "x": 0.18,
+          "y": 0.72,
+          "kind": "place"
+        },
+        {
+          "id": "gz_haishan_watch",
+          "x": 0.48,
+          "y": 0.36,
+          "kind": "place"
+        },
+        {
+          "id": "gz_haishan_rumor",
+          "x": 0.32,
+          "y": 0.52,
+          "kind": "person"
+        },
+        {
+          "id": "gz_haishan_porcelain",
+          "x": 0.24,
+          "y": 0.84,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_haishan_night",
+          "x": 0.4,
+          "y": 0.6,
+          "kind": "place"
+        },
+        {
+          "id": "gz_haishan_host",
+          "x": 0.26,
+          "y": 0.38,
+          "kind": "place"
+        },
+        {
+          "id": "npc_zhubo_wind",
+          "x": 0.58,
+          "y": 0.48,
+          "kind": "person"
+        },
+        {
+          "id": "gz_haishan_moon",
+          "x": 0.64,
+          "y": 0.3,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "gz_haishan_climb",
@@ -4109,6 +4159,56 @@
       "kind": "ferry",
       "bg": "bg_dist_gz_dan.jpg",
       "description": "珠江上的蛋户把小船并成一排。船上起火做饭，远处城墙横在雾里。",
+      "hotspots": [
+        {
+          "id": "gz_dan_salt",
+          "x": 0.28,
+          "y": 0.72,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_dan_rumor",
+          "x": 0.38,
+          "y": 0.54,
+          "kind": "person"
+        },
+        {
+          "id": "gz_dan_cross",
+          "x": 0.2,
+          "y": 0.58,
+          "kind": "place"
+        },
+        {
+          "id": "npc_liang_dive",
+          "x": 0.52,
+          "y": 0.62,
+          "kind": "person"
+        },
+        {
+          "id": "gz_dan_hearth",
+          "x": 0.21,
+          "y": 0.5,
+          "kind": "place"
+        },
+        {
+          "id": "gz_dan_cable",
+          "x": 0.6,
+          "y": 0.78,
+          "kind": "place"
+        },
+        {
+          "id": "gz_dan_wall",
+          "x": 0.64,
+          "y": 0.3,
+          "kind": "place"
+        },
+        {
+          "id": "gz_dan_net",
+          "x": 0.44,
+          "y": 0.82,
+          "kind": "goods"
+        }
+      ],
       "interactions": [
         {
           "id": "gz_dan_salt",
@@ -4177,6 +4277,30 @@
               }
             }
           ]
+        },
+        {
+          "id": "gz_dan_hearth",
+          "type": "look",
+          "label": "泥灶",
+          "text": "泥灶裂了道黑缝，湿柴还没烧透，锅沿糊着半圈米汤印。"
+        },
+        {
+          "id": "gz_dan_cable",
+          "type": "look",
+          "label": "麻缆",
+          "text": "麻绳吃水发胀，散开的棕毛卡进木桩缺口，压出一道深白水痕。"
+        },
+        {
+          "id": "gz_dan_wall",
+          "type": "look",
+          "label": "水雾城垛",
+          "text": "垛口在江雾里断成几截灰影，墙根全浸在白茫茫的水汽底下。"
+        },
+        {
+          "id": "gz_dan_net",
+          "type": "look",
+          "label": "粗碗渔网",
+          "text": "粗瓷碗豁了口，反扣在未干的网眼上，碗底还挂着半片鱼鳞。"
         }
       ]
     },
