@@ -3480,6 +3480,56 @@
       "kind": "temple",
       "bg": "bg_dist_gz_liurong.jpg",
       "description": "净慧寺的花塔是八角砖身，外环木檐。塔下榕树很老。寺中相传苏轼题过『六榕』二字。",
+      "hotspots": [
+        {
+          "id": "gz_liurong_banyan",
+          "x": 0.12,
+          "y": 0.52,
+          "kind": "place"
+        },
+        {
+          "id": "gz_liurong_pagoda",
+          "x": 0.38,
+          "y": 0.32,
+          "kind": "place"
+        },
+        {
+          "id": "gz_liurong_bell",
+          "x": 0.38,
+          "y": 0.68,
+          "kind": "place"
+        },
+        {
+          "id": "gz_liurong_incense",
+          "x": 0.32,
+          "y": 0.78,
+          "kind": "person"
+        },
+        {
+          "id": "gz_liurong_hall",
+          "x": 0.54,
+          "y": 0.7,
+          "kind": "place"
+        },
+        {
+          "id": "gz_liurong_med",
+          "x": 0.42,
+          "y": 0.82,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_liurong_ullambana",
+          "x": 0.22,
+          "y": 0.86,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_liurong_court",
+          "x": 0.62,
+          "y": 0.86,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "gz_liurong_incense",
@@ -3532,6 +3582,30 @@
             "network": 1,
             "note": "净慧寺盂兰盆会添过灯油。"
           }
+        },
+        {
+          "id": "gz_liurong_banyan",
+          "type": "look",
+          "label": "古榕",
+          "text": "树干纹路深处开着一道缺口，边缘还没封口，露出一圈浅色树组织。"
+        },
+        {
+          "id": "gz_liurong_pagoda",
+          "type": "look",
+          "label": "花塔",
+          "text": "塔身一侧檐角与柱心细微错开，漆缝里凝着一条水痕。"
+        },
+        {
+          "id": "gz_liurong_hall",
+          "type": "look",
+          "label": "偏殿",
+          "text": "右侧低屋墙皮边缘翘起，墙根处没干的灰有点剥落。"
+        },
+        {
+          "id": "gz_liurong_court",
+          "type": "look",
+          "label": "塔院",
+          "text": "塔前空院里，几块石板错位，缝中渍着一汪雨水。"
         }
       ]
     },
@@ -3743,6 +3817,56 @@
       "kind": "office",
       "bg": "bg_dist_gz_shibo.jpg",
       "description": "东廊只办南舶公凭，货引仍去正厅。廊上堆着香药箱子，书吏按会子说话。",
+      "hotspots": [
+        {
+          "id": "gz_shibo_gift",
+          "x": 0.24,
+          "y": 0.62,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_shibo_lic",
+          "x": 0.48,
+          "y": 0.54,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_shibo_rumor",
+          "x": 0.38,
+          "y": 0.46,
+          "kind": "person"
+        },
+        {
+          "id": "gz_shibo_paste",
+          "x": 0.56,
+          "y": 0.64,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_shibo_chests",
+          "x": 0.22,
+          "y": 0.8,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_shibo_huizi",
+          "x": 0.34,
+          "y": 0.72,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_shibo_hall",
+          "x": 0.64,
+          "y": 0.36,
+          "kind": "place"
+        },
+        {
+          "id": "gz_shibo_queue",
+          "x": 0.16,
+          "y": 0.4,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "gz_shibo_gift",
@@ -3781,6 +3905,36 @@
           "port": "quanzhou",
           "good": "pepper",
           "mul": 1.15
+        },
+        {
+          "id": "gz_shibo_paste",
+          "type": "look",
+          "label": "印泥",
+          "text": "印泥舀了一半弃在碟边，手指蹭过不会闷，湿痕摊开，与匣沿平行。"
+        },
+        {
+          "id": "gz_shibo_chests",
+          "type": "look",
+          "label": "香药箱",
+          "text": "香药箱叠在廊下，三层向一边斜，套绳松开，最底板吸潮变形，压着一块落沙板。"
+        },
+        {
+          "id": "gz_shibo_huizi",
+          "type": "look",
+          "label": "会子角",
+          "text": "会子一角露在抽屉挡板后，四面光面没字，刀口新，角头磕出毛，抽屉里扫落一层木屑。"
+        },
+        {
+          "id": "gz_shibo_hall",
+          "type": "look",
+          "label": "正厅门",
+          "text": "正厅门留着一条缝，门楣压得低，门槛那块石头被踩塌一角，柱边搭着扫帚。"
+        },
+        {
+          "id": "gz_shibo_queue",
+          "type": "look",
+          "label": "廊空处",
+          "text": "廊柱根一圈拇印嵌进石头，两只板凳搁在墙边，凳面开一道缝，缝里落了纸屑。"
         }
       ]
     },
@@ -3791,6 +3945,56 @@
       "kind": "academy",
       "bg": "bg_dist_gz_xue.jpg",
       "description": "州学依着番山。讲堂前的石板刚扫过，学生铺开空白的卷子听讲。侧门的书铺开着。",
+      "hotspots": [
+        {
+          "id": "gz_xue_hall",
+          "x": 0.2,
+          "y": 0.16,
+          "kind": "place"
+        },
+        {
+          "id": "gz_xue_shop",
+          "x": 0.08,
+          "y": 0.38,
+          "kind": "place"
+        },
+        {
+          "id": "gz_xue_listen",
+          "x": 0.42,
+          "y": 0.54,
+          "kind": "person"
+        },
+        {
+          "id": "gz_xue_print",
+          "x": 0.36,
+          "y": 0.66,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_xue_tea",
+          "x": 0.56,
+          "y": 0.64,
+          "kind": "person"
+        },
+        {
+          "id": "gz_xue_scroll",
+          "x": 0.18,
+          "y": 0.74,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_xue_pond",
+          "x": 0.62,
+          "y": 0.46,
+          "kind": "place"
+        },
+        {
+          "id": "gz_xue_buyprint",
+          "x": 0.3,
+          "y": 0.82,
+          "kind": "goods"
+        }
+      ],
       "interactions": [
         {
           "id": "gz_xue_listen",
@@ -3854,6 +4058,24 @@
           "unlock": {
             "require_flag": "gz_xue_print"
           }
+        },
+        {
+          "id": "gz_xue_hall",
+          "type": "look",
+          "label": "红柱廊庑",
+          "text": "红柱根部有一处缺口，断口上的漆还没干；柱身中段按出浅浅的手印凹陷，抹不平。"
+        },
+        {
+          "id": "gz_xue_scroll",
+          "type": "look",
+          "label": "空白卷轴",
+          "text": "竹轴歪出纸边半指，没有拉正；纸面一道压蹭的塌褶，斜着过过轴身的直线。"
+        },
+        {
+          "id": "gz_xue_pond",
+          "type": "look",
+          "label": "池岸小桥",
+          "text": "池岸淹过的地方立着浅浅的水痕，蜿蜒延到台阶边；小桥两头没对准岸角，中段拱起，栏杆歪着没扶正。"
         }
       ]
     },
@@ -3864,6 +4086,56 @@
       "kind": "exam",
       "bg": "bg_dist_gz_bang.jpg",
       "description": "广州贡院在城东北。门外只有榜墙与两通石碑。碑座被手磨得发亮。榜上的名字一层压一层。",
+      "hotspots": [
+        {
+          "id": "gz_bang_gate",
+          "x": 0.18,
+          "y": 0.26,
+          "kind": "place"
+        },
+        {
+          "id": "gz_bang_eave",
+          "x": 0.48,
+          "y": 0.16,
+          "kind": "place"
+        },
+        {
+          "id": "gz_bang_papers",
+          "x": 0.34,
+          "y": 0.38,
+          "kind": "place"
+        },
+        {
+          "id": "gz_bang_look",
+          "x": 0.44,
+          "y": 0.54,
+          "kind": "person"
+        },
+        {
+          "id": "gz_bang_stele",
+          "x": 0.1,
+          "y": 0.58,
+          "kind": "place"
+        },
+        {
+          "id": "gz_bang_aid",
+          "x": 0.6,
+          "y": 0.55,
+          "kind": "person"
+        },
+        {
+          "id": "gz_bang_tea",
+          "x": 0.32,
+          "y": 0.7,
+          "kind": "place"
+        },
+        {
+          "id": "gz_bang_yard",
+          "x": 0.5,
+          "y": 0.86,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "gz_bang_look",
@@ -3965,6 +4237,30 @@
             "favour": 1,
             "network": 1
           }
+        },
+        {
+          "id": "gz_bang_gate",
+          "type": "look",
+          "label": "贡院门",
+          "text": "门洞左侧墙脚缺了一块砖，门槛上沾着几处未干的深色水渍，凳脚踩上去吧台晃。"
+        },
+        {
+          "id": "gz_bang_eave",
+          "type": "look",
+          "label": "屋檐",
+          "text": "檐头积着薄灰，末段瓦片错位半尺，雨水顺着瓦缺冲刷出浅浅的痕，墙面上才晾不干。"
+        },
+        {
+          "id": "gz_bang_papers",
+          "type": "look",
+          "label": "榜纸",
+          "text": "四张白纸均被钉在墙上，右下角那张边角卷起，中间留着一块半合纸的水渍。"
+        },
+        {
+          "id": "gz_bang_yard",
+          "type": "look",
+          "label": "墙下空地",
+          "text": "空地上散着枯叶，靠近墙根的地方风一刮就露出湿漬，地上还踩出独自人走过的浅印。"
         }
       ]
     },
@@ -4112,6 +4408,56 @@
       "kind": "market",
       "bg": "bg_dist_gz_suxin.jpg",
       "description": "城西十里的素馨田边上有一间小铺。花还没进城，铺里也收一点茶叶。",
+      "hotspots": [
+        {
+          "id": "gz_suxin_eave",
+          "x": 0.28,
+          "y": 0.14,
+          "kind": "place"
+        },
+        {
+          "id": "gz_suxin_tea",
+          "x": 0.12,
+          "y": 0.28,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_suxin_shop",
+          "x": 0.22,
+          "y": 0.42,
+          "kind": "person"
+        },
+        {
+          "id": "gz_suxin_field",
+          "x": 0.62,
+          "y": 0.55,
+          "kind": "place"
+        },
+        {
+          "id": "gz_suxin_customer",
+          "x": 0.5,
+          "y": 0.62,
+          "kind": "person"
+        },
+        {
+          "id": "gz_suxin_greens",
+          "x": 0.24,
+          "y": 0.62,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_suxin_gift",
+          "x": 0.32,
+          "y": 0.68,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_suxin_basket",
+          "x": 0.14,
+          "y": 0.8,
+          "kind": "goods"
+        }
+      ],
       "interactions": [
         {
           "id": "gz_suxin_tea",
@@ -4149,6 +4495,36 @@
             "fame": 1,
             "network": 1
           }
+        },
+        {
+          "id": "gz_suxin_eave",
+          "type": "look",
+          "label": "草棚",
+          "text": "茅草压的檐面末段松了，草梢垂在椽子外，边缘有些焦枯，雨水曾在上面攒过一层浅浅的印子。"
+        },
+        {
+          "id": "gz_suxin_field",
+          "type": "look",
+          "label": "花田",
+          "text": "垄沟收得不齐，缝里冒出几丛野草，雨后的低洼处还积着没有退干的水。"
+        },
+        {
+          "id": "gz_suxin_customer",
+          "type": "look",
+          "label": "买花人",
+          "text": "客人提着一只纸袋站在席边，袖口沾了泥，纸袋底角被手指掐得微微卷起。"
+        },
+        {
+          "id": "gz_suxin_greens",
+          "type": "look",
+          "label": "茶青筐",
+          "text": "案上的筐沿压着一块灰布，茶青碎片散在筛孔边，筐底还挂着没干的水丝。"
+        },
+        {
+          "id": "gz_suxin_basket",
+          "type": "look",
+          "label": "素馨筐",
+          "text": "大筐盛得满满，花梗从筐沿挑出几枝，内壁被手指压出几道浅浅的嵴感。"
         }
       ]
     },
@@ -4435,6 +4811,56 @@
       "kind": "warehouse",
       "bg": "bg_dist_gz_tafang.jpg",
       "description": "河南岸的塌房收租，不喊价。货从这里出去，牙行的行情牌可以不动。",
+      "hotspots": [
+        {
+          "id": "gz_tafang_door",
+          "x": 0.08,
+          "y": 0.28,
+          "kind": "place"
+        },
+        {
+          "id": "gz_tafang_rent",
+          "x": 0.24,
+          "y": 0.28,
+          "kind": "place"
+        },
+        {
+          "id": "gz_tafang_watch",
+          "x": 0.16,
+          "y": 0.44,
+          "kind": "person"
+        },
+        {
+          "id": "gz_tafang_loan",
+          "x": 0.56,
+          "y": 0.46,
+          "kind": "person"
+        },
+        {
+          "id": "gz_tafang_grain",
+          "x": 0.3,
+          "y": 0.48,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_tafang_bank",
+          "x": 0.62,
+          "y": 0.6,
+          "kind": "place"
+        },
+        {
+          "id": "gz_tafang_quiet",
+          "x": 0.36,
+          "y": 0.7,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_tafang_sacks",
+          "x": 0.5,
+          "y": 0.76,
+          "kind": "goods"
+        }
+      ],
       "interactions": [
         {
           "id": "gz_tafang_rent",
@@ -4511,6 +4937,24 @@
               }
             }
           ]
+        },
+        {
+          "id": "gz_tafang_door",
+          "type": "look",
+          "label": "仓门",
+          "text": "木门向外撅开，门板下沿卡在地头的石阶上，卡槽里插着根歪的木楔。"
+        },
+        {
+          "id": "gz_tafang_bank",
+          "type": "look",
+          "label": "河岸",
+          "text": "退水后岸边露出一圈浅水渍，泥地上还压着几处车辙，干得不够，踩上去会发晦。"
+        },
+        {
+          "id": "gz_tafang_sacks",
+          "type": "look",
+          "label": "麻袋垛",
+          "text": "袋子叠得歪歪扭扭，顶上那袋磨出一个口子，缝边还挂着没扯净的草绳头。"
         }
       ]
     },
@@ -4521,6 +4965,56 @@
       "kind": "teahouse",
       "bg": "bg_dist_gz_tea.jpg",
       "description": "西城靠大街的一间茶坊。茶博士点一盏建茶，话从这里传到牙行。",
+      "hotspots": [
+        {
+          "id": "gz_tea_lantern",
+          "x": 0.1,
+          "y": 0.16,
+          "kind": "place"
+        },
+        {
+          "id": "gz_tea_share",
+          "x": 0.14,
+          "y": 0.3,
+          "kind": "place"
+        },
+        {
+          "id": "gz_tea_hire",
+          "x": 0.46,
+          "y": 0.52,
+          "kind": "person"
+        },
+        {
+          "id": "gz_tea_wager",
+          "x": 0.3,
+          "y": 0.54,
+          "kind": "person"
+        },
+        {
+          "id": "gz_tea_street",
+          "x": 0.62,
+          "y": 0.5,
+          "kind": "place"
+        },
+        {
+          "id": "gz_tea_guest",
+          "x": 0.1,
+          "y": 0.6,
+          "kind": "person"
+        },
+        {
+          "id": "gz_tea_gift",
+          "x": 0.38,
+          "y": 0.7,
+          "kind": "goods"
+        },
+        {
+          "id": "gz_tea_buy",
+          "x": 0.28,
+          "y": 0.8,
+          "kind": "goods"
+        }
+      ],
       "interactions": [
         {
           "id": "gz_tea_share",
@@ -4604,6 +5098,24 @@
             "network": 1,
             "favour": 1
           }
+        },
+        {
+          "id": "gz_tea_lantern",
+          "type": "look",
+          "label": "灯笼",
+          "text": "灯笼罩口边缘撕开半寸的口子，红纸朝外翻着；系在檐头的绳子结打歪，灯头就那么耷拉下来。"
+        },
+        {
+          "id": "gz_tea_street",
+          "type": "look",
+          "label": "街巷",
+          "text": "门外巷子的地砖高低不齐，挨门柱的那块向外翘起；墙根还留着一条深色潮痕，砖缝里的沙粒没扫干净。"
+        },
+        {
+          "id": "gz_tea_guest",
+          "type": "look",
+          "label": "茶客",
+          "text": "案左坐着的茶客，袖口和指腹都沾着茶渍，指尖壓着膝头的布料；旁边那只杯碟歪扣在桌沿，触边没转回正。"
         }
       ]
     },
@@ -4886,6 +5398,56 @@
       "kind": "shrine",
       "bg": "bg_dist_hk_hako.jpg",
       "description": "箱崎宫对着海，松原一直铺到沙滩。武家与町人都来这里祈海路平安。",
+      "hotspots": [
+        {
+          "id": "hk_hako_tree",
+          "x": 0.14,
+          "y": 0.18,
+          "kind": "place"
+        },
+        {
+          "id": "hk_hako_pray",
+          "x": 0.48,
+          "y": 0.32,
+          "kind": "place"
+        },
+        {
+          "id": "hk_hako_rumor2",
+          "x": 0.38,
+          "y": 0.48,
+          "kind": "person"
+        },
+        {
+          "id": "hk_hako_gift",
+          "x": 0.18,
+          "y": 0.5,
+          "kind": "person"
+        },
+        {
+          "id": "hk_hako_rumor",
+          "x": 0.1,
+          "y": 0.52,
+          "kind": "person"
+        },
+        {
+          "id": "hk_hako_path",
+          "x": 0.56,
+          "y": 0.62,
+          "kind": "place"
+        },
+        {
+          "id": "hk_hako_pool",
+          "x": 0.32,
+          "y": 0.76,
+          "kind": "place"
+        },
+        {
+          "id": "hk_hako_release",
+          "x": 0.22,
+          "y": 0.84,
+          "kind": "goods"
+        }
+      ],
       "interactions": [
         {
           "id": "hk_hako_pray",
@@ -4952,6 +5514,24 @@
             "favour": 1,
             "note": "箱崎宫放生会放过一笼雀。"
           }
+        },
+        {
+          "id": "hk_hako_tree",
+          "type": "look",
+          "label": "老树",
+          "text": "参道左侧的大树，树皮开了一道口子，里面的木质还没干透，边上搁着半截扫不到的枯枝。"
+        },
+        {
+          "id": "hk_hako_path",
+          "type": "look",
+          "label": "参道",
+          "text": "通向海边的参道，路面中间凹下去一小截，两侧长着团团野草，脚踩下去会陷半寸。"
+        },
+        {
+          "id": "hk_hako_pool",
+          "type": "look",
+          "label": "潮池",
+          "text": "路旁浅潮池，池边石头排得不齐，一块向外翘着，嵌缝里还塞着没退干的海水。"
         }
       ]
     },
