@@ -587,7 +587,7 @@
    "letterbox": true,
    "shots": [
     {
-     "bg": "res://assets/cutscene/cs_hanjiang_night.jpg",
+     "bg": "res://assets/cutscene/cs_champa_fanfang_night.jpg",
      "duration": 8.0,
      "cam_from": [0.6, 0.42, 1.35],
      "cam_to": [0.66, 0.4, 1.55],
