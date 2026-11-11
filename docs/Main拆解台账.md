@@ -705,14 +705,14 @@ gen_main_splits 的硬校验 ③ / ④（变异在 ledger_refs_mutants）。
 R 玉湖陈宅 1 支 / 47 行。追加刀函数表里的行段按「拆后那版 Main.gd」记（追加刀节落地时那一支就是一行转发：注释块 3 行
 `## 本地 main 的兴化玉湖陈宅…` 起 + `func _setup_residence_chen:` 1 行 + `\t_RESIDENCE.setup_residence_chen(self, port_id)`
 1 行 + 行下 0 空行 = **2090–2094**（a9 落地时记 2149–2153；w20-c2 port_beats 接回运行时后重算过一次；
-**w21-d20 第十四刀跑 gen 对账时随主干 b29b312 的 Main.gd 再挪到 2090–2094**（其间 w20-c10 等两笔使陈宅转发上移 59 行）——
+**w21-d20 第十四刀跑 gen 对账时随主干 b29b312 的 Main.gd 再挪到 2090–2094**（其间 w20-c10 等两笔使陈宅转发上移 59 行）；其后 1a074848 剧情页接线再挪到 2299–2303；城区热区接线 / 油画底图等主干提交又使转发下移到 **2445–2449**——
 快照随 gen 事后对账更新，不算「回来改」）；这是 gen 事后对账用的快照，不再回来改。拆前 Main.gd 上 function 本体在 2146–2190，
 已搬到 `scripts/ui/ResidencePage.gd`；前面三行 `CHEN_ZAN_STAKE : 3000` / `CHEN_ZAN_FROM_YEAR : 1270` / `CHEN_ZAN_MIN_FAME : 15`
 是簇间常量、仍留 Main：qa 探针 `godot_story_check.gd` 的 zan_cases 直调 `main.CHEN_ZAN_FROM_YEAR`，搬了它就得跟着改）。
 
 | 支 | 行段（拆后那版 Main.gd 的转发快照） | 行（拆前 function 本体） | 拆出件 static func |
 |---|---|---|---|
-| `_setup_residence_chen(port_id)` | 2299–2303 | 47 | `setup_residence_chen` |
+| `_setup_residence_chen(port_id)` | 2445–2449 | 47 | `setup_residence_chen` |
 
 **跨切依赖**（全部经 `main.` 取，追加进拆出件不存状态）：
 - Main 成员：`scene_title` / `body_text` / `choices_container` / `choices_label` 各 1，`current_scene_id` 2（两处 lambda 里，
@@ -761,8 +761,10 @@ R 玉湖陈宅 1 支 / 47 行。追加刀函数表里的行段按「拆后那版
 - **行段**：本节函数表 `_setup_residence_chen` 2145–2149 按追加刀拆前（`4bafe23` 的 Main.gd）记；第九刀函数表
   `_setup_residence` … `_on_temple_rub` 的 6 支行段仍按建刀 `ebd28e7^` 的 Main.gd 记（2389–2505），`gen_main_splits`
   两条路径分别按各刀自己的拆前 Main.gd 重算、逐支对账。清单第 4 列三段合并：`2145-2149,2389-2419,2426-2505`。✓
-  （其后跟过两次号：w20-b1 619e335 那两笔使转发快照挪到 2149–2153；**w21-d20 第十四刀跑 gen 对账时快照与清单首段再挪到
-  2090–2094**（HEAD b29b312 的 Main.gd，其间 w20-c10 等两笔使陈宅转发上移 59 行），「# ══ 浮页 ══」仍在 base 的 2128、
+  （其后跟过号：w20-b1 619e335 那两笔使转发快照挪到 2149–2153；**w21-d20 第十四刀跑 gen 对账时快照与清单首段再挪到
+  2090–2094**（HEAD b29b312 的 Main.gd，其间 w20-c10 等两笔使陈宅转发上移 59 行）；1a074848 剧情页接线再挪到 2299–2303；
+  城区热区接线 / 油画底图等主干提交后又下移到 2445–2449。清单第 4 列建刀段仍是 2389-2419,2426-2505——追加刀快照 2445–2449
+  落在建刀父版行号 2426-2505 段内，并段后不再单列。「# ══ 浮页 ══」仍在 base 的 2128、
   陈宅转发现位那处上方——陈宅段才是本 lane 14 刀的「紧邻段下」口径。）
 - **拆出 commit**：清单第 3 列仍记建刀 `ebd28e7`（`--diff-filter=A`）；本节写好的一刀自己的拆前 = `4bafe23`。✓
 - **引用点**：上面那表 6 处逐条回读——simulate_endgame 1 处改读 main_stitch；story zan_cases 常量仍取 Main 实例
