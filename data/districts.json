@@ -2128,6 +2128,56 @@
       "kind": "gate",
       "bg": "bg_dist_xh_yuhu.jpg",
       "description": "玉湖陈氏的坊门是木构的，门额素净。族里的事在门内办，门前留着车辙。",
+      "hotspots": [
+        {
+          "id": "xh_yuhu_lintel",
+          "x": 0.4,
+          "y": 0.28,
+          "kind": "place"
+        },
+        {
+          "id": "xh_yuhu_gate",
+          "x": 0.42,
+          "y": 0.44,
+          "kind": "place"
+        },
+        {
+          "id": "xh_yuhu_rite",
+          "x": 0.22,
+          "y": 0.58,
+          "kind": "person"
+        },
+        {
+          "id": "xh_yuhu_kin",
+          "x": 0.34,
+          "y": 0.58,
+          "kind": "person"
+        },
+        {
+          "id": "xh_yuhu_grain",
+          "x": 0.12,
+          "y": 0.82,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_yuhu_ruts",
+          "x": 0.5,
+          "y": 0.72,
+          "kind": "place"
+        },
+        {
+          "id": "xh_yuhu_court",
+          "x": 0.6,
+          "y": 0.8,
+          "kind": "place"
+        },
+        {
+          "id": "xh_yuhu_wall",
+          "x": 0.62,
+          "y": 0.46,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "xh_yuhu_rite",
@@ -2176,6 +2226,42 @@
               }
             }
           ]
+        },
+        {
+          "id": "xh_yuhu_lintel",
+          "type": "look",
+          "label": "门额",
+          "text": "门额歪着，上下两颗钉眼没对齐，角上还压着一道浅裂缝。"
+        },
+        {
+          "id": "xh_yuhu_gate",
+          "type": "look",
+          "label": "坊门",
+          "text": "门板中间拱起，框缝里卡着半截松动的木楔，漆面在门轴边翘起来。"
+        },
+        {
+          "id": "xh_yuhu_kin",
+          "type": "look",
+          "label": "族人",
+          "text": "族人袖沿蹭过门板，手指按过的位置留下浅浅的印子。"
+        },
+        {
+          "id": "xh_yuhu_ruts",
+          "type": "look",
+          "label": "车辙",
+          "text": "两道车辙深浅不一，内侧积着浑水，边沿的土剥落入发软。"
+        },
+        {
+          "id": "xh_yuhu_court",
+          "type": "look",
+          "label": "土路",
+          "text": "土路中间两处没压实，进水后不干，踏上去陷半寸。"
+        },
+        {
+          "id": "xh_yuhu_wall",
+          "type": "look",
+          "label": "侧墙",
+          "text": "粉墙根缺一块砖，底下巷口微低，墙根沾着一线水渍。"
         }
       ]
     },
@@ -2463,6 +2549,56 @@
       "kind": "grove",
       "bg": "bg_dist_xh_lychee.jpg",
       "description": "城南荔枝林。六月七月才有鲜果，其余月份摊上卖的是晒干的。",
+      "hotspots": [
+        {
+          "id": "xh_lychee_trees",
+          "x": 0.16,
+          "y": 0.22,
+          "kind": "place"
+        },
+        {
+          "id": "xh_lychee_price",
+          "x": 0.16,
+          "y": 0.56,
+          "kind": "person"
+        },
+        {
+          "id": "xh_lychee_stall",
+          "x": 0.36,
+          "y": 0.6,
+          "kind": "place"
+        },
+        {
+          "id": "xh_lychee_pick",
+          "x": 0.52,
+          "y": 0.62,
+          "kind": "person"
+        },
+        {
+          "id": "xh_lychee_gift",
+          "x": 0.42,
+          "y": 0.8,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_lychee_fallen",
+          "x": 0.3,
+          "y": 0.88,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_lychee_eave",
+          "x": 0.32,
+          "y": 0.38,
+          "kind": "place"
+        },
+        {
+          "id": "xh_lychee_path",
+          "x": 0.62,
+          "y": 0.78,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "xh_lychee_pick",
@@ -2544,6 +2680,30 @@
               }
             }
           ]
+        },
+        {
+          "id": "xh_lychee_trees",
+          "type": "look",
+          "label": "荔树",
+          "text": "低枝挂满荔果，分量把枝梢压弯。叶隙漏下的光在果皮上移来移去。"
+        },
+        {
+          "id": "xh_lychee_fallen",
+          "type": "look",
+          "label": "落果",
+          "text": "荔果滚在土路边，一只外壳裂开缺口，果脖还挂着绿萼。"
+        },
+        {
+          "id": "xh_lychee_eave",
+          "type": "look",
+          "label": "茅檐",
+          "text": "茅檐挑着参差的边，几束茅筋松了垂下来。受潮的位置颜色更深。"
+        },
+        {
+          "id": "xh_lychee_path",
+          "type": "look",
+          "label": "土路",
+          "text": "车辙把路心踩实凹下去，中间最硬。两旁土松，踩一脚陷半寸。"
         }
       ]
     },
@@ -2717,6 +2877,56 @@
       "kind": "ferry",
       "bg": "bg_dist_xh_meizhou.jpg",
       "description": "往湄洲的渡口。渔户在这里祭神女，帆在岛外。",
+      "hotspots": [
+        {
+          "id": "xh_meizhou_lintel",
+          "x": 0.42,
+          "y": 0.26,
+          "kind": "place"
+        },
+        {
+          "id": "xh_meizhou_shrine",
+          "x": 0.32,
+          "y": 0.36,
+          "kind": "place"
+        },
+        {
+          "id": "xh_meizhou_boat",
+          "x": 0.1,
+          "y": 0.34,
+          "kind": "place"
+        },
+        {
+          "id": "xh_meizhou_rumor",
+          "x": 0.16,
+          "y": 0.5,
+          "kind": "person"
+        },
+        {
+          "id": "xh_meizhou_rite",
+          "x": 0.38,
+          "y": 0.52,
+          "kind": "person"
+        },
+        {
+          "id": "xh_meizhou_altar",
+          "x": 0.42,
+          "y": 0.66,
+          "kind": "place"
+        },
+        {
+          "id": "xh_meizhou_fallen",
+          "x": 0.16,
+          "y": 0.82,
+          "kind": "person"
+        },
+        {
+          "id": "xh_meizhou_sea",
+          "x": 0.62,
+          "y": 0.42,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "xh_meizhou_rite",
@@ -2765,6 +2975,36 @@
           "port": "quanzhou",
           "good": "sea_salt",
           "mul": 1.12
+        },
+        {
+          "id": "xh_meizhou_lintel",
+          "type": "look",
+          "label": "庙额",
+          "text": "木额空着挂在上面，钉进木柱的两头没剥掌，裂缝里还填着弯弯的沙。"
+        },
+        {
+          "id": "xh_meizhou_shrine",
+          "type": "look",
+          "label": "神女小庙",
+          "text": "礁上这一间小庙，檐角挂着盐白，中阶断了一级，人得跨着坡上的石头过去。"
+        },
+        {
+          "id": "xh_meizhou_boat",
+          "type": "look",
+          "label": "渡船",
+          "text": "船头那块板缺了口，末梢翘起，系缆的绳圈松垮搁在边上，木头晒得发白。"
+        },
+        {
+          "id": "xh_meizhou_altar",
+          "type": "look",
+          "label": "香案",
+          "text": "香灰压在案沿上，三根香根激出两道黑痕，扫帚杵在炉边，灰堆没挑走。"
+        },
+        {
+          "id": "xh_meizhou_sea",
+          "type": "look",
+          "label": "海面",
+          "text": "水比昨晚退得低一截，湿线一块块浮在滩上，远处半漂着钓网，随浪挪动。"
         }
       ]
     },
@@ -2938,6 +3178,56 @@
       "kind": "market",
       "bg": "bg_dist_xh_market.jpg",
       "description": "城南坊市卖米和香药。米铺的人按会子找零。",
+      "hotspots": [
+        {
+          "id": "xh_market_grain",
+          "x": 0.24,
+          "y": 0.72,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_market_med",
+          "x": 0.48,
+          "y": 0.62,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_market_rice",
+          "x": 0.32,
+          "y": 0.48,
+          "kind": "place"
+        },
+        {
+          "id": "xh_market_cheapgrain",
+          "x": 0.16,
+          "y": 0.58,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_market_hoard",
+          "x": 0.38,
+          "y": 0.8,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_market_cabinet",
+          "x": 0.28,
+          "y": 0.32,
+          "kind": "place"
+        },
+        {
+          "id": "xh_market_huizi",
+          "x": 0.54,
+          "y": 0.46,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_market_canopy",
+          "x": 0.64,
+          "y": 0.7,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "xh_market_grain",
@@ -3014,6 +3304,24 @@
               }
             }
           ]
+        },
+        {
+          "id": "xh_market_cabinet",
+          "type": "look",
+          "label": "大柜",
+          "text": "柜门与柜框之间没关紧，中间裂开一道细缝，门板下半截还留着没干透的暗水印，搭在墙边的柜脚也略微歪了。 "
+        },
+        {
+          "id": "xh_market_huizi",
+          "type": "look",
+          "label": "案角",
+          "text": "案角压着一叠找零的纸签，最上角翘起来，纸边污了一圈浅水渍；案面上散着几处手指按出的印子，边沿和木桌面也衔接得不齐。 "
+        },
+        {
+          "id": "xh_market_canopy",
+          "type": "look",
+          "label": "坊棚",
+          "text": "近处棚沿的瓦片错开了一格，收缝处挂着半干不掉的水痕，下面那块街石往外撐出一道隙来。 "
         }
       ]
     },
@@ -3024,6 +3332,56 @@
       "kind": "workshop",
       "bg": "bg_dist_xh_paper.jpg",
       "description": "书坊抄族谱，也卖纸墨。经卷不在这城里的牙行上。",
+      "hotspots": [
+        {
+          "id": "xh_paper_sign",
+          "x": 0.12,
+          "y": 0.32,
+          "kind": "place"
+        },
+        {
+          "id": "xh_paper_eave",
+          "x": 0.4,
+          "y": 0.26,
+          "kind": "place"
+        },
+        {
+          "id": "xh_paper_copy",
+          "x": 0.26,
+          "y": 0.46,
+          "kind": "person"
+        },
+        {
+          "id": "xh_paper_rumor",
+          "x": 0.52,
+          "y": 0.46,
+          "kind": "person"
+        },
+        {
+          "id": "xh_paper_lacquer",
+          "x": 0.48,
+          "y": 0.54,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_paper_ink",
+          "x": 0.22,
+          "y": 0.68,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_paper_stacks",
+          "x": 0.14,
+          "y": 0.62,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_paper_lane",
+          "x": 0.62,
+          "y": 0.7,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "xh_paper_copy",
@@ -3056,6 +3414,36 @@
           "port": "hakata",
           "good": "fujian_porcelain",
           "mul": 1.2
+        },
+        {
+          "id": "xh_paper_sign",
+          "type": "look",
+          "label": "招牌",
+          "text": "牌面还空，两颗钉子扣得歪，木边留着两道浅划痕。"
+        },
+        {
+          "id": "xh_paper_eave",
+          "type": "look",
+          "label": "屋檐",
+          "text": "檐角少一片瓦，压边的木方被雨淋过，色泽比旁边深一层。"
+        },
+        {
+          "id": "xh_paper_ink",
+          "type": "look",
+          "label": "砚与笔",
+          "text": "砚台墨渍没干透，自砚边拖出一条细墨尾；笔歪搁在砚洞边，没人扶正。"
+        },
+        {
+          "id": "xh_paper_stacks",
+          "type": "look",
+          "label": "纸垛",
+          "text": "纸垛叠得紧实，顶上两张却错开了，角头被指腹揪出软痕。"
+        },
+        {
+          "id": "xh_paper_lane",
+          "type": "look",
+          "label": "巷口",
+          "text": "巷口石阶还带着雨天的潮痕，路面前一段被院墙影压得暗下去。"
         }
       ]
     },
@@ -3066,6 +3454,56 @@
       "kind": "warehouse",
       "bg": "bg_dist_xh_wine.jpg",
       "description": "官酒库的酒按月出。库里的人知道哪一季米会松。",
+      "hotspots": [
+        {
+          "id": "xh_wine_share",
+          "x": 0.28,
+          "y": 0.3,
+          "kind": "place"
+        },
+        {
+          "id": "xh_wine_hang",
+          "x": 0.14,
+          "y": 0.28,
+          "kind": "place"
+        },
+        {
+          "id": "xh_wine_credit",
+          "x": 0.42,
+          "y": 0.5,
+          "kind": "person"
+        },
+        {
+          "id": "xh_wine_rumor",
+          "x": 0.52,
+          "y": 0.54,
+          "kind": "person"
+        },
+        {
+          "id": "xh_wine_treat",
+          "x": 0.22,
+          "y": 0.62,
+          "kind": "person"
+        },
+        {
+          "id": "xh_wine_jars",
+          "x": 0.1,
+          "y": 0.58,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_wine_gift",
+          "x": 0.16,
+          "y": 0.88,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_wine_court",
+          "x": 0.62,
+          "y": 0.72,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "xh_wine_share",
@@ -3145,6 +3583,24 @@
             "favour": 1,
             "merchant_credit": 1
           }
+        },
+        {
+          "id": "xh_wine_hang",
+          "type": "look",
+          "label": "挂穗",
+          "text": "穗子系在廊檐梁头，绳结松垮垮斜垂，下半截穗粒偏稀，几支枝梗压在檐边，擦出浅浅一道印。"
+        },
+        {
+          "id": "xh_wine_jars",
+          "type": "look",
+          "label": "酒坛",
+          "text": "酒坛并排插在廊下，靠墙那尊坛肩有一缺口，鼓肚上溅着一圈没擦净的酒渍，坛口内侧还没干透的水珠挂着。"
+        },
+        {
+          "id": "xh_wine_court",
+          "type": "look",
+          "label": "库外空院",
+          "text": "库外这块空地还没平整，地上压着方形脚印和车辙，角落三块砖歪嵌在地缝里，中间横着半截弃掉的木杠。"
         }
       ]
     },
@@ -3155,6 +3611,56 @@
       "kind": "workshop",
       "bg": "bg_dist_xh_smith.jpg",
       "description": "铁作打农具，也打不该出口的铁器。这城的牙行不挂铁器的牌。",
+      "hotspots": [
+        {
+          "id": "xh_smith_street",
+          "x": 0.62,
+          "y": 0.42,
+          "kind": "place"
+        },
+        {
+          "id": "xh_smith_fire",
+          "x": 0.24,
+          "y": 0.52,
+          "kind": "place"
+        },
+        {
+          "id": "xh_smith_smith",
+          "x": 0.48,
+          "y": 0.54,
+          "kind": "person"
+        },
+        {
+          "id": "xh_smith_charcoal",
+          "x": 0.13,
+          "y": 0.54,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_smith_iron",
+          "x": 0.3,
+          "y": 0.22,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_smith_make",
+          "x": 0.4,
+          "y": 0.66,
+          "kind": "place"
+        },
+        {
+          "id": "xh_smith_repair",
+          "x": 0.16,
+          "y": 0.78,
+          "kind": "goods"
+        },
+        {
+          "id": "xh_smith_bellows",
+          "x": 0.08,
+          "y": 0.3,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "xh_smith_smith",
@@ -3222,6 +3728,30 @@
               }
             }
           ]
+        },
+        {
+          "id": "xh_smith_street",
+          "type": "look",
+          "label": "街口",
+          "text": "作铺外的空地，地面留着车辙的浅沟，墙根处有一条防水台阶入口。远处有行人经过。"
+        },
+        {
+          "id": "xh_smith_fire",
+          "type": "look",
+          "label": "炉口",
+          "text": "炉口木灰未返，炉缘挂着半干的铁水皮，积着一角黑烟。"
+        },
+        {
+          "id": "xh_smith_charcoal",
+          "type": "look",
+          "label": "炭堆",
+          "text": "炭块压手的痕在边上裂开一道缺口，底下插着半截炭匣，好把炭粒挑出去。"
+        },
+        {
+          "id": "xh_smith_bellows",
+          "type": "look",
+          "label": "风箱",
+          "text": "皮橐垂吊在檐下，吹嘴口卷着毛边，搁板被桎梢刮出几道白印。"
         }
       ]
     },
@@ -3518,6 +4048,56 @@
           "closed"
         ]
       },
+      "hotspots": [
+        {
+          "id": "xh_guanghua_tree",
+          "x": 0.12,
+          "y": 0.4,
+          "kind": "place"
+        },
+        {
+          "id": "xh_guanghua_hall",
+          "x": 0.32,
+          "y": 0.34,
+          "kind": "place"
+        },
+        {
+          "id": "xh_guanghua_shelter",
+          "x": 0.52,
+          "y": 0.48,
+          "kind": "place"
+        },
+        {
+          "id": "xh_guanghua_rub",
+          "x": 0.22,
+          "y": 0.62,
+          "kind": "place"
+        },
+        {
+          "id": "xh_guanghua_copy",
+          "x": 0.38,
+          "y": 0.62,
+          "kind": "person"
+        },
+        {
+          "id": "xh_guanghua_incense",
+          "x": 0.48,
+          "y": 0.64,
+          "kind": "place"
+        },
+        {
+          "id": "xh_guanghua_steps",
+          "x": 0.36,
+          "y": 0.8,
+          "kind": "place"
+        },
+        {
+          "id": "xh_guanghua_path",
+          "x": 0.62,
+          "y": 0.7,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "xh_guanghua_copy",
@@ -3578,6 +4158,36 @@
               }
             }
           ]
+        },
+        {
+          "id": "xh_guanghua_tree",
+          "type": "look",
+          "label": "古树",
+          "text": "阶左的古树，树根侧被台阶磕出一条浅槽，截面还湿着木屑；树干结了几块瘤样硬结，剥开一角露出更浅的皮。"
+        },
+        {
+          "id": "xh_guanghua_hall",
+          "type": "look",
+          "label": "佛殿",
+          "text": "殿门扇板中间的木扣松动，推开时两块板之间露出一道暗缝；门槛漆面被踩得薄薄的，露出底下木色，缝里还卡着一枚拇指大小的石子。"
+        },
+        {
+          "id": "xh_guanghua_incense",
+          "type": "look",
+          "label": "香炉",
+          "text": "月台上的香炉，炉口内壁焦黑鼓起，炉沿磕出两道浅坑；炉底香灰没扫，半张废纸的角翘在灰里，没有烧尽。"
+        },
+        {
+          "id": "xh_guanghua_steps",
+          "type": "look",
+          "label": "石阶",
+          "text": "第三级边缘缺了半寸，断面淡白松垮；中段垫了一块补石，色泽和两边分明不一家，踩上去微微晃，凹槽里积着薄沙。"
+        },
+        {
+          "id": "xh_guanghua_path",
+          "type": "look",
+          "label": "小路",
+          "text": "小路蜿到殿侧，一段塌成浅洼，没回填，洼边土磕下两瓣；通向远田那段，长草压在车辙上，草根拽出几道斜丝。"
         }
       ]
     },
