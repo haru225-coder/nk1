@@ -1032,6 +1032,56 @@
       "kind": "workshop",
       "bg": "bg_dist_qz_kiln.jpg",
       "description": "磁灶的龙窑沿着山坡。窑工搬的是青釉与粗瓷，还没进城。",
+      "hotspots": [
+        {
+          "id": "qz_kiln_slope",
+          "x": 0.32,
+          "y": 0.22,
+          "kind": "place"
+        },
+        {
+          "id": "qz_kiln_licence",
+          "x": 0.2,
+          "y": 0.44,
+          "kind": "person"
+        },
+        {
+          "id": "qz_kiln_mouth",
+          "x": 0.4,
+          "y": 0.44,
+          "kind": "place"
+        },
+        {
+          "id": "qz_kiln_rumor",
+          "x": 0.52,
+          "y": 0.66,
+          "kind": "person"
+        },
+        {
+          "id": "qz_kiln_small",
+          "x": 0.14,
+          "y": 0.64,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_kiln_bulk",
+          "x": 0.22,
+          "y": 0.78,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_kiln_wasters",
+          "x": 0.42,
+          "y": 0.9,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_kiln_cart",
+          "x": 0.16,
+          "y": 0.88,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "qz_kiln_small",
@@ -1076,6 +1126,30 @@
           "port": "guangzhou",
           "good": "qingbai_porcelain",
           "mul": 1.3
+        },
+        {
+          "id": "qz_kiln_slope",
+          "type": "look",
+          "label": "龙窑坡",
+          "text": "龙窑顺着坡起伏，砖缝里还嵌着捏砖时压出的指痕，一摞砖口和下一摞对不齐，缺口朝下卡在砖眉缝里。"
+        },
+        {
+          "id": "qz_kiln_mouth",
+          "type": "look",
+          "label": "窑口",
+          "text": "窑口内侧挂着一道烧得鼓起的釉，木框被热烘得泛白翘起，透气的洞里还卡着半截断裂的棒。"
+        },
+        {
+          "id": "qz_kiln_wasters",
+          "type": "look",
+          "label": "窑渣",
+          "text": "窑渣和破片散在地上，大的渣块边缘缺了几口，小的瓷片上沾着没干透的土，踩上去咔嚓便碎。"
+        },
+        {
+          "id": "qz_kiln_cart",
+          "type": "look",
+          "label": "窑车",
+          "text": "木轮车斜停在坡边，低的一边轮子陷进土里，绑瓷的绳还绷着，车板一角塌陷，瓷盘歪歪斜斜叠在一起。"
         }
       ]
     },
@@ -1086,6 +1160,56 @@
       "kind": "market",
       "bg": "bg_dist_qz_spice.jpg",
       "description": "巷里专做香药。有细色公凭的人，药价会让一让。",
+      "hotspots": [
+        {
+          "id": "qz_spice_med",
+          "x": 0.28,
+          "y": 0.62,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_spice_pepper",
+          "x": 0.18,
+          "y": 0.8,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_spice_rumor",
+          "x": 0.48,
+          "y": 0.54,
+          "kind": "person"
+        },
+        {
+          "id": "qz_spice_paper",
+          "x": 0.38,
+          "y": 0.46,
+          "kind": "place"
+        },
+        {
+          "id": "qz_spice_board",
+          "x": 0.22,
+          "y": 0.36,
+          "kind": "place"
+        },
+        {
+          "id": "qz_spice_unopened",
+          "x": 0.42,
+          "y": 0.78,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_spice_mouth",
+          "x": 0.6,
+          "y": 0.4,
+          "kind": "place"
+        },
+        {
+          "id": "qz_spice_baskets",
+          "x": 0.64,
+          "y": 0.68,
+          "kind": "goods"
+        }
+      ],
       "interactions": [
         {
           "id": "qz_spice_med",
@@ -1118,6 +1242,36 @@
           "port": "hakata",
           "good": "pepper",
           "mul": 1.2
+        },
+        {
+          "id": "qz_spice_paper",
+          "type": "look",
+          "label": "牙人纸",
+          "text": "牙人手里的纸角被拇指抠出一个缺口，纸面沾了一层手汗，边缘微微卷起来。"
+        },
+        {
+          "id": "qz_spice_board",
+          "type": "look",
+          "label": "牌板背",
+          "text": "牌价板背面钉痕歪斜，木边缺了一块，露出灰白的断面。"
+        },
+        {
+          "id": "qz_spice_unopened",
+          "type": "look",
+          "label": "未开包",
+          "text": "药包扎口紧闭，包纸上压着一道水潮痕，绳结歪斜地扣在正中。"
+        },
+        {
+          "id": "qz_spice_mouth",
+          "type": "look",
+          "label": "巷口",
+          "text": "巷口窄处两侧石阶错位，左侧石面汩汩探出半截，右侧被踩得贴平。"
+        },
+        {
+          "id": "qz_spice_baskets",
+          "type": "look",
+          "label": "竹箩",
+          "text": "竹箩斜倒在地，箩沿一片竹纤维翘起，边缘卡着半枚碎布屑。"
         }
       ]
     },
@@ -1278,6 +1432,56 @@
       "kind": "exam",
       "bg": "bg_dist_qz_bang.jpg",
       "description": "泉州州学与文庙同在一院，贡院门外只有榜墙与两通石碑。放榜那日，名字贴在这面墙上。",
+      "hotspots": [
+        {
+          "id": "qz_bang_look",
+          "x": 0.42,
+          "y": 0.36,
+          "kind": "place"
+        },
+        {
+          "id": "qz_bang_stele",
+          "x": 0.34,
+          "y": 0.58,
+          "kind": "place"
+        },
+        {
+          "id": "qz_bang_aid",
+          "x": 0.52,
+          "y": 0.64,
+          "kind": "person"
+        },
+        {
+          "id": "qz_bang_tea",
+          "x": 0.22,
+          "y": 0.78,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_bang_stele2",
+          "x": 0.5,
+          "y": 0.42,
+          "kind": "place"
+        },
+        {
+          "id": "qz_bang_wallfoot",
+          "x": 0.58,
+          "y": 0.78,
+          "kind": "place"
+        },
+        {
+          "id": "qz_bang_gate",
+          "x": 0.2,
+          "y": 0.48,
+          "kind": "place"
+        },
+        {
+          "id": "qz_bang_empty",
+          "x": 0.64,
+          "y": 0.54,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "qz_bang_look",
@@ -1379,6 +1583,30 @@
             "favour": 1,
             "network": 1
           }
+        },
+        {
+          "id": "qz_bang_stele2",
+          "type": "look",
+          "label": "另一通碑",
+          "text": "另一通石碑与抚碑错开半尺，中间落着半尺的灰；碑顶开了一道斜口，碑身下半还没干，指腹划过会起石粉。"
+        },
+        {
+          "id": "qz_bang_wallfoot",
+          "type": "look",
+          "label": "墙根纸",
+          "text": "被雨泡过的旧纸贴在墙根，边角卷起压不平；中间有道手压的浅痕，水渍晕出暗沉的印，字已被泡没。"
+        },
+        {
+          "id": "qz_bang_gate",
+          "type": "look",
+          "label": "州学门",
+          "text": "门楣上的匾架空着，两只挂钩还嵌在木头里，插过去的孔未填；门板中缝裂开一条细缝，风钻出去时带起木末。"
+        },
+        {
+          "id": "qz_bang_empty",
+          "type": "look",
+          "label": "空墙根",
+          "text": "非放榜日的这段墙皮剥出两道浅口，根上扫过的灰土堆在角上，踩上去洒得贴脚。"
         }
       ]
     },
@@ -1389,6 +1617,56 @@
       "kind": "temple",
       "bg": "bg_dist_qz_qingjing.jpg",
       "description": "门楼是石砌的，不高，番商从这里进出。院子安静，门额上刻着大食字。",
+      "hotspots": [
+        {
+          "id": "qz_qingjing_rumor",
+          "x": 0.5,
+          "y": 0.58,
+          "kind": "person"
+        },
+        {
+          "id": "qz_qingjing_ivory",
+          "x": 0.36,
+          "y": 0.8,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_qingjing_gift",
+          "x": 0.62,
+          "y": 0.48,
+          "kind": "place"
+        },
+        {
+          "id": "npc_maruding_meet",
+          "x": 0.58,
+          "y": 0.64,
+          "kind": "person"
+        },
+        {
+          "id": "qz_qingjing_lintel",
+          "x": 0.38,
+          "y": 0.3,
+          "kind": "place"
+        },
+        {
+          "id": "qz_qingjing_steps",
+          "x": 0.4,
+          "y": 0.7,
+          "kind": "place"
+        },
+        {
+          "id": "qz_qingjing_well",
+          "x": 0.33,
+          "y": 0.66,
+          "kind": "place"
+        },
+        {
+          "id": "qz_qingjing_court",
+          "x": 0.18,
+          "y": 0.82,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "qz_qingjing_rumor",
@@ -1432,6 +1710,30 @@
           "effects": {
             "flag": "npc_maruding_met"
           }
+        },
+        {
+          "id": "qz_qingjing_lintel",
+          "type": "look",
+          "label": "门额",
+          "text": "门额空白处只剩几道凿痕，深浅参差。角头还留着刮石时溅出来的碎屑。"
+        },
+        {
+          "id": "qz_qingjing_steps",
+          "type": "look",
+          "label": "石阶",
+          "text": "中段一块石面略微下凹，边沿被踩出弧形磨痕。石缝里扣着扫不净的灰。"
+        },
+        {
+          "id": "qz_qingjing_well",
+          "type": "look",
+          "label": "井栏",
+          "text": "井栏一截石柱翘起漆皮，露出的石面上带着水渍。凿痕边缘沾着浮灰。"
+        },
+        {
+          "id": "qz_qingjing_court",
+          "type": "look",
+          "label": "院地",
+          "text": "靠门一侧的砖面压着几处浅灰足迹。缝里嵌着断瓷尖，角头还有没扫走的灰。"
         }
       ]
     },
@@ -5267,6 +5569,56 @@
       "kind": "temple",
       "bg": "bg_dist_hk_joten.jpg",
       "description": "承天寺是宋商谢国明出钱给圆尔起的禅寺。山门不高，寺里的僧人多去过宋。",
+      "hotspots": [
+        {
+          "id": "hk_joten_lantern",
+          "x": 0.5,
+          "y": 0.3,
+          "kind": "place"
+        },
+        {
+          "id": "hk_joten_gate",
+          "x": 0.22,
+          "y": 0.44,
+          "kind": "place"
+        },
+        {
+          "id": "hk_joten_corridor",
+          "x": 0.42,
+          "y": 0.36,
+          "kind": "place"
+        },
+        {
+          "id": "hk_joten_monk",
+          "x": 0.4,
+          "y": 0.58,
+          "kind": "person"
+        },
+        {
+          "id": "hk_joten_sand",
+          "x": 0.62,
+          "y": 0.58,
+          "kind": "place"
+        },
+        {
+          "id": "hk_joten_tree",
+          "x": 0.12,
+          "y": 0.52,
+          "kind": "place"
+        },
+        {
+          "id": "hk_joten_sutra",
+          "x": 0.16,
+          "y": 0.82,
+          "kind": "goods"
+        },
+        {
+          "id": "hk_joten_steps",
+          "x": 0.24,
+          "y": 0.58,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "hk_joten_monk",
@@ -5306,6 +5658,42 @@
           "qty": 2,
           "price_mul": 1.08,
           "impact": true
+        },
+        {
+          "id": "hk_joten_lantern",
+          "type": "look",
+          "label": "灯笼",
+          "text": "纸灯笼系得歪，蒙在顶上的绳结压出一个扁扁的印子，下沿卡着没抹净的灰。"
+        },
+        {
+          "id": "hk_joten_gate",
+          "type": "look",
+          "label": "山门",
+          "text": "山门不高，门楣与两侧立柱衔接处的灰缝勾出一道细线，角上还压着半枚旧砖。"
+        },
+        {
+          "id": "hk_joten_corridor",
+          "type": "look",
+          "label": "廊庑",
+          "text": "廊庑的木枋一根比一根窄半指，脚手留下的新刮痕还没施工到尽头。"
+        },
+        {
+          "id": "hk_joten_sand",
+          "type": "look",
+          "label": "砂庭",
+          "text": "砂地上有一撮未推平的波纹，角落压着片收过水的叶子，边缘离断了线。"
+        },
+        {
+          "id": "hk_joten_tree",
+          "type": "look",
+          "label": "庭树",
+          "text": "老树主干在腰以下拐一个弯，树皮开了一道口子，里面露出淡色的木质。"
+        },
+        {
+          "id": "hk_joten_steps",
+          "type": "look",
+          "label": "石阶",
+          "text": "石阶两级高一级低，中段横裂纹里嵌着几粒砖沙，踩上去咯吱作响。"
         }
       ]
     },
@@ -5316,6 +5704,56 @@
       "kind": "shrine",
       "bg": "bg_dist_hk_kushida.jpg",
       "description": "栉田社是博多的总镇守。朱漆社殿旁有老树，祭日里神舆从街上抬过。",
+      "hotspots": [
+        {
+          "id": "hk_kushida_pine",
+          "x": 0.56,
+          "y": 0.2,
+          "kind": "place"
+        },
+        {
+          "id": "hk_kushida_rite",
+          "x": 0.22,
+          "y": 0.22,
+          "kind": "place"
+        },
+        {
+          "id": "hk_kushida_mikoshi",
+          "x": 0.42,
+          "y": 0.42,
+          "kind": "place"
+        },
+        {
+          "id": "hk_kushida_festival",
+          "x": 0.5,
+          "y": 0.56,
+          "kind": "place"
+        },
+        {
+          "id": "hk_kushida_gift",
+          "x": 0.34,
+          "y": 0.58,
+          "kind": "goods"
+        },
+        {
+          "id": "hk_kushida_sweeper",
+          "x": 0.12,
+          "y": 0.62,
+          "kind": "person"
+        },
+        {
+          "id": "hk_kushida_stall",
+          "x": 0.32,
+          "y": 0.72,
+          "kind": "place"
+        },
+        {
+          "id": "hk_kushida_court",
+          "x": 0.62,
+          "y": 0.78,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "hk_kushida_rite",
@@ -5388,6 +5826,30 @@
             "network": 1,
             "favour": 1
           }
+        },
+        {
+          "id": "hk_kushida_pine",
+          "type": "look",
+          "label": "老松",
+          "text": "树皮自树腰裂开一道窄缝，里面伸出浅一号的木质。缝边还顶着半截硬皮，指甲掀也掀不动。"
+        },
+        {
+          "id": "hk_kushida_mikoshi",
+          "type": "look",
+          "label": "神舆",
+          "text": "轭木两头参差：一端平滑，一端留着深色的刮痕；桁架接缝上下溢出的漆沫未干，指碰微黏。"
+        },
+        {
+          "id": "hk_kushida_sweeper",
+          "type": "look",
+          "label": "清扫",
+          "text": "肩带把布面勒出两道浅痕，扫帚柄中段被手反复按出弧形凹槽。袖口起线头，布絮松散垂在腰侧。"
+        },
+        {
+          "id": "hk_kushida_court",
+          "type": "look",
+          "label": "砂庭",
+          "text": "砂面扫出的弧纹几处叠夹在一起，中段错位拐过一次。对开的边缘立着半截木栏，底下卡着一把金属铲齿没拉出来。"
         }
       ]
     },
@@ -5919,6 +6381,56 @@
       "kind": "warehouse",
       "bg": "bg_dist_hk_naya.jpg",
       "description": "纳屋是海边的仓。板墙厚，门大，里面码着米包、瓷箱和鹿皮。",
+      "hotspots": [
+        {
+          "id": "hk_naya_share",
+          "x": 0.3,
+          "y": 0.48,
+          "kind": "place"
+        },
+        {
+          "id": "hk_naya_hide",
+          "x": 0.42,
+          "y": 0.78,
+          "kind": "goods"
+        },
+        {
+          "id": "hk_naya_watch",
+          "x": 0.48,
+          "y": 0.54,
+          "kind": "place"
+        },
+        {
+          "id": "hk_naya_loan",
+          "x": 0.2,
+          "y": 0.36,
+          "kind": "place"
+        },
+        {
+          "id": "npc_cairong_evidence",
+          "x": 0.56,
+          "y": 0.62,
+          "kind": "goods"
+        },
+        {
+          "id": "hk_naya_door",
+          "x": 0.38,
+          "y": 0.4,
+          "kind": "place"
+        },
+        {
+          "id": "hk_naya_rice",
+          "x": 0.5,
+          "y": 0.78,
+          "kind": "goods"
+        },
+        {
+          "id": "hk_naya_boxes",
+          "x": 0.64,
+          "y": 0.48,
+          "kind": "goods"
+        }
+      ],
       "interactions": [
         {
           "id": "hk_naya_share",
@@ -5998,6 +6510,24 @@
           "effects": {
             "flag": "npc_cairong_evidence"
           }
+        },
+        {
+          "id": "hk_naya_door",
+          "type": "look",
+          "label": "木门",
+          "text": "门框右下角缺了一角，凑近能看见断面里盘出的裂纹。门板低处陷着潮痕，把手旁叠着几运用手指拽过的浅印。"
+        },
+        {
+          "id": "hk_naya_rice",
+          "type": "look",
+          "label": "米包",
+          "text": "米包垛外层的绳子勒进去，压出几道深痕。有的包开了口，谷粒从裂缝里漏出来，底下两包被压得凹下去。"
+        },
+        {
+          "id": "hk_naya_boxes",
+          "type": "look",
+          "label": "瓷箱",
+          "text": "瓷箱三件斜叠在墙边，一件一件搭错，与角落拉开半个箱身，影子里分不出哪件在上面。随一件的盒沿把骨B？"
         }
       ]
     },
@@ -6839,6 +7369,56 @@
       "kind": "academy",
       "bg": "bg_dist_wz_academy.jpg",
       "description": "永嘉学者讲事功之学。廊下先生坐在席上，学生捧着卷听。",
+      "hotspots": [
+        {
+          "id": "wz_academy_listen",
+          "x": 0.38,
+          "y": 0.72,
+          "kind": "place"
+        },
+        {
+          "id": "wz_academy_donate",
+          "x": 0.18,
+          "y": 0.72,
+          "kind": "goods"
+        },
+        {
+          "id": "wz_academy_tea",
+          "x": 0.32,
+          "y": 0.32,
+          "kind": "goods"
+        },
+        {
+          "id": "wz_academy_ask",
+          "x": 0.22,
+          "y": 0.52,
+          "kind": "person"
+        },
+        {
+          "id": "npc_zhouxing_meet",
+          "x": 0.58,
+          "y": 0.62,
+          "kind": "person"
+        },
+        {
+          "id": "wz_academy_scrolls",
+          "x": 0.48,
+          "y": 0.7,
+          "kind": "goods"
+        },
+        {
+          "id": "wz_academy_scrap",
+          "x": 0.64,
+          "y": 0.78,
+          "kind": "goods"
+        },
+        {
+          "id": "wz_academy_pillar",
+          "x": 0.42,
+          "y": 0.38,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "wz_academy_listen",
@@ -6915,6 +7495,24 @@
           "effects": {
             "flag": "npc_zhouxing_met"
           }
+        },
+        {
+          "id": "wz_academy_scrolls",
+          "type": "look",
+          "label": "廊下卷",
+          "text": "这卷一直没展开，摞在席角；卷头微翘，旁边一道摁出的褶子斜着，边角还有个缺口，渗过一条潮痕，纸还是湿的。"
+        },
+        {
+          "id": "wz_academy_scrap",
+          "type": "look",
+          "label": "弃纸角",
+          "text": "抄坏的纸角丢在一边，与周行那头隔着一段空；折痕掰得紧紧的，缺口朝上翘着，角上压着一块没干的墨，拇指按出的印子很浅。"
+        },
+        {
+          "id": "wz_academy_pillar",
+          "type": "look",
+          "label": "廊柱",
+          "text": "廊柱立在阶口边，柱脚和台阶之间那条缝没抹平，宽狭还参差；中段擦着半截手痕，深浅不一。"
         }
       ]
     },
