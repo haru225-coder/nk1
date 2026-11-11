@@ -963,7 +963,7 @@ const PORT_BG := {
 	"ryukyu": "bg_ryukyu.jpg",
 	"penghu": "bg_penghu.jpg",
 	"kagoshima": "bg_kagoshima.jpg",
-	"champa": "bg_temple_gate.jpg",
+	"champa": "bg_champa.jpg",
 	"guangzhou": "bg_guangzhou.jpg",
 }
 
