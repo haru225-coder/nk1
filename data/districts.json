@@ -615,6 +615,15 @@
               }
             }
           ]
+        },
+        {
+          "id": "qz_shunji_stele",
+          "type": "look",
+          "label": "桥碑的条",
+          "text": "香案脚边压着一张条，写着安平桥头新立了小碑，过桥的人会停一下。",
+          "unlock": {
+            "require_flag": "qz_anping_stele"
+          }
         }
       ]
     },

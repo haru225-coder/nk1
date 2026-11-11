@@ -280,9 +280,9 @@ def main():
                 if not isinstance(lic, str) or not lic.startswith("lic_"):
                     errors.append(f"{ixloc}: licence 须以 lic_ 开头")
             elif typ == "look":
-                extra = set(ix) - {"id", "type", "label", "text", "again", "lead"}
+                extra = set(ix) - {"id", "type", "label", "text", "again", "lead", "unlock"}
                 if extra:
-                    errors.append(f"{ixloc}: look 只可写 id/type/label/text/again/lead，多了 {sorted(extra)}")
+                    errors.append(f"{ixloc}: look 只可写 id/type/label/text/again/lead/unlock，多了 {sorted(extra)}")
                 if "again" in ix and (not isinstance(ix.get("again"), str) or not str(ix.get("again", "")).strip()):
                     errors.append(f"{ixloc}: look.again 须为非空字符串")
                 if "lead" in ix and (not isinstance(ix.get("lead"), str) or not str(ix.get("lead", "")).strip()):
