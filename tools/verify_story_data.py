@@ -1160,7 +1160,7 @@ for tag, probe in (("body", {"body": "寺社网络"}), ("objective", {"objective
 #   SEQ3_MIRRORS 的「characters 收句人」按台词反查（不登 id，不随改名）、「scenes 落幕」仍**按幕 id**——
 #   镜像合同写的是「这两处具体产品」要逐字同在，落幕是审计锚、不是形状锚（判法见下段口径②）。
 SEQ3_MIRRORS = {  # 镜像句 → (characters 收句人 —— 只做存在性自查, scenes 落幕 id —— 跟随改幕名)
-    "这趟先验半程的水路。货不能潮，信不能皱。": ("merchant_lin", "merchant"),
+    "这几箱你带着，跑一半就回。舱底垫好油布，货不能潮。那封信揣怀里，别压皱了。": ("merchant_lin", "merchant"),
     "依大宋律，同居共财，这笔债自然落到了你的名下。": ("guild_head", "prologue_ledger"),
 }
 _chars = load("characters.json").get("characters", [])
@@ -1185,8 +1185,8 @@ for line, (cid_expect, sid_expect) in SEQ3_MIRRORS.items():
           "若他幕也要上这一句，在本表另起一行）")
 
 _SEQ3_MIRROR_SELF = {  # 自证两项：误植收句人 / 误植第二落幕均须被上面 checks 抓出
-    "误植 characters 次收句人": lambda: len(_mirror_owner("这趟先验半程的水路。货不能潮，信不能皱。",
-        list(_chars) + [{"id": "_probe_ch", "lines": ["这趟先验半程的水路。货不能潮，信不能皱。"]}])) != 1,
+    "误植 characters 次收句人": lambda: len(_mirror_owner("这几箱你带着，跑一半就回。舱底垫好油布，货不能潮。那封信揣怀里，别压皱了。",
+        list(_chars) + [{"id": "_probe_ch", "lines": ["这几箱你带着，跑一半就回。舱底垫好油布，货不能潮。那封信揣怀里，别压皱了。"]}])) != 1,
     "误植 scenes 第二落幕": lambda: _mirror_scenes("依大宋律，同居共财，这笔债自然落到了你的名下。",
         list(scenes) + [{"id": "_probe_sc", "body": "依大宋律，同居共财，这笔债自然落到了你的名下。"}]) != ["prologue_ledger"],
 }
@@ -1199,7 +1199,7 @@ for tag, probe in _SEQ3_MIRROR_SELF.items():
 # 在本文件 SEQ3_MIRRORS 本体之外再把同样的 2 条的「characters 收句人 = X」影印一处：
 # 影印散掉（改名 / 挪人 / 删句）即红，SEQ3_MIRRORS 整行删掉它也红 —— 双表同理印证，删一处另一处仍守。
 _SEQ3_MIRROR_PIN = {  # 影印登记（不读 SEQ3_MIRRORS —— 若是硬同步复制，加行 / 改 owner 时两处一处改即可红）
-    "merchant_lin": "这趟先验半程的水路",
+    "merchant_lin": "舱底垫好油布，货不能潮",
     "guild_head": "依大宋律，同居共财",
 }
 for _cid, _frag in _SEQ3_MIRROR_PIN.items():
