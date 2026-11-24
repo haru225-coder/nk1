@@ -532,6 +532,38 @@
       "kind": "temple",
       "bg": "bg_dist_qz_shunji.jpg",
       "description": "宫临江。渔户来还愿，帆樯就在墙外。宫外有人搭着香火摊。",
+      "hotspots": [
+        {
+          "id": "qz_shunji_rite",
+          "x": 0.26,
+          "y": 0.64,
+          "kind": "person"
+        },
+        {
+          "id": "qz_shunji_fallen",
+          "x": 0.16,
+          "y": 0.50,
+          "kind": "place"
+        },
+        {
+          "id": "qz_shunji_stall",
+          "x": 0.35,
+          "y": 0.60,
+          "kind": "place"
+        },
+        {
+          "id": "npc_zhubo_deliver",
+          "x": 0.16,
+          "y": 0.70,
+          "kind": "place"
+        },
+        {
+          "id": "qz_shunji_stele",
+          "x": 0.15,
+          "y": 0.80,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "qz_shunji_rite",
@@ -1779,7 +1811,7 @@
             {
               "id": "play",
               "label": "押一盏",
-              "text": "你押了自己这盏。茶博士把话传到牙行，建茶的价随之抬头。",
+              "text": "你把这盏押上。茶博士把话传到牙行，建茶的价随之抬头。",
               "cost": 20,
               "effects": {
                 "merchant_credit": 1
@@ -4033,7 +4065,7 @@
           "id": "xh_gate_arch",
           "type": "look",
           "label": "门洞",
-          "text": "门洞上扇石料挨得不紧，中间露着一条缝，门槛抹过的水泥还没干透。"
+          "text": "门洞上扇石料挨得不紧，中间露着一条缝，门槛新抹的灰泥还没干透。"
         },
         {
           "id": "xh_gate_cart",
@@ -4212,7 +4244,7 @@
           "id": "gz_fuxu_salt",
           "type": "buy",
           "label": "收海盐",
-          "text": "扶胥盐包刚卸下，还没过牙行的秤。按出洋前的价收。",
+          "text": "扶胥盐包刚卸下，潮气还在包上。牙行的秤还没到，先按船上的价收。",
           "good": "sea_salt",
           "qty": 8,
           "price_mul": 0.92,
@@ -4243,7 +4275,7 @@
           "id": "gz_fuxu_pilot",
           "type": "favour",
           "label": "请梢工",
-          "text": "你请扶胥的梢工吃了一席。往后收盐，他先给你递话。",
+          "text": "你请扶胥的梢工在江边坐了一席。下次卸盐，他先把潮时报给你。",
           "cost": 30,
           "once": true,
           "effects": {
@@ -4534,7 +4566,7 @@
           "id": "gz_fanfang_interpreter",
           "type": "hire",
           "label": "雇通事",
-          "text": "蕃坊里的通事肯与你同走石巷。他在时，象牙的行情问得细，牙行的簿子也松些。",
+          "text": "蕃坊通事站在石巷口等活。他在时，问得出哪一支象牙是新上岸的，簿子也肯翻开。",
           "who": "蕃坊通事",
           "cost": 140,
           "wage": 24,
@@ -4544,7 +4576,7 @@
           "id": "gz_fanfang_ivory",
           "type": "buy",
           "label": "收象牙",
-          "text": "通事在身边时，这一支象牙少要一成。",
+          "text": "通事跟在旁边还价，这一支象牙少要一成。",
           "good": "ivory",
           "qty": 2,
           "price_mul": 0.94,
@@ -5015,7 +5047,7 @@
           "id": "gz_shibo_gift",
           "type": "favour",
           "label": "送笔墨",
-          "text": "你给市舶司书吏送了一匣笔墨。再验货时，他先翻你的货引。",
+          "text": "你给市舶司书吏送了两锭墨、一刀纸。再验货时，他先翻你的货引。",
           "cost": 40,
           "once_per": "month",
           "effects": {
@@ -5027,7 +5059,7 @@
           "id": "gz_shibo_lic",
           "type": "licence",
           "label": "领南舶公凭",
-          "text": "南舶公凭到手。香药市上的牙人认这张纸，货引仍去正厅请。",
+          "text": "南舶公凭到手。香药市的牙人看印就放行，货引还得回市舶司正厅去请。",
           "cost": 900,
           "licence": "lic_gz_south",
           "unlock": {
@@ -6044,13 +6076,13 @@
           "id": "gz_tafang_watch",
           "type": "favour",
           "label": "查仓",
-          "text": "你到塌房里走了一遭，记下几件货的去向。",
+          "text": "你到河南岸的塌房走了一遭，记下几件货是往城里送的，还是等船出洋的。",
           "cost": 10,
           "once_per": "month",
           "cooldown_days": 30,
           "effects": {
             "network": 1,
-            "note": "塌房里查过一遭仓。"
+            "note": "河南岸的塌房查过一遭。"
           }
         },
         {
@@ -6184,7 +6216,7 @@
             {
               "id": "play",
               "label": "押一盏",
-              "text": "你押了自己这盏。博多的茶船还压在海上，牙行先改了牌价。",
+              "text": "你把这盏搁到桌上当押。博多的茶船还压在海上，牙行先改了牌价。",
               "cost": 20,
               "effects": {
                 "merchant_credit": 1
@@ -7302,7 +7334,7 @@
           "id": "hk_naya_watch",
           "type": "favour",
           "label": "查仓",
-          "text": "你到纳屋里走了一遭，记下几件货的去向。",
+          "text": "你到纳屋里走了一遭，记下几件货是等唐房来收的。",
           "cost": 10,
           "once_per": "month",
           "cooldown_days": 30,
@@ -8761,7 +8793,7 @@
             {
               "id": "play",
               "label": "押一盏",
-              "text": "你押了自己这盏。茶博士把水续上，价也跟着传出去。",
+              "text": "你指了指自己面前这盏。茶博士把水续上，价也跟着传出去。",
               "cost": 20,
               "effects": {
                 "merchant_credit": 1
