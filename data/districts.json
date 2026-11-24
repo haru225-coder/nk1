@@ -742,6 +742,56 @@
       "kind": "bridge",
       "bg": "bg_dist_qz_luoyang.jpg",
       "description": "石梁桥很长，桥墩上长着牡蛎。桥头有人支摊，卖给过桥的人。",
+      "hotspots": [
+        {
+          "id": "qz_luoyang_eave",
+          "x": 0.15,
+          "y": 0.26,
+          "kind": "place"
+        },
+        {
+          "id": "qz_luoyang_span",
+          "x": 0.6,
+          "y": 0.37,
+          "kind": "place"
+        },
+        {
+          "id": "qz_luoyang_rumor",
+          "x": 0.3,
+          "y": 0.39,
+          "kind": "person"
+        },
+        {
+          "id": "qz_luoyang_stall",
+          "x": 0.2,
+          "y": 0.48,
+          "kind": "place"
+        },
+        {
+          "id": "qz_luoyang_beam",
+          "x": 0.42,
+          "y": 0.47,
+          "kind": "place"
+        },
+        {
+          "id": "qz_luoyang_salt",
+          "x": 0.08,
+          "y": 0.5,
+          "kind": "goods"
+        },
+        {
+          "id": "qz_luoyang_pier",
+          "x": 0.22,
+          "y": 0.76,
+          "kind": "place"
+        },
+        {
+          "id": "qz_luoyang_tide",
+          "x": 0.54,
+          "y": 0.84,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "qz_luoyang_stall",
@@ -780,6 +830,36 @@
           "port": "xinghua",
           "good": "grain",
           "mul": 1.12
+        },
+        {
+          "id": "qz_luoyang_eave",
+          "type": "look",
+          "label": "茅棚顶",
+          "text": "棚顶茅束绑绳松了半圈，靠河的一侧被潮气洇成深色。"
+        },
+        {
+          "id": "qz_luoyang_beam",
+          "type": "look",
+          "label": "石梁",
+          "text": "两块石梁接口错开一线，缝里嵌着细沙，踩上去微微晃。"
+        },
+        {
+          "id": "qz_luoyang_pier",
+          "type": "look",
+          "label": "牡蛎墩",
+          "text": "近处桥墩石缝里咬满牡蛎壳，下层的壳还带着潮水，边沿缺了几口。"
+        },
+        {
+          "id": "qz_luoyang_tide",
+          "type": "look",
+          "label": "潮滩",
+          "text": "潮退下去，泥上留一道深色水印，旁边的穴还湿着。"
+        },
+        {
+          "id": "qz_luoyang_span",
+          "type": "look",
+          "label": "桥影",
+          "text": "往桥心望，石墩一列列小下去，尽头只剩一条细影。"
         }
       ]
     },
