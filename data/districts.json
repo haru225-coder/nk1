@@ -8520,6 +8520,38 @@
       "kind": "exam",
       "bg": "bg_dist_wz_bang.jpg",
       "description": "温州州学门外是碑与榜墙。放榜时，永嘉人的名字贴在上头。",
+      "hotspots": [
+        {
+          "id": "wz_bang_look",
+          "x": 0.56,
+          "y": 0.46,
+          "kind": "place"
+        },
+        {
+          "id": "wz_bang_stele",
+          "x": 0.07,
+          "y": 0.62,
+          "kind": "place"
+        },
+        {
+          "id": "wz_bang_aid",
+          "x": 0.3,
+          "y": 0.68,
+          "kind": "person"
+        },
+        {
+          "id": "wz_bang_tea",
+          "x": 0.55,
+          "y": 0.74,
+          "kind": "goods"
+        },
+        {
+          "id": "wz_bang_stele2",
+          "x": 0.72,
+          "y": 0.62,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "wz_bang_look",
@@ -8620,6 +8652,12 @@
             "favour": 1,
             "network": 1
           }
+        },
+        {
+          "id": "wz_bang_stele2",
+          "type": "look",
+          "label": "墙根旧碑",
+          "text": "墙根一方旧碑，座子陷进泥里半寸。碑面被雨浇白，额上「州学」只剩右边一半，下面列着几科永嘉中式的姓，有两行叫瓦片刮过，刮痕里塞着沙。"
         }
       ]
     },
