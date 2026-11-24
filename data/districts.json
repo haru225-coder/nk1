@@ -3655,50 +3655,50 @@
       "hotspots": [
         {
           "id": "xh_smith_street",
-          "x": 0.62,
-          "y": 0.42,
+          "x": 0.64,
+          "y": 0.72,
           "kind": "place"
         },
         {
           "id": "xh_smith_fire",
-          "x": 0.24,
-          "y": 0.52,
+          "x": 0.32,
+          "y": 0.4,
           "kind": "place"
         },
         {
           "id": "xh_smith_smith",
-          "x": 0.48,
-          "y": 0.54,
+          "x": 0.54,
+          "y": 0.36,
           "kind": "person"
         },
         {
           "id": "xh_smith_charcoal",
-          "x": 0.13,
-          "y": 0.54,
+          "x": 0.28,
+          "y": 0.84,
           "kind": "goods"
         },
         {
           "id": "xh_smith_iron",
           "x": 0.3,
-          "y": 0.22,
+          "y": 0.2,
           "kind": "goods"
         },
         {
           "id": "xh_smith_make",
           "x": 0.4,
-          "y": 0.66,
+          "y": 0.6,
           "kind": "place"
         },
         {
           "id": "xh_smith_repair",
-          "x": 0.16,
-          "y": 0.78,
+          "x": 0.07,
+          "y": 0.7,
           "kind": "goods"
         },
         {
           "id": "xh_smith_bellows",
-          "x": 0.08,
-          "y": 0.3,
+          "x": 0.2,
+          "y": 0.52,
           "kind": "place"
         }
       ],
@@ -3806,50 +3806,50 @@
       "hotspots": [
         {
           "id": "xh_chenghuang_hall",
-          "x": 0.3,
-          "y": 0.32,
+          "x": 0.37,
+          "y": 0.45,
           "kind": "place"
         },
         {
           "id": "xh_chenghuang_stele_l",
-          "x": 0.18,
-          "y": 0.48,
+          "x": 0.25,
+          "y": 0.6,
           "kind": "place"
         },
         {
           "id": "xh_chenghuang_burner",
-          "x": 0.3,
-          "y": 0.58,
+          "x": 0.43,
+          "y": 0.68,
           "kind": "place"
         },
         {
           "id": "xh_chenghuang_stele_r",
-          "x": 0.46,
-          "y": 0.46,
+          "x": 0.58,
+          "y": 0.5,
           "kind": "place"
         },
         {
           "id": "xh_chenghuang_incense",
-          "x": 0.44,
-          "y": 0.7,
+          "x": 0.54,
+          "y": 0.8,
           "kind": "person"
         },
         {
           "id": "xh_chenghuang_grain",
-          "x": 0.14,
-          "y": 0.7,
+          "x": 0.08,
+          "y": 0.76,
           "kind": "goods"
         },
         {
           "id": "xh_chenghuang_court",
-          "x": 0.56,
-          "y": 0.82,
+          "x": 0.64,
+          "y": 0.66,
           "kind": "place"
         },
         {
           "id": "xh_chenghuang_eave",
-          "x": 0.62,
-          "y": 0.38,
+          "x": 0.22,
+          "y": 0.1,
           "kind": "place"
         }
       ],
@@ -6445,50 +6445,50 @@
       "hotspots": [
         {
           "id": "hk_joten_lantern",
-          "x": 0.5,
-          "y": 0.3,
+          "x": 0.36,
+          "y": 0.39,
           "kind": "place"
         },
         {
           "id": "hk_joten_gate",
           "x": 0.22,
-          "y": 0.44,
+          "y": 0.32,
           "kind": "place"
         },
         {
           "id": "hk_joten_corridor",
-          "x": 0.42,
-          "y": 0.36,
+          "x": 0.52,
+          "y": 0.48,
           "kind": "place"
         },
         {
           "id": "hk_joten_monk",
-          "x": 0.4,
-          "y": 0.58,
+          "x": 0.42,
+          "y": 0.66,
           "kind": "person"
         },
         {
           "id": "hk_joten_sand",
           "x": 0.62,
-          "y": 0.58,
+          "y": 0.72,
           "kind": "place"
         },
         {
           "id": "hk_joten_tree",
-          "x": 0.12,
-          "y": 0.52,
+          "x": 0.05,
+          "y": 0.55,
           "kind": "place"
         },
         {
           "id": "hk_joten_sutra",
-          "x": 0.16,
-          "y": 0.82,
+          "x": 0.2,
+          "y": 0.84,
           "kind": "goods"
         },
         {
           "id": "hk_joten_steps",
-          "x": 0.24,
-          "y": 0.58,
+          "x": 0.25,
+          "y": 0.6,
           "kind": "place"
         }
       ],
@@ -8042,50 +8042,50 @@
       "hotspots": [
         {
           "id": "wz_shop_cabinet",
-          "x": 0.18,
-          "y": 0.36,
+          "x": 0.04,
+          "y": 0.42,
           "kind": "place"
         },
         {
           "id": "wz_shop_painter",
-          "x": 0.22,
-          "y": 0.52,
+          "x": 0.26,
+          "y": 0.62,
           "kind": "person"
         },
         {
           "id": "wz_shop_regular",
-          "x": 0.48,
+          "x": 0.44,
           "y": 0.52,
           "kind": "person"
         },
         {
           "id": "wz_shop_regular2",
-          "x": 0.44,
-          "y": 0.62,
+          "x": 0.37,
+          "y": 0.72,
           "kind": "goods"
         },
         {
           "id": "wz_shop_alley",
-          "x": 0.62,
-          "y": 0.44,
+          "x": 0.64,
+          "y": 0.9,
           "kind": "place"
         },
         {
           "id": "wz_shop_box",
-          "x": 0.34,
-          "y": 0.66,
+          "x": 0.16,
+          "y": 0.22,
           "kind": "goods"
         },
         {
           "id": "wz_shop_buy2",
-          "x": 0.52,
-          "y": 0.76,
+          "x": 0.64,
+          "y": 0.7,
           "kind": "goods"
         },
         {
           "id": "wz_shop_stones",
-          "x": 0.26,
-          "y": 0.82,
+          "x": 0.08,
+          "y": 0.92,
           "kind": "place"
         }
       ],
@@ -8195,50 +8195,50 @@
       "hotspots": [
         {
           "id": "wz_market_canopy",
-          "x": 0.28,
-          "y": 0.32,
+          "x": 0.22,
+          "y": 0.18,
           "kind": "place"
         },
         {
           "id": "wz_market_gate",
-          "x": 0.6,
-          "y": 0.38,
+          "x": 0.62,
+          "y": 0.36,
           "kind": "place"
         },
         {
           "id": "wz_market_tea",
           "x": 0.18,
-          "y": 0.5,
+          "y": 0.68,
           "kind": "goods"
         },
         {
           "id": "wz_market_sundries",
-          "x": 0.4,
-          "y": 0.48,
+          "x": 0.56,
+          "y": 0.66,
           "kind": "goods"
         },
         {
           "id": "wz_market_pepper",
-          "x": 0.54,
-          "y": 0.56,
+          "x": 0.42,
+          "y": 0.6,
           "kind": "goods"
         },
         {
           "id": "wz_market_grain",
-          "x": 0.24,
-          "y": 0.72,
+          "x": 0.4,
+          "y": 0.8,
           "kind": "goods"
         },
         {
           "id": "wz_market_aisle",
-          "x": 0.56,
-          "y": 0.72,
+          "x": 0.62,
+          "y": 0.86,
           "kind": "place"
         },
         {
           "id": "wz_market_sacks",
-          "x": 0.16,
-          "y": 0.82,
+          "x": 0.08,
+          "y": 0.86,
           "kind": "goods"
         }
       ],
@@ -8966,50 +8966,50 @@
       "hotspots": [
         {
           "id": "wz_tafang_row",
-          "x": 0.2,
-          "y": 0.38,
+          "x": 0.06,
+          "y": 0.3,
           "kind": "place"
         },
         {
           "id": "wz_tafang_share",
-          "x": 0.4,
-          "y": 0.48,
+          "x": 0.2,
+          "y": 0.42,
           "kind": "place"
         },
         {
           "id": "wz_tafang_ship",
           "x": 0.62,
-          "y": 0.5,
+          "y": 0.52,
           "kind": "place"
         },
         {
           "id": "wz_tafang_porters",
-          "x": 0.22,
-          "y": 0.56,
+          "x": 0.33,
+          "y": 0.52,
           "kind": "person"
         },
         {
           "id": "wz_tafang_copper",
-          "x": 0.42,
-          "y": 0.68,
+          "x": 0.4,
+          "y": 0.82,
           "kind": "goods"
         },
         {
           "id": "wz_tafang_crates",
           "x": 0.1,
-          "y": 0.82,
+          "y": 0.66,
           "kind": "goods"
         },
         {
           "id": "wz_tafang_shore",
-          "x": 0.58,
-          "y": 0.78,
+          "x": 0.62,
+          "y": 0.85,
           "kind": "place"
         },
         {
           "id": "wz_tafang_eave",
-          "x": 0.48,
-          "y": 0.34,
+          "x": 0.42,
+          "y": 0.2,
           "kind": "place"
         }
       ],
@@ -9087,50 +9087,50 @@
       "hotspots": [
         {
           "id": "wz_mochi_banyan",
-          "x": 0.2,
-          "y": 0.28,
+          "x": 0.12,
+          "y": 0.3,
           "kind": "place"
         },
         {
           "id": "wz_mochi_shop",
-          "x": 0.32,
-          "y": 0.5,
+          "x": 0.3,
+          "y": 0.33,
           "kind": "place"
         },
         {
           "id": "wz_mochi_ferry",
-          "x": 0.62,
-          "y": 0.42,
+          "x": 0.63,
+          "y": 0.5,
           "kind": "place"
         },
         {
           "id": "wz_mochi_chat",
-          "x": 0.18,
-          "y": 0.56,
+          "x": 0.42,
+          "y": 0.72,
           "kind": "person"
         },
         {
           "id": "wz_mochi_ask",
-          "x": 0.54,
+          "x": 0.6,
           "y": 0.68,
           "kind": "person"
         },
         {
           "id": "wz_mochi_grain",
-          "x": 0.1,
-          "y": 0.7,
+          "x": 0.07,
+          "y": 0.8,
           "kind": "goods"
         },
         {
           "id": "wz_mochi_steamer",
-          "x": 0.32,
-          "y": 0.64,
+          "x": 0.24,
+          "y": 0.62,
           "kind": "goods"
         },
         {
           "id": "wz_mochi_baskets",
-          "x": 0.62,
-          "y": 0.74,
+          "x": 0.54,
+          "y": 0.86,
           "kind": "goods"
         }
       ],
