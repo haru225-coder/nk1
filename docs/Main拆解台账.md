@@ -705,14 +705,14 @@ gen_main_splits 的硬校验 ③ / ④（变异在 ledger_refs_mutants）。
 R 玉湖陈宅 1 支 / 47 行。追加刀函数表里的行段按「拆后那版 Main.gd」记（追加刀节落地时那一支就是一行转发：注释块 3 行
 `## 本地 main 的兴化玉湖陈宅…` 起 + `func _setup_residence_chen:` 1 行 + `\t_RESIDENCE.setup_residence_chen(self, port_id)`
 1 行 + 行下 0 空行 = **2090–2094**（a9 落地时记 2149–2153；w20-c2 port_beats 接回运行时后重算过一次；
-**w21-d20 第十四刀跑 gen 对账时随主干 b29b312 的 Main.gd 再挪到 2090–2094**（其间 w20-c10 等两笔使陈宅转发上移 59 行）；其后 1a074848 剧情页接线再挪到 2299–2303；城区热区接线 / 油画底图等主干提交又使转发下移到 **2445–2449**——
+**w21-d20 第十四刀跑 gen 对账时随主干 b29b312 的 Main.gd 再挪到 2090–2094**（其间 w20-c10 等两笔使陈宅转发上移 59 行）；其后 1a074848 剧情页接线再挪到 2299–2303；城区热区接线 / 油画底图等主干提交又使转发下移到 2445–2449，序章案上三物拆热区再下移到 **2447–2451**——
 快照随 gen 事后对账更新，不算「回来改」）；这是 gen 事后对账用的快照，不再回来改。拆前 Main.gd 上 function 本体在 2146–2190，
 已搬到 `scripts/ui/ResidencePage.gd`；前面三行 `CHEN_ZAN_STAKE : 3000` / `CHEN_ZAN_FROM_YEAR : 1270` / `CHEN_ZAN_MIN_FAME : 15`
 是簇间常量、仍留 Main：qa 探针 `godot_story_check.gd` 的 zan_cases 直调 `main.CHEN_ZAN_FROM_YEAR`，搬了它就得跟着改）。
 
 | 支 | 行段（拆后那版 Main.gd 的转发快照） | 行（拆前 function 本体） | 拆出件 static func |
 |---|---|---|---|
-| `_setup_residence_chen(port_id)` | 2445–2449 | 47 | `setup_residence_chen` |
+| `_setup_residence_chen(port_id)` | 2447–2451 | 47 | `setup_residence_chen` |
 
 **跨切依赖**（全部经 `main.` 取，追加进拆出件不存状态）：
 - Main 成员：`scene_title` / `body_text` / `choices_container` / `choices_label` 各 1，`current_scene_id` 2（两处 lambda 里，
