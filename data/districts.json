@@ -2543,6 +2543,56 @@
       "kind": "exam",
       "bg": "bg_dist_xh_bang.jpg",
       "description": "兴化军学的榜墙对着街。墙边立着两通石碑，碑上是历科题名。放榜时，名字贴满一墙。",
+      "hotspots": [
+        {
+          "id": "xh_bang_papers",
+          "x": 0.12,
+          "y": 0.34,
+          "kind": "place"
+        },
+        {
+          "id": "xh_bang_gate",
+          "x": 0.42,
+          "y": 0.32,
+          "kind": "place"
+        },
+        {
+          "id": "xh_bang_poster",
+          "x": 0.2,
+          "y": 0.44,
+          "kind": "place"
+        },
+        {
+          "id": "xh_bang_look",
+          "x": 0.12,
+          "y": 0.58,
+          "kind": "person"
+        },
+        {
+          "id": "xh_bang_aid",
+          "x": 0.36,
+          "y": 0.56,
+          "kind": "person"
+        },
+        {
+          "id": "xh_bang_stele",
+          "x": 0.54,
+          "y": 0.56,
+          "kind": "place"
+        },
+        {
+          "id": "xh_bang_street",
+          "x": 0.62,
+          "y": 0.72,
+          "kind": "place"
+        },
+        {
+          "id": "xh_bang_tea",
+          "x": 0.18,
+          "y": 0.76,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "xh_bang_look",
@@ -2660,6 +2710,24 @@
             "favour": 1,
             "network": 1
           }
+        },
+        {
+          "id": "xh_bang_papers",
+          "type": "look",
+          "label": "榜纸",
+          "text": "墙上钉着几张白纸，右下角那张边卷起来，钉眼底下还留着一小圈湿印。"
+        },
+        {
+          "id": "xh_bang_gate",
+          "type": "look",
+          "label": "军学门",
+          "text": "门框一侧的砖缺了半块，门槛上有两处未干的泥点。"
+        },
+        {
+          "id": "xh_bang_street",
+          "type": "look",
+          "label": "墙外街",
+          "text": "石路中间被踩出一道浅槽，远处屋脊还剩半截影。"
         }
       ]
     },
@@ -7142,6 +7210,56 @@
       "kind": "market",
       "bg": "bg_dist_hk_ichi.jpg",
       "description": "海边的市在雾里开。草棚下堆着鱼干、米包，倭商用宋钱算账。",
+      "hotspots": [
+        {
+          "id": "hk_ichi_thatch",
+          "x": 0.14,
+          "y": 0.26,
+          "kind": "place"
+        },
+        {
+          "id": "hk_ichi_sails",
+          "x": 0.3,
+          "y": 0.24,
+          "kind": "ship"
+        },
+        {
+          "id": "hk_ichi_porcelain",
+          "x": 0.32,
+          "y": 0.48,
+          "kind": "goods"
+        },
+        {
+          "id": "hk_ichi_watch",
+          "x": 0.13,
+          "y": 0.5,
+          "kind": "person"
+        },
+        {
+          "id": "hk_ichi_wager",
+          "x": 0.22,
+          "y": 0.54,
+          "kind": "place"
+        },
+        {
+          "id": "hk_ichi_grain",
+          "x": 0.22,
+          "y": 0.66,
+          "kind": "goods"
+        },
+        {
+          "id": "hk_ichi_fish",
+          "x": 0.1,
+          "y": 0.8,
+          "kind": "goods"
+        },
+        {
+          "id": "hk_ichi_tide",
+          "x": 0.48,
+          "y": 0.82,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "hk_ichi_grain",
@@ -7207,6 +7325,30 @@
               }
             }
           ]
+        },
+        {
+          "id": "hk_ichi_thatch",
+          "type": "look",
+          "label": "草棚",
+          "text": "棚沿茅束绑绳松了，布帘一边挂不住，角上结着盐斑。"
+        },
+        {
+          "id": "hk_ichi_sails",
+          "type": "look",
+          "label": "帆影",
+          "text": "近处两艘船的帆还没落尽，帆脚绳垂在舷边，潮水拍到桅根。"
+        },
+        {
+          "id": "hk_ichi_fish",
+          "type": "look",
+          "label": "鱼干筐",
+          "text": "筐里鱼干叠了半筐，最上面几条尾翅翘起，筐沿挂着没干的盐星。"
+        },
+        {
+          "id": "hk_ichi_tide",
+          "type": "look",
+          "label": "潮滩",
+          "text": "潮退下去，沙上留一道深色水印，贝壳碎末陷在脚印里。"
         }
       ]
     },
@@ -7553,6 +7695,56 @@
       "kind": "teahouse",
       "bg": "bg_dist_hk_cha.jpg",
       "description": "禅僧从宋带回吃茶的规矩。廊下设席，僧与客对坐，茶碗里是宋茶。",
+      "hotspots": [
+        {
+          "id": "hk_cha_pine",
+          "x": 0.5,
+          "y": 0.28,
+          "kind": "place"
+        },
+        {
+          "id": "hk_cha_sit",
+          "x": 0.28,
+          "y": 0.48,
+          "kind": "person"
+        },
+        {
+          "id": "hk_cha_hire",
+          "x": 0.14,
+          "y": 0.58,
+          "kind": "person"
+        },
+        {
+          "id": "hk_cha_kettle",
+          "x": 0.42,
+          "y": 0.62,
+          "kind": "place"
+        },
+        {
+          "id": "hk_cha_sand",
+          "x": 0.62,
+          "y": 0.64,
+          "kind": "place"
+        },
+        {
+          "id": "hk_cha_sell",
+          "x": 0.32,
+          "y": 0.68,
+          "kind": "goods"
+        },
+        {
+          "id": "hk_cha_bowls",
+          "x": 0.22,
+          "y": 0.7,
+          "kind": "goods"
+        },
+        {
+          "id": "hk_cha_gift",
+          "x": 0.3,
+          "y": 0.78,
+          "kind": "goods"
+        }
+      ],
       "interactions": [
         {
           "id": "hk_cha_sit",
@@ -7600,6 +7792,30 @@
             "network": 1,
             "favour": 1
           }
+        },
+        {
+          "id": "hk_cha_bowls",
+          "type": "look",
+          "label": "茶碗",
+          "text": "两只碗并在案上，近处那只碗沿有一道浅磕，茶未喝尽，碗底还潮。"
+        },
+        {
+          "id": "hk_cha_kettle",
+          "type": "look",
+          "label": "茶釜",
+          "text": "釜放在炭笼上，提梁微微偏一侧，笼边积着一圈冷灰。"
+        },
+        {
+          "id": "hk_cha_pine",
+          "type": "look",
+          "label": "庭松",
+          "text": "庭中那棵松，主干在一人高处折了一回，折处结着深色的皮。"
+        },
+        {
+          "id": "hk_cha_sand",
+          "type": "look",
+          "label": "砂庭",
+          "text": "砂面扫出的纹在石边断掉，有一处被鞋印踩乱，没有补平。"
         }
       ]
     },
@@ -8388,6 +8604,56 @@
       "kind": "orchard",
       "bg": "bg_dist_wz_citrus.jpg",
       "description": "温柑出名。山坡上一片柑树，园丁挑着筐下山，远处是瓯江和城。",
+      "hotspots": [
+        {
+          "id": "wz_citrus_eave",
+          "x": 0.14,
+          "y": 0.24,
+          "kind": "place"
+        },
+        {
+          "id": "wz_citrus_share",
+          "x": 0.16,
+          "y": 0.42,
+          "kind": "place"
+        },
+        {
+          "id": "wz_citrus_trees",
+          "x": 0.48,
+          "y": 0.5,
+          "kind": "place"
+        },
+        {
+          "id": "wz_citrus_price",
+          "x": 0.34,
+          "y": 0.52,
+          "kind": "person"
+        },
+        {
+          "id": "wz_citrus_pick",
+          "x": 0.22,
+          "y": 0.62,
+          "kind": "person"
+        },
+        {
+          "id": "wz_citrus_gift",
+          "x": 0.08,
+          "y": 0.72,
+          "kind": "goods"
+        },
+        {
+          "id": "wz_citrus_path",
+          "x": 0.3,
+          "y": 0.78,
+          "kind": "place"
+        },
+        {
+          "id": "wz_citrus_river",
+          "x": 0.62,
+          "y": 0.62,
+          "kind": "place"
+        }
+      ],
       "interactions": [
         {
           "id": "wz_citrus_share",
@@ -8468,6 +8734,30 @@
               }
             }
           ]
+        },
+        {
+          "id": "wz_citrus_eave",
+          "type": "look",
+          "label": "园屋",
+          "text": "茅檐靠坡的一侧被烟熏深了，门框下沿还卡着半截湿土。"
+        },
+        {
+          "id": "wz_citrus_trees",
+          "type": "look",
+          "label": "柑树",
+          "text": "近处一枝被果子压低，叶背面还挂着一滴未干的水，枝杈与下一株缠在一起。"
+        },
+        {
+          "id": "wz_citrus_path",
+          "type": "look",
+          "label": "坡路",
+          "text": "路心被担子踩出两道浅槽，槽里的土比两旁硬，有一处被筐沿刮掉一层。"
+        },
+        {
+          "id": "wz_citrus_river",
+          "type": "look",
+          "label": "江与城",
+          "text": "坡下江面收成一条亮带，城墙只剩一排矮影，看不清门。"
         }
       ]
     },
